@@ -8,7 +8,7 @@ import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../lib/supabase';
 import { Button, Card, Input, Modal, Badge, EmptyState } from '../components/ui';
-import { Logo, StatusBadge } from '../components/brand';
+import { Logo, LangToggle, StatusBadge } from '../components/brand';
 
 const NAV = [
   { key: 'overview', icon: LayoutDashboard },
@@ -82,9 +82,9 @@ export function SuperAdmin() {
       </aside>
 
       <div className="flex-1 bg-gray-50 overflow-y-auto">
-        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center px-6">
-          <h1 className="font-semibold text-gray-900">{t('sa.title')}</h1>
-          <span className="ml-3 text-xs text-gray-400">{user?.email}</span>
+        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-6">
+          <div className="flex items-center gap-3"><h1 className="font-semibold text-gray-900">{t('sa.title')}</h1><span className="text-xs text-gray-400">{user?.email}</span></div>
+          <LangToggle />
         </header>
         <main className="p-6 lg:p-8">
           {section === 'overview' && <SaOverview stats={stats} tenants={tenants} />}
@@ -114,7 +114,7 @@ function SaOverview({ stats, tenants }: { stats: { total: number; active: number
         ))}
       </div>
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Recent institutions</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.recent_tenants')}</h3>
         {tenants.length === 0 ? <EmptyState icon={Building2} title={t('common.none')} /> : (
           <div className="space-y-2">{tenants.slice(0, 10).map((tn) => <div key={tn.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{tn.commercial_name || tn.legal_name}</p><p className="text-xs text-gray-400">{tn.email}</p></div><StatusBadge status={tn.status} /></div>)}</div>
         )}

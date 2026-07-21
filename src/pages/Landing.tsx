@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, Shield, Globe, CreditCard, Lock, ArrowRight, Check } from 'lucide-react';
+import { Heart, Shield, Globe, CreditCard, Lock, ArrowRight, Check, Stethoscope } from 'lucide-react';
 import { Logo, LangToggle } from '../components/brand';
 import { useI18n } from '../lib/i18n';
 import { Button } from '../components/ui';
@@ -64,7 +64,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium mb-3">{t('plan.trial')}</div>
-            <h2 className="text-3xl font-bold text-gray-900">Plans &amp; Pricing</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{t('footer.pricing')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((p, i) => (
@@ -84,10 +84,40 @@ export function LandingPage() {
       </section>
 
       <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center mb-4"><div className="rounded-xl w-10 h-10 flex items-center justify-center font-bold text-white" style={{ background: 'linear-gradient(135deg, #2563EB, #10B981)' }}>HC</div></div>
-          <p className="text-sm">{t('app.tagline')}</p>
-          <p className="text-xs mt-2">{t('app.developed')} — {t('app.cameroon')}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div className="col-span-2 md:col-span-1">
+              <Logo variant="dark" size={32} />
+              <p className="text-sm mt-4 max-w-xs">{t('app.tagline')}</p>
+              <p className="text-xs mt-2 text-gray-500">{t('app.developed')} — {t('app.cameroon')}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white text-sm mb-3">{t('footer.product')}</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/features" className="hover:text-white transition-colors">{t('footer.features')}</Link></li>
+                <li><a href="#plans" className="hover:text-white transition-colors">{t('footer.pricing')}</a></li>
+                <li><Link to="/about" className="hover:text-white transition-colors">{t('footer.about')}</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white text-sm mb-3">{t('footer.company')}</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/about" className="hover:text-white transition-colors">{t('footer.about')}</Link></li>
+                <li><Link to="/contact" className="hover:text-white transition-colors">{t('footer.contact')}</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white text-sm mb-3">{t('footer.legal')}</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/privacy" className="hover:text-white transition-colors">{t('footer.privacy')}</Link></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">{t('footer.terms')}</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-gray-500">© {new Date().getFullYear()} LIYAH GROUP. {t('footer.rights')}</p>
+            <p className="text-xs text-gray-500 flex items-center gap-1.5"><Heart size={12} className="text-red-500" fill="currentColor" /> {t('footer.made_in')}</p>
+          </div>
         </div>
       </footer>
     </div>

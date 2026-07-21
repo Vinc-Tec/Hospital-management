@@ -12,6 +12,8 @@ import {
   ConsultationsModule, PrescriptionsModule, LabModule, RadiologyModule,
   PharmacyModule, BedsModule, AdmissionsModule, InvoicesModule, StaffModule, RolesModule,
 } from './pages/modules';
+import { SettingsPage } from './pages/Settings';
+import { AboutPage, FeaturesPage, PrivacyPage, TermsPage, ContactPage } from './pages/StaticPages';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading, activeTenant } = useAuth();
@@ -48,6 +50,11 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<AuthPage mode="signin" />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/features" element={<FeaturesPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/onboarding" element={<TenantRoute><Onboarding /></TenantRoute>} />
       <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/app/patients" element={<ProtectedRoute><ModuleWrapper><PatientsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
@@ -64,20 +71,11 @@ function AppRoutes() {
       <Route path="/app/invoices" element={<ProtectedRoute><ModuleWrapper><InvoicesModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
       <Route path="/app/staff" element={<ProtectedRoute><ModuleWrapper><StaffModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
       <Route path="/app/roles" element={<ProtectedRoute><ModuleWrapper><RolesModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/settings" element={<ProtectedRoute><ModuleWrapper><SettingsPlaceholder /></ModuleWrapper></ProtectedRoute>} />
+      <Route path="/app/settings" element={<ProtectedRoute><ModuleWrapper><SettingsPage /></ModuleWrapper></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
       <Route path="/admin/*" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
-}
-
-function SettingsPlaceholder() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Settings</h1>
-      <p className="text-gray-500">Tenant settings module — coming next.</p>
-    </div>
   );
 }
 

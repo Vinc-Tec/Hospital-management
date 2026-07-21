@@ -23,6 +23,7 @@ const NAV = [
   { to: '/app/radiology', icon: ScanLine, key: 'dash.nav.radiology' },
   { to: '/app/pharmacy', icon: Pill, key: 'dash.nav.pharmacy' },
   { to: '/app/beds', icon: BedDouble, key: 'dash.nav.beds' },
+  { to: '/app/admissions', icon: LogIn, key: 'dash.nav.admissions' },
   { to: '/app/invoices', icon: Receipt, key: 'dash.nav.invoices' },
   { to: '/app/staff', icon: UserCog, key: 'dash.nav.staff' },
   { to: '/app/roles', icon: ShieldCheck, key: 'dash.nav.roles' },
@@ -94,7 +95,7 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
           })}
           {profile?.is_super_admin && (
             <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-emerald-700 hover:bg-emerald-50 font-medium">
-              <ShieldCheck size={18} /> Super Admin
+              <ShieldCheck size={18} /> {t('nav.superadmin')}
             </Link>
           )}
         </nav>
@@ -116,7 +117,7 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <LangToggle />
-            <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> {t('dash.nav.patients')}</Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> {t('dash.quickadd.patient')}</Button>
           </div>
         </header>
 
@@ -147,15 +148,15 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-5">
-                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.patients')}</h3><Link to="/app/patients" className="text-xs text-blue-600 flex items-center gap-1">View all <ChevronRight size={12} /></Link></div>
+                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.patients')}</h3><Link to="/app/patients" className="text-xs text-blue-600 flex items-center gap-1">{t('dash.viewall')} <ChevronRight size={12} /></Link></div>
                   {patients.length === 0 ? <EmptyState icon={Users} title={t('common.none')} /> : (
                     <div className="space-y-2">{patients.map((p) => <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{p.first_name} {p.last_name}</p><p className="text-xs text-gray-400">{p.phone || '—'}</p></div>{p.gender && <StatusBadge status={p.gender} />}</div>)}</div>
                   )}
                 </Card>
                 <Card className="p-5">
-                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.appointments')}</h3><Link to="/app/appointments" className="text-xs text-blue-600 flex items-center gap-1">View all <ChevronRight size={12} /></Link></div>
+                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.appointments')}</h3><Link to="/app/appointments" className="text-xs text-blue-600 flex items-center gap-1">{t('dash.viewall')} <ChevronRight size={12} /></Link></div>
                   {appointments.length === 0 ? <EmptyState icon={CalendarDays} title={t('common.none')} /> : (
-                    <div className="space-y-2">{appointments.map((a) => <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{a.reason || 'Appointment'}</p><p className="text-xs text-gray-400">{new Date(a.scheduled_at).toLocaleDateString()}</p></div><StatusBadge status={a.status} /></div>)}</div>
+                    <div className="space-y-2">{appointments.map((a) => <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{a.reason || t('dash.nav.appointments')}</p><p className="text-xs text-gray-400">{new Date(a.scheduled_at).toLocaleDateString()}</p></div><StatusBadge status={a.status} /></div>)}</div>
                   )}
                 </Card>
               </div>
@@ -167,12 +168,12 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('common.add')} footer={<><Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel')}</Button><Button onClick={addPatient} loading={saving}>{t('common.save')}</Button></>}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <Input label="First name" required value={pForm.first_name} onChange={(e) => setPForm({ ...pForm, first_name: e.target.value })} />
-            <Input label="Last name" required value={pForm.last_name} onChange={(e) => setPForm({ ...pForm, last_name: e.target.value })} />
+            <Input label={t('common.firstname')} required value={pForm.first_name} onChange={(e) => setPForm({ ...pForm, first_name: e.target.value })} />
+            <Input label={t('common.lastname')} required value={pForm.last_name} onChange={(e) => setPForm({ ...pForm, last_name: e.target.value })} />
           </div>
-          <Input label="Phone" value={pForm.phone} onChange={(e) => setPForm({ ...pForm, phone: e.target.value })} />
-          <Select label="Gender" value={pForm.gender} options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }]} onChange={(e) => setPForm({ ...pForm, gender: e.target.value })} />
-          <Input label="Date of birth" type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
+          <Input label={t('common.phone')} value={pForm.phone} onChange={(e) => setPForm({ ...pForm, phone: e.target.value })} />
+          <Select label={t('common.gender')} value={pForm.gender} options={[{ value: 'male', label: t('common.male') }, { value: 'female', label: t('common.female') }, { value: 'other', label: t('common.other') }]} onChange={(e) => setPForm({ ...pForm, gender: e.target.value })} />
+          <Input label={t('common.dob')} type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
         </div>
       </Modal>
     </div>
