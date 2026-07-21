@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Check, Pencil } from 'lucide-react';
+import { Building2, MapPin, FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { useGeography } from '../lib/geography';
@@ -85,6 +85,7 @@ export function Onboarding() {
       : form.address || null;
 
     const payload = {
+      owner_user_id: user.id,
       legal_name: form.legal_name,
       commercial_name: form.commercial_name || null,
       healthcare_type: form.healthcare_type,
@@ -211,36 +212,64 @@ export function Onboarding() {
 
           {step === 1 && (
             <>
-              <div className="flex items-center justify-end mb-4">
+              <div className="flex items-center justify-between mb-5 p-3 rounded-xl bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">{manualLoc ? t('onb.loc.manual') : t('onb.loc.dropdown')}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{manualLoc ? t('onb.loc.manual.desc') : t('onb.loc.dropdown.desc')}</p>
+                </div>
                 <button
                   onClick={() => setManualLoc((m) => !m)}
-                  className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${manualLoc ? 'bg-blue-600' : 'bg-gray-300'}`}
                 >
-                  <Pencil size={14} /> {manualLoc ? t('onb.loc.dropdown') : t('onb.loc.manual')}
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${manualLoc ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
 
               {manualLoc ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label={t('onb.country')} required value={form.manual_country} onChange={(e) => set('manual_country', e.target.value)} />
-                  <Input label={t('onb.region')} value={form.manual_region} onChange={(e) => set('manual_region', e.target.value)} />
-                  <Input label={t('onb.district')} value={form.manual_district} onChange={(e) => set('manual_district', e.target.value)} />
-                  <Input label={t('onb.city')} value={form.manual_city} onChange={(e) => set('manual_city', e.target.value)} />
-                  <Input label={t('onb.locality')} value={form.manual_locality} onChange={(e) => set('manual_locality', e.target.value)} />
-                  <Input label={t('onb.address')} value={form.address} onChange={(e) => set('address', e.target.value)} />
-                  <Input label="GPS Lat" type="number" value={form.gps_lat} onChange={(e) => set('gps_lat', e.target.value)} />
-                  <Input label="GPS Lng" type="number" value={form.gps_lng} onChange={(e) => set('gps_lng', e.target.value)} />
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('onb.loc.section.location')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label={t('onb.country')} required value={form.manual_country} onChange={(e) => set('manual_country', e.target.value)} />
+                      <Input label={t('onb.region')} value={form.manual_region} onChange={(e) => set('manual_region', e.target.value)} />
+                      <Input label={t('onb.district')} value={form.manual_district} onChange={(e) => set('manual_district', e.target.value)} />
+                      <Input label={t('onb.city')} value={form.manual_city} onChange={(e) => set('manual_city', e.target.value)} />
+                      <Input label={t('onb.locality')} value={form.manual_locality} onChange={(e) => set('manual_locality', e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('onb.loc.section.address')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label={t('onb.address')} value={form.address} onChange={(e) => set('address', e.target.value)} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input label={t('onb.loc.gps.lat')} type="number" value={form.gps_lat} onChange={(e) => set('gps_lat', e.target.value)} />
+                        <Input label={t('onb.loc.gps.lng')} type="number" value={form.gps_lng} onChange={(e) => set('gps_lng', e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select label={t('onb.country')} required value={form.country_id} options={geo.countries.map((c) => ({ value: c.id, label: c.name }))} loading={geo.loading} onChange={(e) => { set('country_id', e.target.value); set('region_id', ''); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadRegions(e.target.value); }} />
-                  <Select label={t('onb.region')} required value={form.region_id} options={geo.regions.map((r) => ({ value: r.id, label: r.name }))} onChange={(e) => { set('region_id', e.target.value); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadDistricts(e.target.value); }} />
-                  <Select label={t('onb.district')} value={form.district_id} options={geo.districts.map((d) => ({ value: d.id, label: d.name }))} onChange={(e) => { set('district_id', e.target.value); set('city_id', ''); set('locality_id', ''); geo.loadCities(e.target.value); }} />
-                  <Select label={t('onb.city')} value={form.city_id} options={geo.cities.map((c) => ({ value: c.id, label: c.name }))} onChange={(e) => { set('city_id', e.target.value); set('locality_id', ''); geo.loadLocalities(e.target.value); }} />
-                  <Select label={t('onb.locality')} value={form.locality_id} options={geo.localities.map((l) => ({ value: l.id, label: l.name }))} onChange={(e) => set('locality_id', e.target.value)} />
-                  <Input label={t('onb.address')} value={form.address} onChange={(e) => set('address', e.target.value)} />
-                  <Input label="GPS Lat" type="number" value={form.gps_lat} onChange={(e) => set('gps_lat', e.target.value)} />
-                  <Input label="GPS Lng" type="number" value={form.gps_lng} onChange={(e) => set('gps_lng', e.target.value)} />
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('onb.loc.section.location')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Select label={t('onb.country')} required value={form.country_id} options={geo.countries.map((c) => ({ value: c.id, label: c.name }))} loading={geo.loading} onChange={(e) => { set('country_id', e.target.value); set('region_id', ''); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadRegions(e.target.value); }} />
+                      <Select label={t('onb.region')} required value={form.region_id} options={geo.regions.map((r) => ({ value: r.id, label: r.name }))} onChange={(e) => { set('region_id', e.target.value); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadDistricts(e.target.value); }} />
+                      <Select label={t('onb.district')} value={form.district_id} options={geo.districts.map((d) => ({ value: d.id, label: d.name }))} onChange={(e) => { set('district_id', e.target.value); set('city_id', ''); set('locality_id', ''); geo.loadCities(e.target.value); }} />
+                      <Select label={t('onb.city')} value={form.city_id} options={geo.cities.map((c) => ({ value: c.id, label: c.name }))} onChange={(e) => { set('city_id', e.target.value); set('locality_id', ''); geo.loadLocalities(e.target.value); }} />
+                      <Select label={t('onb.locality')} value={form.locality_id} options={geo.localities.map((l) => ({ value: l.id, label: l.name }))} onChange={(e) => set('locality_id', e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('onb.loc.section.address')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label={t('onb.address')} value={form.address} onChange={(e) => set('address', e.target.value)} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input label={t('onb.loc.gps.lat')} type="number" value={form.gps_lat} onChange={(e) => set('gps_lat', e.target.value)} />
+                        <Input label={t('onb.loc.gps.lng')} type="number" value={form.gps_lng} onChange={(e) => set('gps_lng', e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </>

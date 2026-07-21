@@ -5,6 +5,7 @@ import {
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../lib/i18n';
 import { Badge } from '../components/ui';
 import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF,
@@ -19,296 +20,313 @@ function usePatientDoctorMaps(tenantId: string) {
   return { pMap, dMap };
 }
 
+const statusOpts = (keys: string[], t: (k: string) => string) =>
+  keys.map((k) => ({ value: k, label: t(`opt.${k}`) }));
+
 export function PatientsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: 'Name', render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
-    { key: 'gender', label: 'Gender' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'blood_group', label: 'Blood' },
+    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'gender', label: t('col.gender') },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'email', label: t('col.email') },
+    { key: 'blood_group', label: t('col.blood') },
   ];
   const fields: FieldDef[] = [
-    { key: 'first_name', label: 'First name', required: true },
-    { key: 'last_name', label: 'Last name', required: true },
-    { key: 'date_of_birth', label: 'Date of birth', type: 'date' },
-    { key: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'blood_group', label: 'Blood group', type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((v) => ({ value: v, label: v })) },
-    { key: 'allergies', label: 'Allergies', type: 'textarea' },
+    { key: 'first_name', label: t('fld.firstname'), required: true },
+    { key: 'last_name', label: t('fld.lastname'), required: true },
+    { key: 'date_of_birth', label: t('fld.dob'), type: 'date' },
+    { key: 'gender', label: t('fld.gender'), type: 'select', options: statusOpts(['male', 'female', 'other'], t) },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'email', label: t('col.email'), type: 'text' },
+    { key: 'blood_group', label: t('fld.blood_group'), type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((v) => ({ value: v, label: v })) },
+    { key: 'allergies', label: t('fld.allergies'), type: 'textarea' },
   ];
-  return <ModulePage table="patients" tenantId={tenantId} title="Patients" desc="Manage patient records" icon={Users} columns={cols} formFields={fields} />;
+  return <ModulePage table="patients" tenantId={tenantId} title={t('mod.patients.title')} desc={t('mod.patients.desc')} icon={Users} columns={cols} formFields={fields} />;
 }
 
 export function DoctorsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: 'Name', render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
-    { key: 'specialty', label: 'Specialty' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'license_number', label: 'License' },
-    { key: 'status', label: 'Status' },
+    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'specialty', label: t('col.specialty') },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'email', label: t('col.email') },
+    { key: 'license_number', label: t('col.license') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'first_name', label: 'First name', required: true },
-    { key: 'last_name', label: 'Last name', required: true },
-    { key: 'specialty', label: 'Specialty' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'license_number', label: 'License number' },
-    { key: 'status', label: 'Status', type: 'select', options: [{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }, { value: 'inactive', label: 'Inactive' }] },
+    { key: 'first_name', label: t('fld.firstname'), required: true },
+    { key: 'last_name', label: t('fld.lastname'), required: true },
+    { key: 'specialty', label: t('fld.specialty') },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'email', label: t('col.email'), type: 'text' },
+    { key: 'license_number', label: t('fld.license_number') },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'suspended', 'inactive'], t) },
   ];
-  return <ModulePage table="doctors" tenantId={tenantId} title="Doctors" desc="Manage medical staff" icon={Stethoscope} columns={cols} formFields={fields} />;
+  return <ModulePage table="doctors" tenantId={tenantId} title={t('mod.doctors.title')} desc={t('mod.doctors.desc')} icon={Stethoscope} columns={cols} formFields={fields} />;
 }
 
 export function AppointmentsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'doctor_id', label: 'Doctor', render: (r) => <span>{dMap.get(r.doctor_id as string)?.first_name ?? '—'} {dMap.get(r.doctor_id as string)?.last_name ?? ''}</span> },
-    { key: 'scheduled_at', label: 'Scheduled' },
-    { key: 'reason', label: 'Reason' },
-    { key: 'status', label: 'Status' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'doctor_id', label: t('col.doctor'), render: (r) => <span>{dMap.get(r.doctor_id as string)?.first_name ?? '—'} {dMap.get(r.doctor_id as string)?.last_name ?? ''}</span> },
+    { key: 'scheduled_at', label: t('col.scheduled') },
+    { key: 'reason', label: t('col.reason') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'scheduled_at', label: 'Scheduled at', type: 'datetime-local', required: true },
-    { key: 'duration_min', label: 'Duration (min)', type: 'number' },
-    { key: 'reason', label: 'Reason' },
-    { key: 'status', label: 'Status', type: 'select', options: ['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'].map((v) => ({ value: v, label: v })) },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'scheduled_at', label: t('fld.scheduled_at'), type: 'datetime-local', required: true },
+    { key: 'duration_min', label: t('fld.duration'), type: 'number' },
+    { key: 'reason', label: t('col.reason') },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'], t) },
   ];
-  return <ModulePage table="appointments" tenantId={tenantId} title="Appointments" desc="Schedule and track appointments" icon={CalendarDays} columns={cols} formFields={fields} />;
+  return <ModulePage table="appointments" tenantId={tenantId} title={t('mod.appointments.title')} desc={t('mod.appointments.desc')} icon={CalendarDays} columns={cols} formFields={fields} />;
 }
 
 export function MedicalRecordsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'record_date', label: 'Date' },
-    { key: 'diagnosis', label: 'Diagnosis' },
-    { key: 'icd10_code', label: 'ICD-10' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'record_date', label: t('col.date') },
+    { key: 'diagnosis', label: t('col.diagnosis') },
+    { key: 'icd10_code', label: t('col.icd10') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'record_date', label: 'Record date', type: 'date', required: true },
-    { key: 'chief_complaint', label: 'Chief complaint', type: 'textarea' },
-    { key: 'history', label: 'History', type: 'textarea' },
-    { key: 'examination', label: 'Examination', type: 'textarea' },
-    { key: 'diagnosis', label: 'Diagnosis', type: 'textarea' },
-    { key: 'icd10_code', label: 'ICD-10 code' },
-    { key: 'notes', label: 'Notes', type: 'textarea' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'record_date', label: t('fld.record_date'), type: 'date', required: true },
+    { key: 'chief_complaint', label: t('fld.chief_complaint'), type: 'textarea' },
+    { key: 'history', label: t('fld.history'), type: 'textarea' },
+    { key: 'examination', label: t('fld.examination'), type: 'textarea' },
+    { key: 'diagnosis', label: t('fld.diagnosis'), type: 'textarea' },
+    { key: 'icd10_code', label: t('fld.icd10_code') },
+    { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="medical_records" tenantId={tenantId} title="Medical Records" desc="Patient medical records" icon={FileText} columns={cols} formFields={fields}
+  return <ModulePage table="medical_records" tenantId={tenantId} title={t('mod.records.title')} desc={t('mod.records.desc')} icon={FileText} columns={cols} formFields={fields}
     pdfAction={(row) => generateMedicalRecordPDF(activeTenant!, row as unknown as MedicalRecord, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
 export function ConsultationsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'consult_date', label: 'Date' },
-    { key: 'assessment', label: 'Assessment' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'consult_date', label: t('col.date') },
+    { key: 'assessment', label: t('col.assessment') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'consult_date', label: 'Consult date', type: 'date', required: true },
-    { key: 'subjective', label: 'Subjective', type: 'textarea' },
-    { key: 'objective', label: 'Objective', type: 'textarea' },
-    { key: 'assessment', label: 'Assessment', type: 'textarea' },
-    { key: 'plan', label: 'Plan', type: 'textarea' },
-    { key: 'follow_up', label: 'Follow up' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'consult_date', label: t('fld.consult_date'), type: 'date', required: true },
+    { key: 'subjective', label: t('fld.subjective'), type: 'textarea' },
+    { key: 'objective', label: t('fld.objective'), type: 'textarea' },
+    { key: 'assessment', label: t('fld.assessment'), type: 'textarea' },
+    { key: 'plan', label: t('fld.plan'), type: 'textarea' },
+    { key: 'follow_up', label: t('fld.follow_up') },
   ];
-  return <ModulePage table="consultations" tenantId={tenantId} title="Consultations" desc="SOAP consultations" icon={ClipboardList} columns={cols} formFields={fields} />;
+  return <ModulePage table="consultations" tenantId={tenantId} title={t('mod.consultations.title')} desc={t('mod.consultations.desc')} icon={ClipboardList} columns={cols} formFields={fields} />;
 }
 
 export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'medication', label: 'Medication' },
-    { key: 'dosage', label: 'Dosage' },
-    { key: 'status', label: 'Status' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'medication', label: t('col.medication') },
+    { key: 'dosage', label: t('col.dosage') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'medication', label: 'Medication', required: true },
-    { key: 'dosage', label: 'Dosage' },
-    { key: 'frequency', label: 'Frequency' },
-    { key: 'duration', label: 'Duration' },
-    { key: 'notes', label: 'Notes', type: 'textarea' },
-    { key: 'status', label: 'Status', type: 'select', options: ['active', 'dispensed', 'cancelled'].map((v) => ({ value: v, label: v })) },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'medication', label: t('fld.medication'), required: true },
+    { key: 'dosage', label: t('col.dosage') },
+    { key: 'frequency', label: t('fld.frequency') },
+    { key: 'duration', label: t('fld.duration_tx') },
+    { key: 'notes', label: t('fld.notes'), type: 'textarea' },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'dispensed', 'cancelled'], t) },
   ];
-  return <ModulePage table="prescriptions" tenantId={tenantId} title="Prescriptions" desc="Prescribe medications" icon={Pill} columns={cols} formFields={fields}
+  return <ModulePage table="prescriptions" tenantId={tenantId} title={t('mod.prescriptions.title')} desc={t('mod.prescriptions.desc')} icon={Pill} columns={cols} formFields={fields}
     pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
 export function LabModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'test_name', label: 'Test' },
-    { key: 'status', label: 'Status' },
-    { key: 'ordered_at', label: 'Ordered' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'test_name', label: t('col.test') },
+    { key: 'status', label: t('col.status') },
+    { key: 'ordered_at', label: t('col.ordered') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'test_name', label: 'Test name', required: true },
-    { key: 'test_code', label: 'Test code' },
-    { key: 'status', label: 'Status', type: 'select', options: ['ordered', 'collected', 'resulted', 'validated', 'cancelled'].map((v) => ({ value: v, label: v })) },
-    { key: 'result', label: 'Result', type: 'textarea' },
-    { key: 'reference_values', label: 'Reference values', type: 'textarea' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'test_name', label: t('fld.test_name'), required: true },
+    { key: 'test_code', label: t('fld.test_code') },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['ordered', 'collected', 'resulted', 'validated', 'cancelled'], t) },
+    { key: 'result', label: t('fld.result'), type: 'textarea' },
+    { key: 'reference_values', label: t('fld.reference_values'), type: 'textarea' },
   ];
-  return <ModulePage table="lab_orders" tenantId={tenantId} title="Laboratory" desc="Lab orders and results" icon={FlaskConical} columns={cols} formFields={fields}
+  return <ModulePage table="lab_orders" tenantId={tenantId} title={t('mod.lab.title')} desc={t('mod.lab.desc')} icon={FlaskConical} columns={cols} formFields={fields}
     pdfAction={(row) => generateLabReportPDF(activeTenant!, row as unknown as LabOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
 export function RadiologyModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'modality', label: 'Modality' },
-    { key: 'body_part', label: 'Body part' },
-    { key: 'status', label: 'Status' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'modality', label: t('col.modality') },
+    { key: 'body_part', label: t('col.body_part') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'modality', label: 'Modality', required: true, type: 'select', options: ['X-Ray', 'CT', 'MRI', 'Ultrasound', 'Mammography', 'PET'].map((v) => ({ value: v, label: v })) },
-    { key: 'body_part', label: 'Body part', required: true },
-    { key: 'status', label: 'Status', type: 'select', options: ['ordered', 'performed', 'reported', 'validated', 'cancelled'].map((v) => ({ value: v, label: v })) },
-    { key: 'report', label: 'Report', type: 'textarea' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'modality', label: t('fld.modality'), required: true, type: 'select', options: ['X-Ray', 'CT', 'MRI', 'Ultrasound', 'Mammography', 'PET'].map((v) => ({ value: v, label: v })) },
+    { key: 'body_part', label: t('fld.body_part'), required: true },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['ordered', 'performed', 'reported', 'validated', 'cancelled'], t) },
+    { key: 'report', label: t('fld.report'), type: 'textarea' },
   ];
-  return <ModulePage table="radiology_orders" tenantId={tenantId} title="Radiology" desc="Imaging orders and reports" icon={ScanLine} columns={cols} formFields={fields}
+  return <ModulePage table="radiology_orders" tenantId={tenantId} title={t('mod.radiology.title')} desc={t('mod.radiology.desc')} icon={ScanLine} columns={cols} formFields={fields}
     pdfAction={(row) => generateRadiologyReportPDF(activeTenant!, row as unknown as RadiologyOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
 export function PharmacyModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const crud = useCrud<{ id: string; name: string; quantity: number; reorder_level: number; unit_price: number; expiry_date: string | null }>('pharmacy_items', tenantId);
   const cols: ColumnDef[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'generic_name', label: 'Generic' },
-    { key: 'quantity', label: 'Qty', render: (r) => <Badge color={r.quantity <= r.reorder_level ? 'red' : 'green'}>{r.quantity}</Badge> },
-    { key: 'unit_price', label: 'Price' },
-    { key: 'expiry_date', label: 'Expiry' },
+    { key: 'name', label: t('fld.name') },
+    { key: 'generic_name', label: t('col.generic') },
+    { key: 'quantity', label: t('col.qty'), render: (r) => <Badge color={r.quantity <= r.reorder_level ? 'red' : 'green'}>{r.quantity}</Badge> },
+    { key: 'unit_price', label: t('col.price') },
+    { key: 'expiry_date', label: t('col.expiry') },
   ];
   const fields: FieldDef[] = [
-    { key: 'name', label: 'Name', required: true },
-    { key: 'generic_name', label: 'Generic name' },
-    { key: 'form', label: 'Form', type: 'select', options: ['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops'].map((v) => ({ value: v, label: v })) },
-    { key: 'strength', label: 'Strength' },
-    { key: 'batch_number', label: 'Batch number' },
-    { key: 'expiry_date', label: 'Expiry date', type: 'date' },
-    { key: 'quantity', label: 'Quantity', type: 'number', required: true },
-    { key: 'reorder_level', label: 'Reorder level', type: 'number' },
-    { key: 'unit_price', label: 'Unit price', type: 'number' },
+    { key: 'name', label: t('fld.name'), required: true },
+    { key: 'generic_name', label: t('fld.generic_name') },
+    { key: 'form', label: t('fld.form'), type: 'select', options: ['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops'].map((v) => ({ value: v, label: v })) },
+    { key: 'strength', label: t('fld.strength') },
+    { key: 'batch_number', label: t('fld.batch_number') },
+    { key: 'expiry_date', label: t('fld.expiry_date'), type: 'date' },
+    { key: 'quantity', label: t('fld.quantity'), type: 'number', required: true },
+    { key: 'reorder_level', label: t('fld.reorder_level'), type: 'number' },
+    { key: 'unit_price', label: t('fld.unit_price'), type: 'number' },
   ];
   const lowStock = crud.rows.filter((r) => r.quantity <= r.reorder_level).length;
   return (
     <>
-      {lowStock > 0 && <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">{lowStock} item(s) at or below reorder level</div>}
-      <ModulePage table="pharmacy_items" tenantId={tenantId} title="Pharmacy" desc="Medication inventory" icon={Pill} columns={cols} formFields={fields} />
+      {lowStock > 0 && <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">{lowStock} {t('settings.low_stock')}</div>}
+      <ModulePage table="pharmacy_items" tenantId={tenantId} title={t('mod.pharmacy.title')} desc={t('mod.pharmacy.desc')} icon={Pill} columns={cols} formFields={fields} />
     </>
   );
 }
 
 export function BedsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'ward', label: 'Ward' },
-    { key: 'room', label: 'Room' },
-    { key: 'bed_number', label: 'Bed' },
-    { key: 'status', label: 'Status' },
+    { key: 'ward', label: t('col.ward') },
+    { key: 'room', label: t('col.room') },
+    { key: 'bed_number', label: t('col.bed') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'ward', label: 'Ward', required: true },
-    { key: 'room', label: 'Room', required: true },
-    { key: 'bed_number', label: 'Bed number', required: true },
-    { key: 'status', label: 'Status', type: 'select', options: ['available', 'occupied', 'cleaning', 'maintenance', 'reserved'].map((v) => ({ value: v, label: v })) },
+    { key: 'ward', label: t('fld.ward'), required: true },
+    { key: 'room', label: t('fld.room'), required: true },
+    { key: 'bed_number', label: t('fld.bed_number'), required: true },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['available', 'occupied', 'cleaning', 'maintenance', 'reserved'], t) },
   ];
-  return <ModulePage table="beds" tenantId={tenantId} title="Hospitalization" desc="Ward and bed management" icon={BedDouble} columns={cols} formFields={fields} />;
+  return <ModulePage table="beds" tenantId={tenantId} title={t('mod.beds.title')} desc={t('mod.beds.desc')} icon={BedDouble} columns={cols} formFields={fields} />;
 }
 
 export function AdmissionsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'admission_date', label: 'Admitted' },
-    { key: 'reason', label: 'Reason' },
-    { key: 'status', label: 'Status' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'admission_date', label: t('col.admitted') },
+    { key: 'reason', label: t('col.reason') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'doctor_id', label: 'Doctor', type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
-    { key: 'admission_date', label: 'Admission date', type: 'datetime-local', required: true },
-    { key: 'reason', label: 'Reason' },
-    { key: 'status', label: 'Status', type: 'select', options: ['admitted', 'discharged', 'transferred'].map((v) => ({ value: v, label: v })) },
-    { key: 'notes', label: 'Notes', type: 'textarea' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    { key: 'admission_date', label: t('fld.admission_date'), type: 'datetime-local', required: true },
+    { key: 'reason', label: t('col.reason') },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['admitted', 'discharged', 'transferred'], t) },
+    { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="admissions" tenantId={tenantId} title="Admissions" desc="Patient admissions" icon={LogIn} columns={cols} formFields={fields} />;
+  return <ModulePage table="admissions" tenantId={tenantId} title={t('mod.admissions.title')} desc={t('mod.admissions.desc')} icon={LogIn} columns={cols} formFields={fields} />;
 }
 
 export function InvoicesModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap } = usePatientDoctorMaps(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'invoice_number', label: 'Invoice #' },
-    { key: 'patient_id', label: 'Patient', render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
-    { key: 'issue_date', label: 'Issue date' },
-    { key: 'total', label: 'Total', render: (r) => <span>${Number(r.total).toFixed(2)}</span> },
-    { key: 'status', label: 'Status' },
+    { key: 'invoice_number', label: t('col.invoice_no') },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'issue_date', label: t('col.issue_date') },
+    { key: 'total', label: t('col.total'), render: (r) => <span>${Number(r.total).toFixed(2)}</span> },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'patient_id', label: 'Patient', type: 'select', options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'invoice_number', label: 'Invoice number', required: true },
-    { key: 'issue_date', label: 'Issue date', type: 'date', required: true },
-    { key: 'due_date', label: 'Due date', type: 'date' },
-    { key: 'subtotal', label: 'Subtotal', type: 'number', required: true },
-    { key: 'tax', label: 'Tax', type: 'number' },
-    { key: 'total', label: 'Total', type: 'number', required: true },
-    { key: 'status', label: 'Status', type: 'select', options: ['unpaid', 'paid', 'partial', 'cancelled', 'refunded'].map((v) => ({ value: v, label: v })) },
-    { key: 'notes', label: 'Notes', type: 'textarea' },
+    { key: 'patient_id', label: t('fld.patient'), type: 'select', options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    { key: 'invoice_number', label: t('fld.invoice_number'), required: true },
+    { key: 'issue_date', label: t('fld.issue_date'), type: 'date', required: true },
+    { key: 'due_date', label: t('fld.due_date'), type: 'date' },
+    { key: 'subtotal', label: t('fld.subtotal'), type: 'number', required: true },
+    { key: 'tax', label: t('fld.tax'), type: 'number' },
+    { key: 'total', label: t('fld.total'), type: 'number', required: true },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['unpaid', 'paid', 'partial', 'cancelled', 'refunded'], t) },
+    { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="invoices" tenantId={tenantId} title="Billing" desc="Invoices and payments" icon={Receipt} columns={cols} formFields={fields}
+  return <ModulePage table="invoices" tenantId={tenantId} title={t('mod.invoices.title')} desc={t('mod.invoices.desc')} icon={Receipt} columns={cols} formFields={fields}
     pdfAction={(row) => generateInvoicePDF(activeTenant!, row as unknown as Invoice, pMap.get(row.patient_id as string) ?? null)} />;
 }
 
 export function StaffModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: 'Name', render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
-    { key: 'role', label: 'Role' },
-    { key: 'department', label: 'Department' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'status', label: 'Status' },
+    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'role', label: t('col.role') },
+    { key: 'department', label: t('col.department') },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
-    { key: 'first_name', label: 'First name', required: true },
-    { key: 'last_name', label: 'Last name', required: true },
-    { key: 'role', label: 'Role' },
-    { key: 'department', label: 'Department' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'status', label: 'Status', type: 'select', options: ['active', 'suspended', 'inactive'].map((v) => ({ value: v, label: v })) },
+    { key: 'first_name', label: t('fld.firstname'), required: true },
+    { key: 'last_name', label: t('fld.lastname'), required: true },
+    { key: 'role', label: t('col.role') },
+    { key: 'department', label: t('col.department') },
+    { key: 'email', label: t('col.email'), type: 'text' },
+    { key: 'phone', label: t('col.phone') },
+    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'suspended', 'inactive'], t) },
   ];
-  return <ModulePage table="staff" tenantId={tenantId} title="Staff" desc="Non-medical staff management" icon={UserCog} columns={cols} formFields={fields} />;
+  return <ModulePage table="staff" tenantId={tenantId} title={t('mod.staff.title')} desc={t('mod.staff.desc')} icon={UserCog} columns={cols} formFields={fields} />;
 }
 
 export function RolesModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'name', label: 'Role name' },
-    { key: 'description', label: 'Description' },
-    { key: 'is_system', label: 'System', render: (r) => (r.is_system ? <Badge color="blue">System</Badge> : <Badge>Custom</Badge>) },
+    { key: 'name', label: t('fld.role_name') },
+    { key: 'description', label: t('fld.description') },
+    { key: 'is_system', label: t('col.system'), render: (r) => (r.is_system ? <Badge color="blue">{t('col.system')}</Badge> : <Badge>{t('col.custom')}</Badge>) },
   ];
   const fields: FieldDef[] = [
-    { key: 'name', label: 'Role name', required: true },
-    { key: 'description', label: 'Description', type: 'textarea' },
+    { key: 'name', label: t('fld.role_name'), required: true },
+    { key: 'description', label: t('fld.description'), type: 'textarea' },
   ];
-  return <ModulePage table="roles" tenantId={tenantId} title="Roles & Permissions" desc="Access control roles" icon={ShieldCheck} columns={cols} formFields={fields} />;
+  return <ModulePage table="roles" tenantId={tenantId} title={t('mod.roles.title')} desc={t('mod.roles.desc')} icon={ShieldCheck} columns={cols} formFields={fields} />;
 }
