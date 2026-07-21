@@ -293,3 +293,37 @@ export function generateMedicalRecordPDF(tenant: Tenant, mr: MedicalRecord, pati
   footer(doc);
   doc.save(`medical-record-${mr.id.slice(0, 8)}.pdf`);
 }
+
+export function generateGenericReportPDF(tenant: Tenant, report: { title: string; report_type: string; content: string; created_at: string; metadata?: Record<string, unknown> | null }) {
+  const doc = new jsPDF();
+  let y = header(doc, tenant, 'REPORT', report.title.slice(0, 20).toUpperCase());
+  y = sectionTitle(doc, y, 'Report info');
+  y = field(doc, y, 'Title', report.title, 14, 180);
+  y = field(doc, y, 'Type', report.report_type);
+  y = field(doc, y, 'Date', new Date(report.created_at).toLocaleDateString());
+  y += 4;
+  y = sectionTitle(doc, y, 'Content');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK);
+  const lines = doc.splitTextToSize(report.content || '—', 180);
+  y = ensureSpace(doc, y, lines.length * 5);
+  doc.text(lines, 14, y);
+  y += lines.length * 5;
+  if (report.metadata && Object.keys(report.metadata).length > 0) {
+    y += 4;
+    y = sectionTitle(doc, y, 'Metadata');
+    for (const [k, v] of Object.entries(report.metadata)) {
+      y = field(doc, y, k, String(v), 14, 180);
+    }
+  }
+  y = ensureSpace(doc, y, 24);
+  y += 16;
+  doc.setDrawColor(...GRAY);
+  doc.line(14, y, 80, y);
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  doc.text('Authorized signature', 14, y + 4);
+  footer(doc);
+  doc.save(`report-${report.title.slice(0, 20).replace(/\s/g, '-')}.pdf`);
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { supabase } from '../lib/supabase';
+import { supabase, type Tenant, type SubscriptionPlan } from '../lib/supabase';
 import { Button, Card, Input, Badge } from '../components/ui';
 import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check } from 'lucide-react';
 
@@ -96,30 +96,76 @@ export function SettingsPage() {
       )}
 
       {tab === 'billing' && (
-        <Card className="p-6 max-w-2xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
-              <div>
-                <p className="text-sm text-gray-500">{t('settings.billing_plan')}</p>
-                <p className="text-lg font-bold text-gray-900">{activeTenant.plan_id ? 'Active Plan' : t('settings.trial')}</p>
-              </div>
-              <Badge color={activeTenant.status === 'approved' ? 'green' : 'amber'}>{activeTenant.status}</Badge>
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
-              <div>
-                <p className="text-sm text-gray-500">{t('settings.billing_status')}</p>
-                <p className="text-lg font-bold text-gray-900 capitalize">{activeTenant.status.replace(/_/g, ' ')}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
-              <div>
-                <p className="text-sm text-gray-500">{t('dash.trial')}</p>
-                <p className="text-lg font-bold text-gray-900">{new Date(activeTenant.trial_ends_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <BillingTab tenant={activeTenant} onUpdated={refresh} />
       )}
+    </div>
+  );
+}
+
+function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => void }) {
+  const { t } = useI18n();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('subscription_plans').select('*').eq('is_active', true).order('sort_order');
+      setPlans((data as SubscriptionPlan[]) ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const selectPlan = async (planId: string) => {
+    setSaving(true);
+    await supabase.from('tenants').update({ plan_id: planId }).eq('id', tenant.id);
+    await onUpdated();
+    setSaving(false); setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const currentPlan = plans.find((p) => p.id === tenant.plan_id);
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 max-w-2xl">
+        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
+          <div>
+            <p className="text-sm text-gray-500">{t('settings.billing_plan')}</p>
+            <p className="text-lg font-bold text-gray-900">{currentPlan?.name ?? t('settings.trial')}</p>
+          </div>
+          <Badge color={tenant.status === 'approved' ? 'green' : 'amber'}>{tenant.status}</Badge>
+        </div>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 mt-3">
+          <div>
+            <p className="text-sm text-gray-500">{t('dash.trial')}</p>
+            <p className="text-lg font-bold text-gray-900">{new Date(tenant.trial_ends_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      </Card>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('settings.choose_plan')}</h3>
+        {loading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
+            {plans.map((p) => {
+              const isCurrent = p.id === tenant.plan_id;
+              return (
+                <Card key={p.id} className={`p-5 ${isCurrent ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
+                  <p className="font-semibold text-gray-900">{p.name}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
+                  {p.features && p.features.length > 0 && <ul className="mt-3 space-y-1">{p.features.slice(0, 4).map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}</ul>}
+                  <Button variant={isCurrent ? 'outline' : 'primary'} size="sm" className="w-full mt-4" disabled={isCurrent || saving} onClick={() => selectPlan(p.id)}>
+                    {isCurrent ? t('settings.current_plan') : t('plan.choose')}
+                  </Button>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+        {saved && <p className="mt-3 text-sm text-emerald-600 flex items-center gap-1"><Check size={16} /> {t('settings.saved')}</p>}
+      </div>
     </div>
   );
 }

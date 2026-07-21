@@ -176,6 +176,15 @@ const fr: Dict = {
   'opt.refunded': 'Remboursé', 'opt.dispensed': 'Délivré',
   'opt.available': 'Disponible', 'opt.occupied': 'Occupé', 'opt.cleaning': 'Nettoyage',
   'opt.maintenance': 'Maintenance', 'opt.reserved': 'Réservé',
+  'dash.nav.reports': 'Rapports', 'dash.nav.performance': 'Performance',
+  'mod.reports.title': 'Rapports', 'mod.reports.desc': 'Créer et exporter des rapports',
+  'mod.reports.custom': 'Personnalisé', 'mod.permissions': 'permissions',
+  'mod.performance.title': 'Performance du personnel', 'mod.performance.desc': 'Indicateurs de performance par médecin',
+  'sa.nav.subscriptions': 'Abonnements', 'sa.nav.commercial': 'Codes commerciaux',
+  'sa.nav.accounting': 'Comptabilité', 'sa.nav.users': 'Utilisateurs',
+  'sa.assign_plan': 'Attribuer un plan', 'sa.add_code': 'Ajouter un code', 'sa.add_staff': 'Ajouter du personnel',
+  'sa.activate': 'Activer', 'sa.deactivate': 'Désactiver',
+  'settings.choose_plan': 'Choisir un plan', 'settings.current_plan': 'Plan actuel',
 };
 
 const en: Dict = {
@@ -351,6 +360,15 @@ const en: Dict = {
   'opt.refunded': 'Refunded', 'opt.dispensed': 'Dispensed',
   'opt.available': 'Available', 'opt.occupied': 'Occupied', 'opt.cleaning': 'Cleaning',
   'opt.maintenance': 'Maintenance', 'opt.reserved': 'Reserved',
+  'dash.nav.reports': 'Reports', 'dash.nav.performance': 'Performance',
+  'mod.reports.title': 'Reports', 'mod.reports.desc': 'Create and export reports',
+  'mod.reports.custom': 'Custom', 'mod.permissions': 'permissions',
+  'mod.performance.title': 'Staff Performance', 'mod.performance.desc': 'Performance metrics per doctor',
+  'sa.nav.subscriptions': 'Subscriptions', 'sa.nav.commercial': 'Commercial Codes',
+  'sa.nav.accounting': 'Accounting', 'sa.nav.users': 'Users',
+  'sa.assign_plan': 'Assign plan', 'sa.add_code': 'Add code', 'sa.add_staff': 'Add staff',
+  'sa.activate': 'Activate', 'sa.deactivate': 'Deactivate',
+  'settings.choose_plan': 'Choose a plan', 'settings.current_plan': 'Current plan',
 };
 
 const dictionaries: Record<Lang, Dict> = { fr, en };

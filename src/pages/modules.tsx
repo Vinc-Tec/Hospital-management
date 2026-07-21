@@ -1,16 +1,18 @@
+import { useState, useEffect } from 'react';
 import {
   Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill, FlaskConical, ScanLine,
-  BedDouble, Receipt, UserCog, ShieldCheck, LogIn,
+  BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2,
 } from 'lucide-react';
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { Badge } from '../components/ui';
+import { Badge, Card, Button, Input, Modal, EmptyState } from '../components/ui';
 import {
-  generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF,
+  generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
-import type { Patient, Doctor, Invoice, Prescription, LabOrder, RadiologyOrder, MedicalRecord } from '../lib/supabase';
+import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Tenant } from '../lib/supabase';
+import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
 function usePatientDoctorMaps(tenantId: string) {
   const patients = useCrud<Patient>('patients', tenantId);
@@ -319,14 +321,229 @@ export function StaffModule({ tenantId }: { tenantId: string }) {
 
 export function RolesModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const crud = useCrud<any>('roles', tenantId);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState<{ name: string; description: string; permissions: Record<string, boolean> }>({ name: '', description: '', permissions: {} });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const MODULE_KEYS = [
+    'patients', 'appointments', 'doctors', 'records', 'consultations',
+    'prescriptions', 'lab', 'radiology', 'pharmacy', 'beds', 'admissions',
+    'invoices', 'reports', 'staff', 'roles', 'settings',
+  ];
+  const ACTIONS = ['view', 'create', 'edit', 'delete', 'export'];
+
   const cols: ColumnDef[] = [
     { key: 'name', label: t('fld.role_name') },
     { key: 'description', label: t('fld.description') },
     { key: 'is_system', label: t('col.system'), render: (r) => (r.is_system ? <Badge color="blue">{t('col.system')}</Badge> : <Badge>{t('col.custom')}</Badge>) },
+    { key: 'permissions', label: t('sa.nav.audit'), render: (r) => <span className="text-xs text-gray-500">{Object.keys(r.permissions ?? {}).length} {t('mod.permissions')}</span> },
   ];
-  const fields: FieldDef[] = [
-    { key: 'name', label: t('fld.role_name'), required: true },
-    { key: 'description', label: t('fld.description'), type: 'textarea' },
+
+  const openAdd = () => { setEditing(null); setForm({ name: '', description: '', permissions: {} }); setErr(null); setModalOpen(true); };
+  const openEdit = (row: any) => { setEditing(row); setForm({ name: row.name, description: row.description ?? '', permissions: row.permissions ?? {} }); setErr(null); setModalOpen(true); };
+
+  const togglePerm = (mod: string, action: string) => {
+    const key = `${mod}.${action}`;
+    setForm((f) => ({ ...f, permissions: { ...f.permissions, [key]: !f.permissions[key] } }));
+  };
+
+  const submit = async () => {
+    if (!form.name) { setErr(t('onb.err.required')); return; }
+    setSaving(true); setErr(null);
+    const payload = { name: form.name, description: form.description || null, permissions: form.permissions, tenant_id: tenantId };
+    const res = editing ? await crud.update(editing.id, payload) : await crud.insert(payload);
+    if (res.error) setErr(res.error); else setModalOpen(false);
+    setSaving(false);
+  };
+
+  const crudPage = useCrud<any>('roles', tenantId);
+  const filtered = crudPage.rows;
+
+  return (
+    <div>
+      <div className="flex items-start justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><ShieldCheck size={22} className="text-blue-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.roles.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.roles.desc')}</p></div>
+        </div>
+        <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
+      </div>
+      <Card className="overflow-hidden">
+        {crudPage.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : filtered.length === 0 ? <div className="p-8"><EmptyState icon={ShieldCheck} title={t('common.none')} /></div> : (
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">{filtered.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render ? c.render(row) : <span className="text-sm text-gray-700">{row[c.key] ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">{!row.is_system && <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>}</div></td></tr>))}</tbody>
+          </table></div>
+        )}
+      </Card>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('common.edit') : t('common.add')} footer={<><Button variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button><Button onClick={submit} loading={saving}>{t('common.save')}</Button></>}>
+        <div className="space-y-4">
+          <Input label={t('fld.role_name')} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input label={t('fld.description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t('mod.permissions')}</p>
+            <div className="max-h-64 overflow-y-auto space-y-2 border border-gray-200 rounded-xl p-3">
+              {MODULE_KEYS.map((mod) => (
+                <div key={mod} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
+                  <span className="text-sm font-medium text-gray-700 capitalize">{t(`dash.nav.${mod === 'records' ? 'records' : mod}`)}</span>
+                  <div className="flex gap-1">
+                    {ACTIONS.map((act) => {
+                      const key = `${mod}.${act}`;
+                      const checked = !!form.permissions[key];
+                      return <button key={act} onClick={() => togglePerm(mod, act)} className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${checked ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>{act}</button>;
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {err && <p className="text-sm text-red-600">{err}</p>}
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+export function ReportsModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
+  const { user, activeTenant } = useAuth();
+  const crud = useCrud<any>('reports', tenantId);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState({ title: '', report_type: 'custom', content: '', status: 'draft' });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [delId, setDelId] = useState<string | null>(null);
+
+  const REPORT_TYPES = [
+    { value: 'patient', label: t('mod.patients.title') },
+    { value: 'consultation', label: t('mod.consultations.title') },
+    { value: 'lab', label: t('mod.lab.title') },
+    { value: 'radiology', label: t('mod.radiology.title') },
+    { value: 'financial', label: t('mod.invoices.title') },
+    { value: 'pharmacy', label: t('mod.pharmacy.title') },
+    { value: 'custom', label: t('mod.reports.custom') },
   ];
-  return <ModulePage table="roles" tenantId={tenantId} title={t('mod.roles.title')} desc={t('mod.roles.desc')} icon={ShieldCheck} columns={cols} formFields={fields} />;
+
+  const openAdd = () => { setEditing(null); setForm({ title: '', report_type: 'custom', content: '', status: 'draft' }); setErr(null); setModalOpen(true); };
+  const openEdit = (row: any) => { setEditing(row); setForm({ title: row.title, report_type: row.report_type, content: row.content ?? '', status: row.status }); setErr(null); setModalOpen(true); };
+
+  const submit = async () => {
+    if (!form.title) { setErr(t('onb.err.required')); return; }
+    setSaving(true); setErr(null);
+    const payload = { ...form, tenant_id: tenantId, user_id: user?.id };
+    const res = editing ? await crud.update(editing.id, payload) : await crud.insert(payload);
+    if (res.error) setErr(res.error); else setModalOpen(false);
+    setSaving(false);
+  };
+
+  const sendWhatsApp = (row: any) => {
+    const text = `*${row.title}*\nType: ${row.report_type}\n\n${row.content ?? ''}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const cols: ColumnDef[] = [
+    { key: 'title', label: t('fld.name') },
+    { key: 'report_type', label: t('common.type') },
+    { key: 'status', label: t('col.status'), render: (r) => <Badge color={r.status === 'published' ? 'green' : 'gray'}>{r.status}</Badge> },
+    { key: 'created_at', label: t('common.date'), render: (r) => <span className="text-sm text-gray-600">{new Date(r.created_at).toLocaleDateString()}</span> },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-start justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><FileBarChart size={22} className="text-blue-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.reports.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.reports.desc')}</p></div>
+        </div>
+        <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
+      </div>
+      <Card className="overflow-hidden">
+        {crud.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : crud.rows.length === 0 ? <div className="p-8"><EmptyState icon={FileBarChart} title={t('common.none')} /></div> : (
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">{crud.rows.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render?.(row) ?? <span className="text-sm text-gray-700">{row[c.key] ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">
+              <button onClick={() => generateGenericReportPDF(activeTenant!, row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="PDF"><FileDown size={16} /></button>
+              <button onClick={() => sendWhatsApp(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50" title="WhatsApp"><MessageCircle size={16} /></button>
+              <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>
+              <button onClick={() => setDelId(row.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={16} /></button>
+            </div></td></tr>))}</tbody>
+          </table></div>
+        )}
+      </Card>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('common.edit') : t('common.add')} footer={<><Button variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button><Button onClick={submit} loading={saving}>{t('common.save')}</Button></>}>
+        <div className="space-y-4">
+          <Input label={t('fld.name')} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('common.type')}</span><select value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">{REPORT_TYPES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('fld.notes')}</span><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={6} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('col.status')}</span><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+          {err && <p className="text-sm text-red-600">{err}</p>}
+        </div>
+      </Modal>
+      <Modal open={!!delId} onClose={() => setDelId(null)} title={t('common.confirm.delete')} footer={<><Button variant="outline" onClick={() => setDelId(null)}>{t('common.cancel')}</Button><Button variant="danger" onClick={async () => { if (delId) { await crud.remove(delId); setDelId(null); } }}>{t('common.delete')}</Button></>}>
+        <p className="text-sm text-gray-600">{t('common.confirm.delete')}</p>
+      </Modal>
+    </div>
+  );
+}
+
+export function PerformanceModule({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.rpc('get_staff_performance', { p_tenant_id: tenantId });
+      if (data) { setRows(data); setLoading(false); return; }
+      const { data: doctors } = await supabase.from('doctors').select('*').eq('tenant_id', tenantId);
+      const docList = (doctors as any[]) ?? [];
+      const results: any[] = [];
+      for (const d of docList) {
+        const [apt, con, pre, lab, rad] = await Promise.all([
+          supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
+          supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
+          supabase.from('prescriptions').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
+          supabase.from('lab_orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
+          supabase.from('radiology_orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
+        ]);
+        results.push({ doctor_id: d.id, first_name: d.first_name, last_name: d.last_name, specialty: d.specialty, status: d.status, appointments_count: apt.count ?? 0, consultations_count: con.count ?? 0, prescriptions_count: pre.count ?? 0, lab_orders_count: lab.count ?? 0, radiology_orders_count: rad.count ?? 0 });
+      }
+      setRows(results); setLoading(false);
+    })();
+  }, [tenantId]);
+
+  const kpis = [
+    { label: t('dash.nav.appointments'), key: 'appointments_count', icon: CalendarDays, color: 'blue' },
+    { label: t('dash.nav.consultations'), key: 'consultations_count', icon: ClipboardList, color: 'emerald' },
+    { label: t('dash.nav.prescriptions'), key: 'prescriptions_count', icon: Pill, color: 'amber' },
+    { label: t('dash.nav.lab'), key: 'lab_orders_count', icon: FlaskConical, color: 'red' },
+  ];
+
+  const totals = kpis.reduce((acc, k) => ({ ...acc, [k.key]: rows.reduce((s, r) => s + (r[k.key] ?? 0), 0) }), {} as Record<string, number>);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><TrendingUp size={22} className="text-blue-600" /></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.performance.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.performance.desc')}</p></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {kpis.map((k, i) => (
+          <Card key={i} className="p-5"><div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-${k.color}-50`}><k.icon size={20} className={`text-${k.color}-600`} /></div><p className="text-2xl font-bold text-gray-900">{totals[k.key] ?? 0}</p><p className="text-sm text-gray-500">{k.label}</p></Card>
+        ))}
+      </div>
+      <Card className="overflow-hidden">
+        {loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : rows.length === 0 ? <div className="p-8"><EmptyState icon={TrendingUp} title={t('common.none')} /></div> : (
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('col.doctor')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('col.specialty')}</th>{kpis.map((k) => <th key={k.key} className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{k.label}</th>)}<th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{t('col.total')}</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">{rows.map((r) => { const total = (r.appointments_count ?? 0) + (r.consultations_count ?? 0) + (r.prescriptions_count ?? 0) + (r.lab_orders_count ?? 0) + (r.radiology_orders_count ?? 0); return (
+              <tr key={r.doctor_id} className="hover:bg-gray-50/50"><td className="px-4 py-3 text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</td><td className="px-4 py-3 text-sm text-gray-600">{r.specialty ?? '—'}</td>{kpis.map((k) => <td key={k.key} className="px-4 py-3 text-center text-sm text-gray-700">{r[k.key] ?? 0}</td>)}<td className="px-4 py-3 text-center"><Badge color={total > 10 ? 'green' : total > 0 ? 'amber' : 'gray'}>{total}</Badge></td></tr>
+            ); })}</tbody>
+          </table></div>
+        )}
+      </Card>
+    </div>
+  );
 }

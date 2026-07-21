@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, CreditCard, Globe, ScrollText, ShieldCheck,
-  Check, X, AlertCircle, Eye, Ban, MessageSquarePlus,
+  Check, X, AlertCircle, Eye, Ban, MessageSquarePlus, Users, TrendingUp,
+  DollarSign, Ticket, UserPlus,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -10,10 +11,15 @@ import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../
 import { Button, Card, Input, Modal, Badge, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 
+const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com'];
+
 const NAV = [
   { key: 'overview', icon: LayoutDashboard },
   { key: 'tenants', icon: Building2 },
-  { key: 'plans', icon: CreditCard },
+  { key: 'subscriptions', icon: CreditCard },
+  { key: 'commercial', icon: Ticket },
+  { key: 'accounting', icon: DollarSign },
+  { key: 'users', icon: Users },
   { key: 'geography', icon: Globe },
   { key: 'audit', icon: ScrollText },
 ];
@@ -28,31 +34,41 @@ export function SuperAdmin() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [countries, setCountries] = useState<{ id: string; name: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string; name: string }[]>([]);
-  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, mrr: 0 });
+  const [commercialCodes, setCommercialCodes] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, mrr: 0, totalRevenue: 0 });
 
   const loadAll = async () => {
-    const [{ data: tns }, { data: pl }, { data: lg }, { data: cs }] = await Promise.all([
+    const [{ data: tns }, { data: pl }, { data: lg }, { data: cs }, { data: cc }, { data: pr }] = await Promise.all([
       supabase.from('tenants').select('*').order('created_at', { ascending: false }),
       supabase.from('subscription_plans').select('*').order('sort_order'),
       supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('countries').select('id, name').order('name'),
+      supabase.from('commercial_codes').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, full_name, is_super_admin').order('full_name'),
     ]);
     const tList = (tns as Tenant[]) ?? [];
     setTenants(tList);
     setPlans((pl as SubscriptionPlan[]) ?? []);
     setLogs((lg as AuditLog[]) ?? []);
     setCountries((cs as { id: string; name: string }[]) ?? []);
+    setCommercialCodes(cc ?? []);
+    setProfiles(pr ?? []);
+    const activeTenants = tList.filter((x) => x.status === 'approved');
     setStats({
       total: tList.length,
-      active: tList.filter((x) => x.status === 'approved').length,
+      active: activeTenants.length,
       pending: tList.filter((x) => x.status === 'pending').length,
       suspended: tList.filter((x) => x.status === 'suspended').length,
-      mrr: tList.filter((x) => x.status === 'approved').reduce((s, x) => s + (x.plan_id ? 100 : 0), 0),
+      mrr: activeTenants.reduce((s, x) => s + (x.plan_id ? 100 : 0), 0),
+      totalRevenue: activeTenants.reduce((s, x) => s + (x.plan_id ? 1200 : 0), 0),
     });
   };
   useEffect(() => { loadAll(); }, []);
 
-  if (!profile?.is_super_admin) {
+  const isAuthorized = profile?.is_super_admin && user?.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
+
+  if (!isAuthorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <Card className="max-w-md w-full p-8 text-center">
@@ -69,7 +85,7 @@ export function SuperAdmin() {
     <div className="min-h-screen bg-gray-900 flex">
       <aside className="w-64 bg-gray-900 text-gray-300 flex flex-col">
         <div className="h-16 flex items-center px-5 border-b border-gray-800"><Logo size={30} /></div>
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {NAV.map((n) => (
             <button key={n.key} onClick={() => setSection(n.key)} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm w-full transition-colors ${section === n.key ? 'bg-emerald-600/20 text-emerald-400 font-medium' : 'hover:bg-gray-800'}`}>
               <n.icon size={18} /> {t(`sa.nav.${n.key}`)}
@@ -89,7 +105,10 @@ export function SuperAdmin() {
         <main className="p-6 lg:p-8">
           {section === 'overview' && <SaOverview stats={stats} tenants={tenants} />}
           {section === 'tenants' && <SaTenants tenants={tenants} onAction={loadAll} />}
-          {section === 'plans' && <SaPlans plans={plans} onAction={loadAll} />}
+          {section === 'subscriptions' && <SaSubscriptions tenants={tenants} plans={plans} onAction={loadAll} />}
+          {section === 'commercial' && <SaCommercial codes={commercialCodes} onAction={loadAll} />}
+          {section === 'accounting' && <SaAccounting tenants={tenants} plans={plans} />}
+          {section === 'users' && <SaUsers profiles={profiles} tenants={tenants} onAction={loadAll} />}
           {section === 'geography' && <SaGeography countries={countries} regions={regions} setRegions={setRegions} onAction={loadAll} />}
           {section === 'audit' && <SaAudit logs={logs} />}
         </main>
@@ -98,13 +117,13 @@ export function SuperAdmin() {
   );
 }
 
-function SaOverview({ stats, tenants }: { stats: { total: number; active: number; pending: number; suspended: number; mrr: number }; tenants: Tenant[] }) {
+function SaOverview({ stats, tenants }: { stats: { total: number; active: number; pending: number; suspended: number; mrr: number; totalRevenue: number }; tenants: Tenant[] }) {
   const { t } = useI18n();
   const kpis = [
     { label: t('sa.active_tenants'), value: stats.active, color: 'emerald' },
     { label: t('sa.pending'), value: stats.pending, color: 'amber' },
-    { label: t('sa.suspended'), value: stats.suspended, color: 'red' },
     { label: t('sa.mrr'), value: `$${stats.mrr}`, color: 'blue' },
+    { label: t('sa.total_revenue'), value: `$${stats.totalRevenue}`, color: 'gray' },
   ];
   return (
     <div>
@@ -179,37 +198,188 @@ function SaTenants({ tenants, onAction }: { tenants: Tenant[]; onAction: () => v
   );
 }
 
-function SaPlans({ plans, onAction }: { plans: SubscriptionPlan[]; onAction: () => void }) {
+function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plans: SubscriptionPlan[]; onAction: () => void }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ code: '', name: '', price_monthly: '0', price_yearly: '0', max_users: '0', max_doctors: '0', max_patients: '0', features: '' });
-  const save = async () => {
-    await supabase.from('subscription_plans').insert({ code: form.code, name: form.name, price_monthly: parseFloat(form.price_monthly), price_yearly: parseFloat(form.price_yearly), max_users: parseInt(form.max_users), max_doctors: parseInt(form.max_doctors), max_patients: parseInt(form.max_patients), features: form.features.split(',').map((s) => s.trim()), is_active: true, sort_order: plans.length + 1 });
-    setOpen(false); onAction();
+  const [selected, setSelected] = useState<Tenant | null>(null);
+  const [planId, setPlanId] = useState('');
+
+  const assignPlan = async () => {
+    if (!selected) return;
+    await supabase.from('tenants').update({ plan_id: planId }).eq('id', selected.id);
+    setSelected(null); onAction();
   };
+
+  const planName = (id: string | null) => plans.find((p) => p.id === id)?.name ?? '—';
+
   return (
     <div>
-      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><CreditCard size={16} /> {t('sa.add_plan')}</Button></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map((p) => (
-          <Card key={p.id} className="p-5">
-            <h3 className="font-bold text-gray-900">{p.name}</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-1">${p.price_monthly}<span className="text-sm text-gray-400">/mo</span></p>
-            <ul className="mt-3 space-y-1 text-xs text-gray-500">{p.features?.map((f, i) => <li key={i}>• {f}</li>)}</ul>
-            <div className="mt-3 flex gap-2 text-xs text-gray-400"><span>U:{p.max_users}</span><span>D:{p.max_doctors}</span><span>P:{p.max_patients}</span></div>
-          </Card>
-        ))}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Institution</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {tenants.map((tn) => (
+                <tr key={tn.id} className="hover:bg-gray-50/50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{tn.commercial_name || tn.legal_name}</td>
+                  <td className="px-4 py-3"><Badge color={tn.plan_id ? 'blue' : 'gray'}>{planName(tn.plan_id)}</Badge></td>
+                  <td className="px-4 py-3"><StatusBadge status={tn.status} /></td>
+                  <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => { setSelected(tn); setPlanId(tn.plan_id ?? ''); }}>{t('sa.assign_plan')}</Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={t('sa.assign_plan')} footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={assignPlan}>{t('common.save')}</Button></>}>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">{selected?.commercial_name || selected?.legal_name}</p>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.nav.plans')}</span><select value={planId} onChange={(e) => setPlanId(e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">—</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name} — ${p.price_monthly}/mo</option>)}</select></label>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function SaCommercial({ codes, onAction }: { codes: any[]; onAction: () => void }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ code: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' });
+
+  const save = async () => {
+    await supabase.from('commercial_codes').insert({
+      code: form.code.toUpperCase(),
+      description: form.description || null,
+      discount_percent: parseFloat(form.discount_percent) || 0,
+      max_uses: form.max_uses ? parseInt(form.max_uses) : null,
+      valid_until: form.valid_until || null,
+      created_by: user?.id,
+    });
+    setForm({ code: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' }); setOpen(false); onAction();
+  };
+
+  const toggle = async (c: any) => { await supabase.from('commercial_codes').update({ is_active: !c.is_active }).eq('id', c.id); onAction(); };
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Ticket size={16} /> {t('sa.add_code')}</Button></div>
+      <Card className="overflow-hidden">
+        {codes.length === 0 ? <div className="p-8"><EmptyState icon={Ticket} title={t('common.none')} /></div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Code</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Discount</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Uses</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+              <tbody className="divide-y divide-gray-50">
+                {codes.map((c) => (
+                  <tr key={c.id} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-3 text-sm font-mono font-medium text-gray-900">{c.code}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{c.discount_percent}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{c.uses_count}{c.max_uses ? `/${c.max_uses}` : ''}</td>
+                    <td className="px-4 py-3"><Badge color={c.is_active ? 'green' : 'gray'}>{c.is_active ? t('opt.active') : t('opt.inactive')}</Badge></td>
+                    <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => toggle(c)}>{c.is_active ? t('sa.deactivate') : t('sa.activate')}</Button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.add_code')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
+        <div className="space-y-3">
+          <Input label="Code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+          <Input label={t('fld.description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Input label="Discount %" type="number" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} />
+          <Input label="Max uses" type="number" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })} />
+          <Input label="Valid until" type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function SaAccounting({ tenants, plans }: { tenants: Tenant[]; plans: SubscriptionPlan[] }) {
+  const { t } = useI18n();
+  const active = tenants.filter((tn) => tn.status === 'approved');
+  const totalMrr = active.reduce((s, tn) => {
+    const plan = plans.find((p) => p.id === tn.plan_id);
+    return s + (plan?.price_monthly ?? 0);
+  }, 0);
+  const totalArr = totalMrr * 12;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><DollarSign size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">${totalMrr}</p><p className="text-sm text-gray-500">{t('sa.mrr')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><TrendingUp size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${totalArr}</p><p className="text-sm text-gray-500">{t('sa.arr')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-amber-50"><Building2 size={20} className="text-amber-600" /></div><p className="text-2xl font-bold text-gray-900">{active.length}</p><p className="text-sm text-gray-500">{t('sa.active_tenants')}</p></Card>
       </div>
-      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.add_plan')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={t('sa.plan_code')} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-          <Input label={t('sa.plan_name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input label={t('sa.price_monthly')} type="number" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: e.target.value })} />
-          <Input label={t('sa.price_yearly')} type="number" value={form.price_yearly} onChange={(e) => setForm({ ...form, price_yearly: e.target.value })} />
-          <Input label={t('sa.max_users')} type="number" value={form.max_users} onChange={(e) => setForm({ ...form, max_users: e.target.value })} />
-          <Input label={t('sa.max_doctors')} type="number" value={form.max_doctors} onChange={(e) => setForm({ ...form, max_doctors: e.target.value })} />
-          <Input label={t('sa.max_patients')} type="number" value={form.max_patients} onChange={(e) => setForm({ ...form, max_patients: e.target.value })} />
-          <Input label={t('sa.features')} placeholder="comma separated" value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} />
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Institution</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Monthly</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Yearly</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {active.map((tn) => {
+                const plan = plans.find((p) => p.id === tn.plan_id);
+                return (
+                  <tr key={tn.id} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{tn.commercial_name || tn.legal_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{plan?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">${plan?.price_monthly ?? 0}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">${plan?.price_yearly ?? 0}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Tenant[]; onAction: () => void }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', is_super_admin: false });
+
+  const createStaff = async () => {
+    const { data: authData, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name } } });
+    if (!error && authData.user) {
+      await supabase.from('profiles').update({ full_name: form.full_name, is_super_admin: form.is_super_admin }).eq('id', authData.user.id);
+    }
+    setForm({ full_name: '', email: '', password: '', is_super_admin: false }); setOpen(false); onAction();
+  };
+
+  const toggleSuperAdmin = async (p: any) => {
+    await supabase.from('profiles').update({ is_super_admin: !p.is_super_admin }).eq('id', p.id);
+    onAction();
+  };
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><UserPlus size={16} /> {t('sa.add_staff')}</Button></div>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Super Admin</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {profiles.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50/50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.full_name || '—'}</td>
+                  <td className="px-4 py-3"><Badge color={p.is_super_admin ? 'green' : 'gray'}>{p.is_super_admin ? 'Yes' : 'No'}</Badge></td>
+                  <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => toggleSuperAdmin(p)}>{p.is_super_admin ? 'Remove' : 'Grant'} Admin</Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.add_staff')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={createStaff}>{t('common.save')}</Button></>}>
+        <div className="space-y-3">
+          <Input label={t('common.name')} required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+          <Input label={t('col.email')} type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Input label={t('auth.password')} type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_super_admin} onChange={(e) => setForm({ ...form, is_super_admin: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Super Admin</span></label>
         </div>
       </Modal>
     </div>
@@ -227,8 +397,8 @@ function SaGeography({ countries, regions, setRegions, onAction }: { countries: 
   const addRegion = async () => {
     await supabase.from('regions').insert({ country_id: rForm.country_id, name: rForm.name });
     setRForm({ country_id: '', name: '' });
-    const { data } = await supabase.from('regions').select('id, name').eq('country_id', rForm.country_id).order('name');
-    setRegions((data as { id: string; name: string }[]) ?? []);
+    const { data: regData } = await supabase.from('regions').select('id, name').eq('country_id', rForm.country_id).order('name');
+    setRegions((regData as { id: string; name: string }[]) ?? []);
   };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -248,7 +418,7 @@ function SaGeography({ countries, regions, setRegions, onAction }: { countries: 
       <Card className="p-5">
         <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_region')}</h3>
         <div className="space-y-3">
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('onb.country')}</span><select value={rForm.country_id} onChange={(e) => setRForm({ ...rForm, country_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">...</option>{countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('onb.country')}</span><select value={rForm.country_id} onChange={(e) => setRForm({ country_id: e.target.value, name: rForm.name })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">...</option>{countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <Input label={t('common.name')} value={rForm.name} onChange={(e) => setRForm({ ...rForm, name: e.target.value })} />
           <Button onClick={addRegion} className="w-full" disabled={!rForm.country_id}>{t('common.save')}</Button>
         </div>

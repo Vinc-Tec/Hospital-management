@@ -11,6 +11,7 @@ import {
   PatientsModule, DoctorsModule, AppointmentsModule, MedicalRecordsModule,
   ConsultationsModule, PrescriptionsModule, LabModule, RadiologyModule,
   PharmacyModule, BedsModule, AdmissionsModule, InvoicesModule, StaffModule, RolesModule,
+  ReportsModule, PerformanceModule,
 } from './pages/modules';
 import { SettingsPage } from './pages/Settings';
 import { AboutPage, FeaturesPage, PrivacyPage, TermsPage, ContactPage } from './pages/StaticPages';
@@ -38,10 +39,6 @@ function AdminRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function ModuleWrapper({ children }: { children: ReactNode }) {
-  return <div className="p-4 sm:p-6 lg:p-8">{children}</div>;
-}
-
 function AppRoutes() {
   const { activeTenant } = useAuth();
   const tid = activeTenant?.id ?? '';
@@ -56,24 +53,27 @@ function AppRoutes() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/onboarding" element={<TenantRoute><Onboarding /></TenantRoute>} />
-      <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/app/patients" element={<ProtectedRoute><ModuleWrapper><PatientsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/appointments" element={<ProtectedRoute><ModuleWrapper><AppointmentsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/doctors" element={<ProtectedRoute><ModuleWrapper><DoctorsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/records" element={<ProtectedRoute><ModuleWrapper><MedicalRecordsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/consultations" element={<ProtectedRoute><ModuleWrapper><ConsultationsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/prescriptions" element={<ProtectedRoute><ModuleWrapper><PrescriptionsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/lab" element={<ProtectedRoute><ModuleWrapper><LabModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/radiology" element={<ProtectedRoute><ModuleWrapper><RadiologyModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/pharmacy" element={<ProtectedRoute><ModuleWrapper><PharmacyModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/beds" element={<ProtectedRoute><ModuleWrapper><BedsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/admissions" element={<ProtectedRoute><ModuleWrapper><AdmissionsModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/invoices" element={<ProtectedRoute><ModuleWrapper><InvoicesModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/staff" element={<ProtectedRoute><ModuleWrapper><StaffModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/roles" element={<ProtectedRoute><ModuleWrapper><RolesModule tenantId={tid} /></ModuleWrapper></ProtectedRoute>} />
-      <Route path="/app/settings" element={<ProtectedRoute><ModuleWrapper><SettingsPage /></ModuleWrapper></ProtectedRoute>} />
+      <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
+        <Route index element={null} />
+        <Route path="patients" element={<PatientsModule tenantId={tid} />} />
+        <Route path="appointments" element={<AppointmentsModule tenantId={tid} />} />
+        <Route path="doctors" element={<DoctorsModule tenantId={tid} />} />
+        <Route path="records" element={<MedicalRecordsModule tenantId={tid} />} />
+        <Route path="consultations" element={<ConsultationsModule tenantId={tid} />} />
+        <Route path="prescriptions" element={<PrescriptionsModule tenantId={tid} />} />
+        <Route path="lab" element={<LabModule tenantId={tid} />} />
+        <Route path="radiology" element={<RadiologyModule tenantId={tid} />} />
+        <Route path="pharmacy" element={<PharmacyModule tenantId={tid} />} />
+        <Route path="beds" element={<BedsModule tenantId={tid} />} />
+        <Route path="admissions" element={<AdmissionsModule tenantId={tid} />} />
+        <Route path="invoices" element={<InvoicesModule tenantId={tid} />} />
+        <Route path="staff" element={<StaffModule tenantId={tid} />} />
+        <Route path="roles" element={<RolesModule tenantId={tid} />} />
+        <Route path="reports" element={<ReportsModule tenantId={tid} />} />
+        <Route path="performance" element={<PerformanceModule tenantId={tid} />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
       <Route path="/admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
-      <Route path="/admin/*" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

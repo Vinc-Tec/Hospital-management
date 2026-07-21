@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
-  Plus, LogOut, Menu, X, ChevronRight, AlertCircle,
+  Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -25,12 +25,14 @@ const NAV = [
   { to: '/app/beds', icon: BedDouble, key: 'dash.nav.beds' },
   { to: '/app/admissions', icon: LogIn, key: 'dash.nav.admissions' },
   { to: '/app/invoices', icon: Receipt, key: 'dash.nav.invoices' },
+  { to: '/app/reports', icon: FileBarChart, key: 'dash.nav.reports' },
   { to: '/app/staff', icon: UserCog, key: 'dash.nav.staff' },
   { to: '/app/roles', icon: ShieldCheck, key: 'dash.nav.roles' },
+  { to: '/app/performance', icon: TrendingUp, key: 'dash.nav.performance' },
   { to: '/app/settings', icon: Settings, key: 'dash.nav.settings' },
 ];
 
-export function Dashboard({ children }: { children?: React.ReactNode }) {
+export function Dashboard() {
   const { t } = useI18n();
   const { user, profile, activeTenant, signOut } = useAuth();
   const loc = useLocation();
@@ -117,12 +119,12 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <LangToggle />
-            <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> {t('dash.quickadd.patient')}</Button>
+            {isOverview && <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> {t('dash.quickadd.patient')}</Button>}
           </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children ?? (
+          {isOverview ? (
             <>
               <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email}</h1>
@@ -161,6 +163,8 @@ export function Dashboard({ children }: { children?: React.ReactNode }) {
                 </Card>
               </div>
             </>
+          ) : (
+            <Outlet />
           )}
         </main>
       </div>
