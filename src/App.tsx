@@ -7,6 +7,7 @@ import { AuthPage } from './pages/Auth';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { SuperAdmin } from './pages/SuperAdmin';
+import { BillingGate, TrialBanner } from './pages/Billing';
 import {
   PatientsModule, DoctorsModule, AppointmentsModule, MedicalRecordsModule,
   ConsultationsModule, PrescriptionsModule, LabModule, RadiologyModule,
@@ -18,22 +19,22 @@ import { AboutPage, FeaturesPage, PrivacyPage, TermsPage, ContactPage } from './
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading, activeTenant } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-gray-500">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
   if (!user) return <Navigate to="/signin" replace />;
   if (!activeTenant) return <Navigate to="/onboarding" replace />;
-  return <>{children}</>;
+  return <BillingGate>{children}</BillingGate>;
 }
 
 function TenantRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-gray-500">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
   if (!user) return <Navigate to="/signin" replace />;
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-gray-500">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
   if (!user) return <Navigate to="/signin" replace />;
   if (!profile?.is_super_admin) return <Navigate to="/app" replace />;
   return <>{children}</>;
@@ -67,9 +68,9 @@ function AppRoutes() {
         <Route path="beds" element={<BedsModule tenantId={tid} />} />
         <Route path="admissions" element={<AdmissionsModule tenantId={tid} />} />
         <Route path="invoices" element={<InvoicesModule tenantId={tid} />} />
+        <Route path="reports" element={<ReportsModule tenantId={tid} />} />
         <Route path="staff" element={<StaffModule tenantId={tid} />} />
         <Route path="roles" element={<RolesModule tenantId={tid} />} />
-        <Route path="reports" element={<ReportsModule tenantId={tid} />} />
         <Route path="performance" element={<PerformanceModule tenantId={tid} />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

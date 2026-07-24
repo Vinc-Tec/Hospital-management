@@ -11,7 +11,8 @@ import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../
 import { Button, Card, Input, Modal, Badge, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 
-const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com'];
+const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com', 'liyahjoha@gmail.com'];
+const PROTECTED_EMAILS = ['webdxb1@gmail.com', 'liyahjoha@gmail.com'];
 
 const NAV = [
   { key: 'overview', icon: LayoutDashboard },
@@ -244,18 +245,27 @@ function SaCommercial({ codes, onAction }: { codes: any[]; onAction: () => void 
   const { t } = useI18n();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ code: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' });
+  const [form, setForm] = useState({ country_iso: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' });
+
+  const generateCode = async (iso: string) => {
+    const prefix = `HC-${iso.toUpperCase().slice(0,3)}`;
+    const { count } = await supabase.from('commercial_codes').select('*', { count: 'exact', head: true }).like('code', `${prefix}-%`);
+    const seq = String((count ?? 0) + 1).padStart(4, '0');
+    return `${prefix}-${seq}`;
+  };
 
   const save = async () => {
+    if (!form.country_iso) return;
+    const code = await generateCode(form.country_iso);
     await supabase.from('commercial_codes').insert({
-      code: form.code.toUpperCase(),
+      code,
       description: form.description || null,
       discount_percent: parseFloat(form.discount_percent) || 0,
       max_uses: form.max_uses ? parseInt(form.max_uses) : null,
       valid_until: form.valid_until || null,
       created_by: user?.id,
     });
-    setForm({ code: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' }); setOpen(false); onAction();
+    setForm({ country_iso: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' }); setOpen(false); onAction();
   };
 
   const toggle = async (c: any) => { await supabase.from('commercial_codes').update({ is_active: !c.is_active }).eq('id', c.id); onAction(); };
@@ -285,7 +295,7 @@ function SaCommercial({ codes, onAction }: { codes: any[]; onAction: () => void 
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title={t('sa.add_code')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
         <div className="space-y-3">
-          <Input label="Code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+          <Input label="Country ISO (e.g. CMR)" required placeholder="CMR, CIV, SEN..." value={form.country_iso} onChange={(e) => setForm({ ...form, country_iso: e.target.value })} />
           <Input label={t('fld.description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label="Discount %" type="number" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} />
           <Input label="Max uses" type="number" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })} />
@@ -361,15 +371,28 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Super Admin</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Super Admin</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
-              {profiles.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.full_name || '—'}</td>
-                  <td className="px-4 py-3"><Badge color={p.is_super_admin ? 'green' : 'gray'}>{p.is_super_admin ? 'Yes' : 'No'}</Badge></td>
-                  <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => toggleSuperAdmin(p)}>{p.is_super_admin ? 'Remove' : 'Grant'} Admin</Button></td>
-                </tr>
-              ))}
+              {profiles.map((p) => {
+                const isProtected = PROTECTED_EMAILS.includes((p.email ?? '').toLowerCase());
+                return (
+                  <tr key={p.id} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.full_name || '—'}</td>
+                    <td className="px-4 py-3 text-xs text-gray-400">{p.email || '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Badge color={p.is_super_admin ? 'green' : 'gray'}>{p.is_super_admin ? 'Yes' : 'No'}</Badge>
+                        {isProtected && <Badge color="blue">Protected</Badge>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {!isProtected && (
+                        <Button size="sm" variant="outline" onClick={() => toggleSuperAdmin(p)}>{p.is_super_admin ? 'Remove' : 'Grant'} Admin</Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

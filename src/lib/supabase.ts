@@ -1,18 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-if (!url || !anonKey) {
-  throw new Error('Missing Supabase env vars. Check .env for VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-}
-
-export const supabase = createClient(url, anonKey, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-});
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+);
 
 export type Tenant = {
-  id: string; owner_user_id: string; legal_name: string; commercial_name: string | null;
+  id: string; legal_name: string; commercial_name: string | null;
   healthcare_type: string; country_id: string | null; region_id: string | null;
   district_id: string | null; city_id: string | null; locality_id: string | null;
   address: string | null; gps_lat: number | null; gps_lng: number | null;
@@ -24,13 +19,41 @@ export type Tenant = {
   departments: string[]; services: string[];
   status: 'pending' | 'approved' | 'rejected' | 'request_info' | 'suspended';
   verification_note: string | null; plan_id: string | null;
-  trial_ends_at: string; created_at: string; updated_at: string;
+  trial_ends_at: string; grace_period_ends_at?: string | null;
+  created_at: string; updated_at: string;
 };
 
 export type SubscriptionPlan = {
   id: string; code: string; name: string; price_monthly: number; price_yearly: number;
   max_users: number; max_doctors: number; max_patients: number;
   features: string[]; is_active: boolean; sort_order: number;
+};
+
+export type TenantSubscription = {
+  id: string; tenant_id: string; plan_id: string;
+  billing_cycle: 'monthly' | 'yearly'; start_date: string; end_date: string | null;
+  status: 'active' | 'cancelled' | 'suspended' | 'past_due' | 'trialing';
+  payment_gateway: string | null; next_billing_date: string | null;
+  auto_renew: boolean; cancelled_at: string | null; cancellation_reason: string | null;
+  created_at: string; updated_at: string;
+};
+
+export type Payment = {
+  id: string; tenant_id: string; subscription_id: string | null;
+  amount: number; currency: string;
+  gateway: 'stripe' | 'flutterwave' | 'paystack' | 'orange_money' | 'mtn_momo' | 'visa' | 'mastercard' | 'bank_transfer' | null;
+  gateway_tx_id: string | null;
+  status: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  paid_at: string | null; invoice_url: string | null; metadata: Record<string, unknown> | null;
+  created_at: string; updated_at: string;
+};
+
+export type BillingInvoice = {
+  id: string; invoice_number: string; tenant_id: string; subscription_id: string | null;
+  amount_due: number; amount_paid: number; due_date: string; paid_at: string | null;
+  status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible';
+  line_items: Record<string, unknown>[]; pdf_url: string | null; notes: string | null;
+  created_at: string; updated_at: string;
 };
 
 export type Country = { id: string; name: string; iso2: string; phone_code: string | null; currency_code: string | null };

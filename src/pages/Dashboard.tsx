@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
-  Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp,
+  Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
+import { TrialBanner } from './Billing';
 
 const NAV = [
   { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview' },
@@ -32,13 +33,28 @@ const NAV = [
   { to: '/app/settings', icon: Settings, key: 'dash.nav.settings' },
 ];
 
+function TrialDaysWidget({ tenant }: { tenant: any }) {
+  const { t } = useI18n();
+  const now = new Date();
+  const trialEnd = new Date(tenant.trial_ends_at);
+  const days = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  if (tenant.plan_id || days <= 0) return null;
+  const urgent = days <= 3;
+  return (
+    <div className={`mx-3 mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${urgent ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
+      <Clock size={13} />
+      <span className="font-medium">{days}d trial left</span>
+      <Link to="/app/settings" className="ml-auto underline text-blue-600 font-semibold">{t('billing.subscribe_now')}</Link>
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { t } = useI18n();
   const { user, profile, activeTenant, signOut } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, doctors: 0, revenue: 0 });
@@ -85,80 +101,124 @@ export function Dashboard() {
     <div className="min-h-screen bg-gray-50 flex">
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed lg:sticky top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="h-16 flex items-center px-4 border-b border-gray-100"><Logo size={32} /></div>
+        <div className="h-16 flex items-center px-4 border-b border-gray-100 flex-shrink-0"><Logo size={32} /></div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
           {NAV.map((n) => {
             const active = loc.pathname === n.to;
             return (
-              <Link key={n.to} to={n.to} onClick={() => setSidebarOpen(false)} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${active ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <n.icon size={18} /> {t(n.key)}
+              <Link key={n.to} to={n.to} onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors ${active ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <n.icon size={17} className={active ? 'text-blue-600' : ''} /> {t(n.key)}
               </Link>
             );
           })}
           {profile?.is_super_admin && (
-            <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-emerald-700 hover:bg-emerald-50 font-medium">
-              <ShieldCheck size={18} /> {t('nav.superadmin')}
+            <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-emerald-700 hover:bg-emerald-50 font-medium mt-2 border-t border-gray-100 pt-3">
+              <ShieldCheck size={17} /> {t('nav.superadmin')}
             </Link>
           )}
         </nav>
-        <div className="p-3 border-t border-gray-100">
-          <button onClick={() => { signOut(); nav('/'); }} className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-            <LogOut size={18} /> {t('nav.signout')}
+        {activeTenant && <TrialDaysWidget tenant={activeTenant} />}
+        <div className="p-3 border-t border-gray-100 flex-shrink-0">
+          <div className="px-3 py-2 mb-1">
+            <p className="text-xs font-semibold text-gray-900 truncate">{profile?.full_name || user?.email}</p>
+            <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+          </div>
+          <button onClick={() => { signOut(); nav('/'); }}
+            className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">
+            <LogOut size={17} /> {t('nav.signout')}
           </button>
         </div>
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6">
+        <TrialBanner />
+        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100"><Menu size={20} /></button>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{activeTenant?.commercial_name || activeTenant?.legal_name || t('dash.tenant')}</p>
-              {activeTenant && <div className="flex items-center gap-2 mt-0.5"><StatusBadge status={activeTenant.status} />{trialEnd && <span className="text-xs text-gray-400">{t('dash.trial')} {trialEnd}</span>}</div>}
+              <p className="text-sm font-bold text-gray-900 truncate max-w-[160px] sm:max-w-xs">{activeTenant?.commercial_name || activeTenant?.legal_name || t('dash.tenant')}</p>
+              {activeTenant && (
+                <div className="flex items-center gap-2 mt-0.5">
+                  <StatusBadge status={activeTenant.status} />
+                  {trialEnd && !activeTenant.plan_id && <span className="text-xs text-gray-400">{t('dash.trial')} {trialEnd}</span>}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <LangToggle />
-            {isOverview && <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> {t('dash.quickadd.patient')}</Button>}
+            {isOverview && <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> <span className="hidden sm:inline">{t('dash.quickadd.patient')}</span></Button>}
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {isOverview ? (
             <>
               <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email}</h1>
+                <h1 className="text-2xl font-black text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
                 <p className="text-sm text-gray-500 mt-1">{activeTenant?.healthcare_type}</p>
               </div>
 
               {activeTenant?.status === 'pending' && (
-                <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <div className="mb-6 flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
                   <AlertCircle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-amber-800">{t('dash.status.pending')}. {t('dash.trial')} {trialEnd}</p>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">{t('dash.status.pending')}</p>
+                    <p className="text-xs text-amber-600 mt-0.5">{t('dash.trial')} {trialEnd}</p>
+                  </div>
                 </div>
               )}
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {kpis.map((k, i) => (
                   <Card key={i} className="p-5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-${k.color}-50`}><k.icon size={20} className={`text-${k.color}-600`} /></div>
-                    <p className="text-2xl font-bold text-gray-900">{k.value}</p>
-                    <p className="text-sm text-gray-500">{k.label}</p>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-${k.color}-50`}>
+                      <k.icon size={20} className={`text-${k.color}-600`} />
+                    </div>
+                    <p className="text-2xl font-black text-gray-900">{k.value}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{k.label}</p>
                   </Card>
                 ))}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-5">
-                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.patients')}</h3><Link to="/app/patients" className="text-xs text-blue-600 flex items-center gap-1">{t('dash.viewall')} <ChevronRight size={12} /></Link></div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">{t('dash.nav.patients')}</h3>
+                    <Link to="/app/patients" className="text-xs text-blue-600 flex items-center gap-1 hover:text-blue-700">{t('dash.viewall')} <ChevronRight size={12} /></Link>
+                  </div>
                   {patients.length === 0 ? <EmptyState icon={Users} title={t('common.none')} /> : (
-                    <div className="space-y-2">{patients.map((p) => <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{p.first_name} {p.last_name}</p><p className="text-xs text-gray-400">{p.phone || '—'}</p></div>{p.gender && <StatusBadge status={p.gender} />}</div>)}</div>
+                    <div className="space-y-2">
+                      {patients.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{p.first_name} {p.last_name}</p>
+                            <p className="text-xs text-gray-400">{p.phone || '—'}</p>
+                          </div>
+                          {p.gender && <StatusBadge status={p.gender} />}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </Card>
                 <Card className="p-5">
-                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-900">{t('dash.nav.appointments')}</h3><Link to="/app/appointments" className="text-xs text-blue-600 flex items-center gap-1">{t('dash.viewall')} <ChevronRight size={12} /></Link></div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">{t('dash.nav.appointments')}</h3>
+                    <Link to="/app/appointments" className="text-xs text-blue-600 flex items-center gap-1 hover:text-blue-700">{t('dash.viewall')} <ChevronRight size={12} /></Link>
+                  </div>
                   {appointments.length === 0 ? <EmptyState icon={CalendarDays} title={t('common.none')} /> : (
-                    <div className="space-y-2">{appointments.map((a) => <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{a.reason || t('dash.nav.appointments')}</p><p className="text-xs text-gray-400">{new Date(a.scheduled_at).toLocaleDateString()}</p></div><StatusBadge status={a.status} /></div>)}</div>
+                    <div className="space-y-2">
+                      {appointments.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{a.reason || t('dash.nav.appointments')}</p>
+                            <p className="text-xs text-gray-400">{new Date(a.scheduled_at).toLocaleDateString()}</p>
+                          </div>
+                          <StatusBadge status={a.status} />
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </Card>
               </div>
@@ -169,7 +229,8 @@ export function Dashboard() {
         </main>
       </div>
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('common.add')} footer={<><Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel')}</Button><Button onClick={addPatient} loading={saving}>{t('common.save')}</Button></>}>
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('common.add')}
+        footer={<><Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel')}</Button><Button onClick={addPatient} loading={saving}>{t('common.save')}</Button></>}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Input label={t('common.firstname')} required value={pForm.first_name} onChange={(e) => setPForm({ ...pForm, first_name: e.target.value })} />
