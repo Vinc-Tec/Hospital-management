@@ -227,7 +227,7 @@ function SubscriptionScreen() {
               {t('nav.signout')}
             </button>
           </div>
-          <p className="text-center text-white/30 text-xs mt-4">{t('billing.secure_note')}</p>
+          <p className="text-center text-white/30 text-xs mt-4">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
         </div>
       </div>
     </div>

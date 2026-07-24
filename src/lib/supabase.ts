@@ -20,12 +20,24 @@ export type Tenant = {
   status: 'pending' | 'approved' | 'rejected' | 'request_info' | 'suspended';
   verification_note: string | null; plan_id: string | null;
   trial_ends_at: string; grace_period_ends_at?: string | null;
+  currency_code: string | null; timezone: string | null;
+  accounting_mode: 'per_branch' | 'consolidated' | 'both' | null;
   created_at: string; updated_at: string;
+};
+
+export type Branch = {
+  id: string; tenant_id: string; name: string; healthcare_type: string;
+  is_head_office: boolean; address: string | null; phone: string | null; email: string | null;
+  city_id: string | null; district_id: string | null; region_id: string | null; country_id: string | null;
+  gps_lat: number | null; gps_lng: number | null;
+  manager_name: string | null; manager_phone: string | null;
+  status: 'active' | 'inactive' | 'suspended'; created_at: string;
 };
 
 export type SubscriptionPlan = {
   id: string; code: string; name: string; price_monthly: number; price_yearly: number;
   max_users: number; max_doctors: number; max_patients: number;
+  max_branches: number; max_storage_gb: number;
   features: string[]; is_active: boolean; sort_order: number;
 };
 
@@ -56,7 +68,7 @@ export type BillingInvoice = {
   created_at: string; updated_at: string;
 };
 
-export type Country = { id: string; name: string; iso2: string; phone_code: string | null; currency_code: string | null };
+export type Country = { id: string; name: string; iso2: string; phone_code: string | null; currency_code: string | null; timezone: string | null };
 export type Region = { id: string; country_id: string; name: string };
 export type District = { id: string; region_id: string; name: string };
 export type City = { id: string; district_id: string; name: string };

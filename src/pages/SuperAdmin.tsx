@@ -113,6 +113,11 @@ export function SuperAdmin() {
           {section === 'geography' && <SaGeography countries={countries} regions={regions} setRegions={setRegions} onAction={loadAll} />}
           {section === 'audit' && <SaAudit logs={logs} />}
         </main>
+        <footer className="bg-gray-900 text-gray-400 py-4">
+          <div className="text-center px-4">
+            <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+          </div>
+        </footer>
       </div>
     </div>
   );

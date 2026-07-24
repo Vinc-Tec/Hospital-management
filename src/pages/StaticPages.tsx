@@ -27,8 +27,7 @@ function StaticPageLayout({ children }: { children: ReactNode }) {
               <Heart size={18} className="text-white" fill="white" />
             </div>
           </div>
-          <p className="text-sm">{t('app.tagline')}</p>
-          <p className="text-xs mt-2">{t('app.developed')} — {t('app.cameroon')}</p>
+          <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
         </div>
       </footer>
     </div>

@@ -11,6 +11,7 @@ import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 import { TrialBanner } from './Billing';
+import { Footer } from '../components/Footer';
 
 const NAV = [
   { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview' },
@@ -241,6 +242,7 @@ export function Dashboard() {
           <Input label={t('common.dob')} type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
         </div>
       </Modal>
+      <Footer />
     </div>
   );
 }

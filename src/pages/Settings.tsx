@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { supabase, type Tenant, type SubscriptionPlan } from '../lib/supabase';
-import { Button, Card, Input, Badge } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check } from 'lucide-react';
+import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
+import { Button, Card, Input, Badge, Select } from '../components/ui';
+import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X } from 'lucide-react';
 
 export function SettingsPage() {
   const { t } = useI18n();
   const { activeTenant, user, profile, refresh } = useAuth();
-  const [tab, setTab] = useState<'general' | 'profile' | 'billing'>('general');
+  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches'>('general');
   const [form, setForm] = useState({ legal_name: '', commercial_name: '', email: '', phone: '', website: '', address: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -48,6 +48,7 @@ export function SettingsPage() {
     { key: 'general' as const, icon: Building2, label: t('settings.general') },
     { key: 'profile' as const, icon: User, label: t('settings.profile') },
     { key: 'billing' as const, icon: CreditCard, label: t('settings.billing') },
+    { key: 'branches' as const, icon: Building2, label: t('settings.branches') },
   ];
 
   return (
@@ -97,6 +98,10 @@ export function SettingsPage() {
 
       {tab === 'billing' && (
         <BillingTab tenant={activeTenant} onUpdated={refresh} />
+      )}
+
+      {tab === 'branches' && (
+        <BranchesTab tenant={activeTenant} onUpdated={refresh} />
       )}
     </div>
   );
@@ -166,6 +171,144 @@ function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => vo
         )}
         {saved && <p className="mt-3 text-sm text-emerald-600 flex items-center gap-1"><Check size={16} /> {t('settings.saved')}</p>}
       </div>
+    </div>
+  );
+}
+
+function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: () => Promise<void> }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [maxBranches, setMaxBranches] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Branch | null>(null);
+  const [form, setForm] = useState({ name: '', healthcare_type: 'hospital', address: '', phone: '', email: '', manager_name: '', manager_phone: '' });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = async () => {
+    if (!tenant) return;
+    setLoading(true);
+    const { data } = await supabase.from('branches').select('*').eq('tenant_id', tenant.id).order('created_at', { ascending: true });
+    setBranches((data as Branch[]) ?? []);
+    if (tenant.plan_id) {
+      const { data: plan } = await supabase.from('subscription_plans').select('max_branches').eq('id', tenant.plan_id).single();
+      setMaxBranches(plan?.max_branches ?? 1);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [tenant?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const canAdd = branches.length < maxBranches;
+
+  const openAdd = () => { setEditing(null); setForm({ name: '', healthcare_type: 'hospital', address: '', phone: '', email: '', manager_name: '', manager_phone: '' }); setShowModal(true); setErr(null); };
+  const openEdit = (b: Branch) => { setEditing(b); setForm({ name: b.name, healthcare_type: b.healthcare_type, address: b.address ?? '', phone: b.phone ?? '', email: b.email ?? '', manager_name: b.manager_name ?? '', manager_phone: b.manager_phone ?? '' }); setShowModal(true); setErr(null); };
+
+  const save = async () => {
+    if (!tenant || !form.name) { setErr(t('onb.err.required')); return; }
+    setSaving(true); setErr(null);
+    if (editing) {
+      const { error } = await supabase.from('branches').update({ name: form.name, healthcare_type: form.healthcare_type, address: form.address, phone: form.phone, email: form.email, manager_name: form.manager_name, manager_phone: form.manager_phone }).eq('id', editing.id);
+      if (error) setErr(error.message);
+    } else {
+      const { error } = await supabase.from('branches').insert({ tenant_id: tenant.id, name: form.name, healthcare_type: form.healthcare_type, is_head_office: false, address: form.address, phone: form.phone, email: form.email, manager_name: form.manager_name, manager_phone: form.manager_phone, status: 'active' });
+      if (error) setErr(error.message);
+    }
+    setSaving(false);
+    if (!err) { setShowModal(false); await load(); await onUpdated(); }
+  };
+
+  const remove = async (id: string) => {
+    await supabase.from('branches').delete().eq('id', id);
+    await load();
+  };
+
+  const updateAccountingMode = async (mode: string) => {
+    if (!tenant) return;
+    await supabase.from('tenants').update({ accounting_mode: mode }).eq('id', tenant.id);
+    await onUpdated();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Accounting mode */}
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t('settings.accounting_mode')}</p>
+        <div className="flex gap-2">
+          {['per_branch', 'consolidated', 'both'].map((m) => (
+            <button key={m} onClick={() => updateAccountingMode(m)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${tenant?.accounting_mode === m ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+              {t(`settings.accounting.${m}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Branches list */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">{t('settings.branches.title')}</p>
+            <p className="text-xs text-gray-400">{branches.length} / {maxBranches === 999 ? '∞' : maxBranches}</p>
+          </div>
+          {canAdd && <Button size="sm" onClick={openAdd}><Plus size={14} /> {t('settings.branches.add')}</Button>}
+        </div>
+
+        {!canAdd && branches.length > 0 && (
+          <p className="text-xs text-amber-600 mb-3">{t('settings.branches.max_reached')}</p>
+        )}
+
+        {loading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {branches.map((b) => (
+              <div key={b.id} className="p-4 rounded-xl border border-gray-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 text-sm">{b.name}</span>
+                      {b.is_head_office && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">{t('settings.branches.head_office')}</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 capitalize">{b.healthcare_type}</p>
+                    {b.address && <p className="text-xs text-gray-500 mt-1">{b.address}</p>}
+                    {b.manager_name && <p className="text-xs text-gray-500 mt-1">{t('settings.branches.manager')}: {b.manager_name}</p>}
+                  </div>
+                  {!b.is_head_office && (
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                      <button onClick={() => remove(b.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">{editing ? t('common.edit') : t('settings.branches.add')}</h3>
+              <button onClick={() => setShowModal(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <div className="space-y-3">
+              <Input label={t('settings.branches.name')} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Select label={t('settings.branches.type')} value={form.healthcare_type}
+                options={[{ value: 'hospital', label: 'Hospital' }, { value: 'clinic', label: 'Clinic' }, { value: 'pharmacy', label: 'Pharmacy' }, { value: 'lab', label: 'Lab' }, { value: 'health_center', label: 'Health Center' }]}
+                onChange={(e) => setForm({ ...form, healthcare_type: e.target.value })} />
+              <Input label={t('settings.branches.address')} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <Input label={t('settings.branches.manager')} value={form.manager_name} onChange={(e) => setForm({ ...form, manager_name: e.target.value })} />
+              <Input label={t('col.phone')} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
+            <Button className="w-full mt-4" onClick={save} loading={saving}>{t('common.save')}</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

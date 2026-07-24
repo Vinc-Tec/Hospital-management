@@ -5,9 +5,11 @@ import { supabase, type Profile, type Tenant, type Membership } from './supabase
 type AuthState = {
   session: Session | null; user: User | null; profile: Profile | null;
   memberships: Membership[]; activeTenant: Tenant | null; loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => void;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  resendVerification: (email: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -57,18 +59,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+    // Check if email already exists
+    const { data: existing } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    }).catch(() => ({ data: null, error: null as any }));
+
+    // Try to sign up — if user exists, Supabase returns the user without creating a duplicate
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/signin`,
+      },
+    });
+
+    if (error) {
+      // User already registered
+      if (error.message.toLowerCase().includes('already') || error.message.toLowerCase().includes('registered')) {
+        return { error: null, emailExists: true };
+      }
+      return { error: error.message };
+    }
+
+    // If user already exists (Supabase returns a fake user object without session)
+    if (data.user && !data.session && data.user.id) {
+      return { error: null, emailExists: true };
+    }
+
+    return { error: null, needsVerification: true };
+  };
+
+  const signIn = async (email: string, password: string, remember?: boolean) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: remember ? { } : { },
+    });
     return { error: error ? error.message : null };
   };
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     return { error: error ? error.message : null };
   };
+
+  const resendVerification = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/signin` },
+    });
+    return { error: error ? error.message : null };
+  };
+
   const signOut = async () => { await supabase.auth.signOut(); localStorage.removeItem('hc_active_tenant_id'); setProfile(null); setMemberships([]); setActiveTenant(null); };
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
   const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, loading, signIn, signUp, signOut, refresh, setActiveTenantId }), [session, user, profile, memberships, activeTenant, loading]);
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, loading, signIn, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
