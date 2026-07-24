@@ -228,6 +228,7 @@ export function Dashboard() {
             <Outlet />
           )}
         </main>
+        <Footer />
       </div>
 
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('common.add')}
@@ -242,7 +243,6 @@ export function Dashboard() {
           <Input label={t('common.dob')} type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
         </div>
       </Modal>
-      <Footer />
     </div>
   );
 }

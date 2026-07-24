@@ -28,14 +28,16 @@ export function useCrud<T extends Row>(table: string, tenantId: string | null) {
   };
 
   const update = async (id: string, payload: Partial<T>): Promise<{ error: string | null }> => {
-    const { error } = await supabase.from(table).update(payload).eq('id', id);
+    if (!tenantId) return { error: 'No active tenant' };
+    const { error } = await supabase.from(table).update(payload).eq('id', id).eq('tenant_id', tenantId);
     if (error) return { error: error.message };
     await load();
     return { error: null };
   };
 
   const remove = async (id: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (!tenantId) return { error: 'No active tenant' };
+    const { error } = await supabase.from(table).delete().eq('id', id).eq('tenant_id', tenantId);
     if (error) return { error: error.message };
     await load();
     return { error: null };
