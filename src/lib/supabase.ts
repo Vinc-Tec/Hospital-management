@@ -171,7 +171,7 @@ export type Notification = {
   body: string | null; type: string; read: boolean; created_at: string;
 };
 
-export type Profile = { id: string; full_name: string | null; is_super_admin: boolean };
+export type Profile = { id: string; full_name: string | null; is_super_admin: boolean; email: string | null };
 export type Membership = {
   id: string; tenant_id: string; user_id: string; role: string;
   permissions: Record<string, unknown>;

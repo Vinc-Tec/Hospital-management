@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { type ReactNode } from 'react';
-import { AuthProvider, useAuth } from './lib/auth';
+import { AuthProvider, useAuth, isProtectedSuperAdminEmail } from './lib/auth';
 import { I18nProvider } from './lib/i18n';
 import { LandingPage } from './pages/Landing';
 import { AuthPage } from './pages/Auth';
@@ -17,24 +17,43 @@ import {
 import { SettingsPage } from './pages/Settings';
 import { AboutPage, FeaturesPage, PrivacyPage, TermsPage, ContactPage } from './pages/StaticPages';
 
+function FullScreenLoader() {
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
+}
+
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading, activeTenant } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
+  const { user, loading, activeTenant, profile } = useAuth();
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
+
+  // Super admins bypass onboarding, subscription, and tenant requirements
+  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
+    return <>{children}</>;
+  }
+
   if (!activeTenant) return <Navigate to="/onboarding" replace />;
   return <BillingGate>{children}</BillingGate>;
 }
 
 function TenantRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
+  const { user, loading, profile, activeTenant } = useAuth();
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
+
+  // Super admins never need onboarding
+  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // If user already has a tenant, never show onboarding again
+  if (activeTenant) return <Navigate to="/app" replace />;
+
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
   if (!profile?.is_super_admin) return <Navigate to="/app" replace />;
   return <>{children}</>;

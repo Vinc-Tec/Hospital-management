@@ -5,7 +5,7 @@ import {
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
 } from 'lucide-react';
-import { useAuth } from '../lib/auth';
+import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
@@ -63,8 +63,10 @@ export function Dashboard() {
   const [pForm, setPForm] = useState({ first_name: '', last_name: '', phone: '', gender: 'male', date_of_birth: '' });
   const [saving, setSaving] = useState(false);
 
+  const isSuperAdmin = profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email);
+
   useEffect(() => {
-    if (!activeTenant) return;
+    if (!activeTenant || isSuperAdmin) return;
     (async () => {
       const tid = activeTenant.id;
       const [{ data: p }, { data: a }, { count: pc }, { count: ac }, { count: dc }] = await Promise.all([
@@ -78,7 +80,7 @@ export function Dashboard() {
       setAppointments((a as Appointment[]) ?? []);
       setStats({ patients: pc ?? 0, appointments: ac ?? 0, doctors: dc ?? 0, revenue: 0 });
     })();
-  }, [activeTenant]);
+  }, [activeTenant, isSuperAdmin]);
 
   const addPatient = async () => {
     if (!activeTenant) return;
@@ -158,8 +160,20 @@ export function Dashboard() {
             <>
               <div className="mb-6">
                 <h1 className="text-2xl font-black text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
-                <p className="text-sm text-gray-500 mt-1">{activeTenant?.healthcare_type}</p>
+                <p className="text-sm text-gray-500 mt-1">{isSuperAdmin ? 'Super Admin — LIYAH GROUP' : activeTenant?.healthcare_type}</p>
               </div>
+
+              {isSuperAdmin && (
+                <div className="mb-6 p-6 rounded-2xl bg-emerald-50 border border-emerald-200">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck size={24} className="text-emerald-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-emerald-800">Super Admin Access</p>
+                      <p className="text-sm text-emerald-600 mt-1">You have unrestricted platform access. No subscription or onboarding is required. Use the Super Admin link in the sidebar to manage institutions, plans, and platform settings.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {activeTenant?.status === 'pending' && (
                 <div className="mb-6 flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">

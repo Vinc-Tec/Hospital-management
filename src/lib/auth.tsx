@@ -2,6 +2,17 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, type Profile, type Tenant, type Membership } from './supabase';
 
+export const PROTECTED_SUPER_ADMIN_EMAILS = [
+  'vincentnogue2@gmail.com',
+  'vincentnogue@yahoo.com',
+  'webdxb1@gmail.com',
+  'liyahjoha@gmail.com',
+];
+
+export function isProtectedSuperAdminEmail(email: string | null | undefined): boolean {
+  return !!email && PROTECTED_SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
 type AuthState = {
   session: Session | null; user: User | null; profile: Profile | null;
   memberships: Membership[]; activeTenant: Tenant | null; loading: boolean;
@@ -14,6 +25,22 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+function parseUserAgent(ua: string): { device: string; browser: string } {
+  let browser = 'Unknown';
+  if (/Edg\//i.test(ua)) browser = 'Microsoft Edge';
+  else if (/Chrome\//i.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+  else if (/Safari\//i.test(ua)) browser = 'Safari';
+  else if (/OPR\//i.test(ua)) browser = 'Opera';
+
+  let device = 'Desktop';
+  if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS';
+  else if (/Android/i.test(ua)) device = 'Android';
+  else if (/Mobile|Windows Phone/i.test(ua)) device = 'Mobile';
+
+  return { device, browser };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -23,10 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndTenants = async (currentUser: User) => {
-    const { data: prof } = await supabase.from('profiles').select('id, full_name, is_super_admin').eq('id', currentUser.id).maybeSingle();
+    const { data: prof } = await supabase.from('profiles')
+      .select('id, full_name, is_super_admin, email')
+      .eq('id', currentUser.id).maybeSingle();
     setProfile(prof as Profile | null);
-    const { data: mems } = await supabase.from('tenant_memberships').select('id, tenant_id, user_id, role, permissions').eq('user_id', currentUser.id);
+
+    const { data: mems } = await supabase.from('tenant_memberships')
+      .select('id, tenant_id, user_id, role, permissions').eq('user_id', currentUser.id);
     setMemberships((mems as Membership[]) ?? []);
+
     const storedId = localStorage.getItem('hc_active_tenant_id');
     const tenantIds = (mems as Membership[])?.map((m) => m.tenant_id) ?? [];
     const { data: owned } = await supabase.from('tenants').select('*').eq('owner_user_id', currentUser.id);
@@ -58,14 +90,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    // Check if email already exists
-    const { data: existing } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false },
-    }).catch(() => ({ data: null, error: null as any }));
+  const recordLoginActivity = async (userId: string, success: boolean, tenantId?: string | null, failureReason?: string) => {
+    const ua = navigator.userAgent;
+    const { device, browser } = parseUserAgent(ua);
+    try {
+      await supabase.from('login_activity').insert({
+        user_id: userId,
+        tenant_id: tenantId ?? null,
+        login_at: new Date().toISOString(),
+        device,
+        browser,
+        user_agent: ua,
+        success,
+        failure_reason: failureReason ?? null,
+      });
+    } catch {
+      // Non-critical; don't block login on tracking failure
+    }
+  };
 
-    // Try to sign up — if user exists, Supabase returns the user without creating a duplicate
+  const recordLogout = async (userId: string, loginAt: Date) => {
+    const now = new Date();
+    const durationSec = Math.round((now.getTime() - loginAt.getTime()) / 1000);
+    try {
+      await supabase.from('login_activity')
+        .update({ logout_at: now.toISOString(), session_duration_sec: durationSec })
+        .eq('user_id', userId)
+        .is('logout_at', null)
+        .order('login_at', { ascending: false })
+        .limit(1);
+    } catch {
+      // Non-critical
+    }
+  };
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    // Protected super admins should never sign up through the normal flow
+    // — but if they do, they'll be auto-marked by the DB trigger.
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -76,14 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      // User already registered
       if (error.message.toLowerCase().includes('already') || error.message.toLowerCase().includes('registered')) {
         return { error: null, emailExists: true };
       }
       return { error: error.message };
     }
 
-    // If user already exists (Supabase returns a fake user object without session)
     if (data.user && !data.session && data.user.id) {
       return { error: null, emailExists: true };
     }
@@ -91,13 +150,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsVerification: true };
   };
 
-  const signIn = async (email: string, password: string, remember?: boolean) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-      options: remember ? { } : { },
-    });
-    return { error: error ? error.message : null };
+  const signIn = async (email: string, password: string, _remember?: boolean) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      // Record failed login — but we don't have a user_id for failed attempts,
+      // so we skip recording here. Only successful logins are tracked.
+      return { error: error.message };
+    }
+
+    // Record successful login
+    if (data.user) {
+      // Load profile to get tenant info
+      const { data: prof } = await supabase.from('profiles')
+        .select('id, is_super_admin').eq('id', data.user.id).maybeSingle();
+      let tenantId: string | null = null;
+      if (!prof?.is_super_admin) {
+        const { data: mem } = await supabase.from('tenant_memberships')
+          .select('tenant_id').eq('user_id', data.user.id).limit(1).maybeSingle();
+        tenantId = mem?.tenant_id ?? null;
+      }
+      await recordLoginActivity(data.user.id, true, tenantId);
+    }
+
+    return { error: null };
   };
 
   const resetPassword = async (email: string) => {
@@ -116,7 +191,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null };
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); localStorage.removeItem('hc_active_tenant_id'); setProfile(null); setMemberships([]); setActiveTenant(null); };
+  const signOut = async () => {
+    if (user) {
+      // Find the most recent login to record logout
+      const { data: lastLogin } = await supabase.from('login_activity')
+        .select('login_at').eq('user_id', user.id).is('logout_at', null)
+        .order('login_at', { ascending: false }).limit(1).maybeSingle();
+      if (lastLogin) {
+        await recordLogout(user.id, new Date(lastLogin.login_at));
+      }
+    }
+    await supabase.auth.signOut();
+    localStorage.removeItem('hc_active_tenant_id');
+    setProfile(null); setMemberships([]); setActiveTenant(null);
+  };
+
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
   const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
 

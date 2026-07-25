@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Check, ArrowRight, CreditCard, Smartphone, Building2, AlertCircle, Clock, Download } from 'lucide-react';
-import { useAuth } from '../lib/auth';
+import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../components/brand';
@@ -67,6 +67,8 @@ function useAccessState(): { state: AccessState; daysLeft: number; graceDaysLeft
 export function TrialBanner() {
   const { daysLeft } = useAccessState();
   const { t } = useI18n();
+  const { profile, user } = useAuth();
+  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) return null;
   if (daysLeft <= 0 || daysLeft > 7) return null;
   const urgent = daysLeft <= 3;
   return (
@@ -83,6 +85,10 @@ export function TrialBanner() {
 export function BillingGate({ children }: { children: React.ReactNode }) {
   const { state, graceDaysLeft } = useAccessState();
   const { t } = useI18n();
+  const { profile, user } = useAuth();
+
+  // Super admins bypass all subscription requirements
+  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) return <>{children}</>;
 
   if (state === 'loading') return null;
   if (state === 'ok') return <>{children}</>;
