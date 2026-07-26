@@ -1,10 +1,17 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
-import { Logo, LangToggle } from '../components/brand';
+import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { useI18n } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
+
+// Coordonnées réelles de contact. CONTACT_PHONE volontairement vide tant qu'un
+// vrai numéro n'est pas fourni par LIYAH GROUP — mieux vaut ne pas afficher de
+// numéro que d'en afficher un faux ("+237 6XX XXX XXX").
+const CONTACT_EMAIL = 'contact@liyahgroup.com';
+const CONTACT_PHONE = ''; // TODO: renseigner le vrai numéro avant mise en production
+const CONTACT_ADDRESS = 'Douala, Cameroun';
 
 function StaticPageLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();
@@ -27,7 +34,7 @@ function StaticPageLayout({ children }: { children: ReactNode }) {
               <Heart size={18} className="text-white" fill="white" />
             </div>
           </div>
-          <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+          <CopyrightLine className="text-sm font-medium text-gray-300" />
         </div>
       </footer>
     </div>
@@ -112,9 +119,11 @@ export function ContactPage() {
       <p className="text-gray-500 mb-8">{t('page.contact.body')}</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <Card className="p-5 flex items-center gap-3"><Mail size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.email')}</p><p className="text-sm text-gray-500">contact@liyahgroup.com</p></div></Card>
-          <Card className="p-5 flex items-center gap-3"><Phone size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.phone')}</p><p className="text-sm text-gray-500">+237 6XX XXX XXX</p></div></Card>
-          <Card className="p-5 flex items-center gap-3"><MapPin size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.address')}</p><p className="text-sm text-gray-500">Douala, Cameroun</p></div></Card>
+          <Card className="p-5 flex items-center gap-3"><Mail size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.email')}</p><p className="text-sm text-gray-500">{CONTACT_EMAIL}</p></div></Card>
+          {CONTACT_PHONE && (
+            <Card className="p-5 flex items-center gap-3"><Phone size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.phone')}</p><p className="text-sm text-gray-500">{CONTACT_PHONE}</p></div></Card>
+          )}
+          <Card className="p-5 flex items-center gap-3"><MapPin size={20} className="text-blue-600" /><div><p className="text-sm font-medium text-gray-900">{t('page.contact.address')}</p><p className="text-sm text-gray-500">{CONTACT_ADDRESS}</p></div></Card>
         </div>
         <Card className="p-6">
           {sent ? (

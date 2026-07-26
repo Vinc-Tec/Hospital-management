@@ -23,6 +23,15 @@ export function Logo({ size = 36, variant = 'light' }: { size?: number; variant?
   );
 }
 
+export function CopyrightLine({ className = '' }: { className?: string }) {
+  const year = new Date().getFullYear();
+  return (
+    <p className={className}>
+      Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; {year} All Rights Reserved.
+    </p>
+  );
+}
+
 export function LangToggle({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const { lang, setLang } = useI18n();
   const base = variant === 'dark'
