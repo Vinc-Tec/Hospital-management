@@ -38,7 +38,7 @@ export type SubscriptionPlan = {
   id: string; code: string; name: string; price_monthly: number; price_yearly: number;
   max_users: number; max_doctors: number; max_patients: number;
   max_branches: number; max_storage_gb: number;
-  features: string[]; is_active: boolean; sort_order: number;
+  features: string[]; module_flags: Record<string, boolean>; is_active: boolean; sort_order: number;
 };
 
 export type TenantSubscription = {
@@ -169,6 +169,56 @@ export type Staff = {
 export type Notification = {
   id: string; tenant_id: string | null; user_id: string; title: string;
   body: string | null; type: string; read: boolean; created_at: string;
+};
+
+export type Surgery = {
+  id: string; tenant_id: string; patient_id: string; surgeon_id: string | null;
+  operating_room: string; procedure_name: string; scheduled_at: string; duration_minutes: number;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'postponed'; notes: string | null;
+};
+export type EmployeeRecord = {
+  id: string; tenant_id: string; staff_id: string;
+  contract_type: 'full_time' | 'part_time' | 'contractor' | 'intern';
+  hire_date: string; termination_date: string | null; base_salary: number; currency: string;
+  emergency_contact: string | null; notes: string | null;
+};
+export type LeaveRequest = {
+  id: string; tenant_id: string; staff_id: string;
+  leave_type: 'annual' | 'sick' | 'maternity' | 'paternity' | 'unpaid' | 'other';
+  start_date: string; end_date: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; reason: string | null;
+};
+export type Payslip = {
+  id: string; tenant_id: string; staff_id: string; period_month: string;
+  gross_salary: number; deductions: number; net_salary: number;
+  status: 'draft' | 'approved' | 'paid'; notes: string | null;
+};
+export type InventoryItem = {
+  id: string; tenant_id: string; name: string;
+  category: 'equipment' | 'consumable' | 'furniture' | 'it' | 'other';
+  sku: string | null; quantity: number; reorder_level: number; unit_price: number; location: string | null;
+};
+export type InsuranceClaim = {
+  id: string; tenant_id: string; patient_id: string; invoice_id: string | null;
+  provider_name: string; policy_number: string | null; claim_amount: number; approved_amount: number | null;
+  status: 'submitted' | 'under_review' | 'approved' | 'rejected' | 'paid'; notes: string | null; submitted_at: string;
+};
+export type TelemedicineSession = {
+  id: string; tenant_id: string; patient_id: string; doctor_id: string | null;
+  scheduled_at: string; video_link: string | null;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'; notes: string | null;
+};
+export type EmergencyCase = {
+  id: string; tenant_id: string; patient_id: string | null; walk_in_name: string | null;
+  triage_level: 'critical' | 'urgent' | 'standard' | 'minor'; chief_complaint: string; arrival_time: string;
+  status: 'waiting' | 'in_treatment' | 'admitted' | 'discharged' | 'deceased' | 'transferred'; notes: string | null;
+};
+export type Immunization = {
+  id: string; tenant_id: string; patient_id: string; vaccine_name: string; dose_number: number;
+  date_administered: string; next_due_date: string | null; administered_by: string | null; notes: string | null;
+};
+export type DischargeSummary = {
+  id: string; tenant_id: string; admission_id: string | null; patient_id: string; doctor_id: string | null;
+  summary: string; follow_up_instructions: string | null; referral_to: string | null; discharged_at: string;
 };
 
 export type Profile = { id: string; full_name: string | null; is_super_admin: boolean; email: string | null };
