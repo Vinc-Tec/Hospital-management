@@ -5,7 +5,7 @@ import {
   Check, X, AlertCircle, Eye, Ban, MessageSquarePlus, Users, TrendingUp,
   DollarSign, Ticket, UserPlus, Activity, Server, Bell, Settings as SettingsIcon,
   Cpu, FileBarChart, Wallet, HeadphonesIcon, Key, MapPin, Map,
-  Trash2, Search,
+  Trash2, Search, Menu,
 } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -45,6 +45,7 @@ export function SuperAdmin() {
   const { profile, user } = useAuth();
   const loc = useLocation();
   const [section, setSection] = useState(loc.hash.replace('#', '') || 'overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -126,11 +127,12 @@ export function SuperAdmin() {
 
   return (
     <div className="min-h-screen bg-gray-900 flex">
-      <aside className="w-64 bg-gray-900 text-gray-300 flex flex-col fixed lg:sticky top-0 h-screen z-40">
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`w-64 bg-gray-900 text-gray-300 flex flex-col fixed lg:sticky top-0 h-screen z-40 transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-16 flex items-center px-5 border-b border-gray-800 flex-shrink-0"><Logo size={30} /></div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {NAV.map((n) => (
-            <button key={n.key} onClick={() => setSection(n.key)} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm w-full transition-colors ${section === n.key ? 'bg-emerald-600/20 text-emerald-400 font-medium' : 'hover:bg-gray-800'}`}>
+            <button key={n.key} onClick={() => { setSection(n.key); setSidebarOpen(false); }} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm w-full transition-colors ${section === n.key ? 'bg-emerald-600/20 text-emerald-400 font-medium' : 'hover:bg-gray-800'}`}>
               <n.icon size={18} /> <span className="capitalize">{n.key.replace(/_/g, ' ')}</span>
             </button>
           ))}
@@ -141,8 +143,12 @@ export function SuperAdmin() {
       </aside>
 
       <div className="flex-1 min-w-0 bg-gray-50 flex flex-col">
-        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex items-center gap-3"><h1 className="font-semibold text-gray-900">{t('sa.title')}</h1><span className="text-xs text-gray-400">{user?.email}</span></div>
+        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100"><Menu size={20} /></button>
+            <h1 className="font-semibold text-gray-900">{t('sa.title')}</h1>
+            <span className="hidden sm:inline text-xs text-gray-400">{user?.email}</span>
+          </div>
           <LangToggle />
         </header>
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
