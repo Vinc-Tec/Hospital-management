@@ -164,7 +164,11 @@ export function Onboarding() {
       status: 'approved',
     };
 
-    const { data: tenant, error: e1 } = await supabase.from('tenants').insert({ ...payload, onboarding_completed: true }).select().single();
+    const { data: settings } = await supabase.from('platform_settings').select('trial_days').eq('id', true).single();
+    const trialDays = settings?.trial_days ?? 7;
+    const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: tenant, error: e1 } = await supabase.from('tenants').insert({ ...payload, trial_ends_at: trialEndsAt, onboarding_completed: true }).select().single();
     if (e1) { setErr(e1.message); setSubmitting(false); return; }
 
     const { error: e2 } = await supabase.from('tenant_memberships').insert({ tenant_id: tenant.id, user_id: user.id, role: 'admin', permissions: {} });

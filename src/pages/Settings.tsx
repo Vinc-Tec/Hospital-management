@@ -3,12 +3,12 @@ import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
 import { Button, Card, Input, Badge, Select } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon } from 'lucide-react';
 
 export function SettingsPage() {
   const { t } = useI18n();
   const { activeTenant, user, profile, refresh } = useAuth();
-  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches'>('general');
+  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support'>('general');
   const [form, setForm] = useState({ legal_name: '', commercial_name: '', email: '', phone: '', website: '', address: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,6 +49,7 @@ export function SettingsPage() {
     { key: 'profile' as const, icon: User, label: t('settings.profile') },
     { key: 'billing' as const, icon: CreditCard, label: t('settings.billing') },
     { key: 'branches' as const, icon: Building2, label: t('settings.branches') },
+    { key: 'support' as const, icon: HeadphonesIcon, label: t('settings.support') },
   ];
 
   return (
@@ -103,6 +104,81 @@ export function SettingsPage() {
       {tab === 'branches' && (
         <BranchesTab tenant={activeTenant} onUpdated={refresh} />
       )}
+
+      {tab === 'support' && <SupportTab />}
+    </div>
+  );
+}
+
+function SupportTab() {
+  const { t } = useI18n();
+  const { user, activeTenant } = useAuth();
+  const [tickets, setTickets] = useState<{ id: string; subject: string; description: string; priority: string; status: string; resolution: string | null; created_at: string }[]>([]);
+  const [form, setForm] = useState({ subject: '', description: '', priority: 'low' });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = () => {
+    supabase.from('support_tickets').select('*').eq('user_id', user!.id).order('created_at', { ascending: false })
+      .then(({ data }) => setTickets((data as typeof tickets) ?? []));
+  };
+  useEffect(() => { if (user) load(); }, [user]);
+
+  const submit = async () => {
+    if (!form.subject.trim()) return;
+    setSubmitting(true); setErr(null);
+    const { error } = await supabase.from('support_tickets').insert({
+      tenant_id: activeTenant?.id ?? null, user_id: user!.id,
+      subject: form.subject, description: form.description, priority: form.priority, status: 'open',
+    });
+    setSubmitting(false);
+    if (error) { setErr(error.message); return; }
+    setForm({ subject: '', description: '', priority: 'low' });
+    load();
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <Card className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">{t('settings.support_new_ticket')}</h3>
+        <div className="space-y-3">
+          <Input label={t('settings.support_subject')} required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+          <label className="block">
+            <span className="block text-sm font-medium text-gray-700 mb-1.5">{t('settings.support_description')}</span>
+            <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </label>
+          <Select label={t('settings.support_priority')} value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
+            options={[{ value: 'low', label: t('opt.low') }, { value: 'medium', label: t('opt.medium') }, { value: 'high', label: t('opt.high') }]} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <Button onClick={submit} loading={submitting}>{t('settings.support_submit')}</Button>
+        </div>
+      </Card>
+
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-3">{t('settings.support_my_tickets')}</h3>
+        {tickets.length === 0 ? (
+          <p className="text-sm text-gray-400">{t('common.none')}</p>
+        ) : (
+          <div className="space-y-3">
+            {tickets.map((tk) => (
+              <Card key={tk.id} className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-semibold text-gray-900">{tk.subject}</p>
+                  <Badge color={tk.status === 'open' ? 'blue' : tk.status === 'resolved' ? 'green' : 'gray'}>{tk.status}</Badge>
+                </div>
+                <p className="text-sm text-gray-500">{tk.description}</p>
+                {tk.resolution && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 text-sm text-emerald-800">
+                    <span className="font-medium">{t('settings.support_resolution')}: </span>{tk.resolution}
+                  </div>
+                )}
+                <p className="text-xs text-gray-300 mt-2">{new Date(tk.created_at).toLocaleString()}</p>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
