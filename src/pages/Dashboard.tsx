@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
-  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput,
+  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell,
 } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -57,6 +57,50 @@ function TrialDaysWidget({ tenant }: { tenant: any }) {
       <Clock size={13} />
       <span className="font-medium">{days}d trial left</span>
       <Link to="/app/settings" className="ml-auto underline text-blue-600 font-semibold">{t('billing.subscribe_now')}</Link>
+    </div>
+  );
+}
+
+function NotificationBell() {
+  const [notifications, setNotifications] = useState<{ id: string; title: string; message: string; created_at: string }[]>([]);
+  const [open, setOpen] = useState(false);
+  const [seenIds, setSeenIds] = useState<string[]>(() => JSON.parse(localStorage.getItem('hc_seen_notifications') || '[]'));
+
+  useEffect(() => {
+    supabase.from('platform_notifications').select('id, title, message, created_at, target')
+      .in('target', ['all', 'tenants']).order('created_at', { ascending: false }).limit(20)
+      .then(({ data }) => setNotifications((data as typeof notifications) ?? []));
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !seenIds.includes(n.id)).length;
+  const markAllSeen = () => {
+    const ids = notifications.map((n) => n.id);
+    setSeenIds(ids);
+    localStorage.setItem('hc_seen_notifications', JSON.stringify(ids));
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => { setOpen(!open); if (!open) markAllSeen(); }} className="relative p-1.5 rounded-lg hover:bg-gray-100">
+        <Bell size={18} className="text-gray-500" />
+        {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">{unreadCount}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-lg z-40">
+            {notifications.length === 0 ? (
+              <p className="text-sm text-gray-400 p-4 text-center">No notifications</p>
+            ) : notifications.map((n) => (
+              <div key={n.id} className="p-3 border-b border-gray-50 last:border-0">
+                <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                <p className="text-[10px] text-gray-300 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -161,6 +205,7 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <LangToggle />
             {isOverview && <Button size="sm" onClick={() => setAddOpen(true)}><Plus size={16} /> <span className="hidden sm:inline">{t('dash.quickadd.patient')}</span></Button>}
           </div>

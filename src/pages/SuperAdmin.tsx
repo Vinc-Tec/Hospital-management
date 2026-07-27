@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, CreditCard, Globe, ScrollText, ShieldCheck,
   Check, X, AlertCircle, Eye, Ban, MessageSquarePlus, Users, TrendingUp,
   DollarSign, Ticket, UserPlus, Activity, Server, Bell, Settings as SettingsIcon,
-  Cpu, FileBarChart, Wallet, HeadphonesIcon, Key, MapPin, Map,
+  FileBarChart, Wallet, HeadphonesIcon, Key, MapPin, Map,
   Trash2, Search, Menu,
 } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
@@ -35,7 +35,6 @@ const NAV = [
   { key: 'billing', icon: DollarSign },
   { key: 'reports', icon: FileBarChart },
   { key: 'analytics', icon: Activity },
-  { key: 'ai', icon: Cpu },
   { key: 'notifications', icon: Bell },
   { key: 'settings', icon: SettingsIcon },
 ];
@@ -170,7 +169,6 @@ export function SuperAdmin() {
           {section === 'billing' && <SaBilling tenants={tenants} plans={plans} billingInvoices={billingInvoices} />}
           {section === 'reports' && <SaReports tenants={tenants} plans={plans} logs={logs} />}
           {section === 'analytics' && <SaAnalytics tenants={tenants} loginActivity={loginActivity} />}
-          {section === 'ai' && <SaAiConfig />}
           {section === 'notifications' && <SaNotifications notifications={notifications} onAction={loadAll} />}
           {section === 'settings' && <SaSystemSettings />}
         </main>
@@ -649,6 +647,9 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
 
   return (
     <div>
+      <div className="mb-4 p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
+        ⚠️ Health Cloud does not yet expose a public API for external integrations. Keys generated here are stored but not currently validated against any endpoint -- this section is provisioned for a future public API and has no effect yet.
+      </div>
       <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Key size={16} /> Generate API Key</Button></div>
       <Card className="overflow-hidden">
         {apiKeys.length === 0 ? <div className="p-8"><EmptyState icon={Key} title={t('common.none')} /></div> : (
@@ -880,29 +881,6 @@ function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActiv
   );
 }
 
-function SaAiConfig() {
-  const [config, setConfig] = useState({ model: 'gpt-4o', temperature: '0.7', maxTokens: '2048', enabled: true });
-  const [saved, setSaved] = useState(false);
-  const save = async () => {
-    localStorage.setItem('hc_ai_config', JSON.stringify(config));
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
-  };
-  return (
-    <div className="max-w-2xl">
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-6"><Cpu size={24} className="text-blue-600" /><h3 className="font-semibold text-gray-900">AI Configuration</h3></div>
-        <div className="space-y-4">
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">Model</span><select value={config.model} onChange={(e) => setConfig({ ...config, model: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="gpt-4o">GPT-4o</option><option value="gpt-4o-mini">GPT-4o Mini</option><option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option></select></label>
-          <Input label="Temperature" type="number" value={config.temperature} onChange={(e) => setConfig({ ...config, temperature: e.target.value })} />
-          <Input label="Max Tokens" type="number" value={config.maxTokens} onChange={(e) => setConfig({ ...config, maxTokens: e.target.value })} />
-          <label className="flex items-center gap-2"><input type="checkbox" checked={config.enabled} onChange={(e) => setConfig({ ...config, enabled: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Enable AI features</span></label>
-          <Button onClick={save} className="w-full">Save Configuration</Button>
-          {saved && <p className="text-sm text-emerald-600 text-center">Configuration saved!</p>}
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 function SaNotifications({ notifications, onAction }: { notifications: any[]; onAction: () => void }) {
   const { t } = useI18n();
@@ -943,23 +921,46 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
 }
 
 function SaSystemSettings() {
-  const [settings, setSettings] = useState({ platformName: 'Health Cloud', supportEmail: 'support@healthcloud.app', trialDays: '7', maxTenants: '1000', maintenanceMode: false });
+  const [settings, setSettings] = useState<{ platform_name: string; support_email: string; trial_days: number; max_tenants: number | null; maintenance_mode: boolean; maintenance_message: string } | null>(null);
   const [saved, setSaved] = useState(false);
-  const save = async () => { localStorage.setItem('hc_system_settings', JSON.stringify(settings)); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('platform_settings').select('*').eq('id', true).single()
+      .then(({ data }) => data && setSettings({
+        platform_name: data.platform_name, support_email: data.support_email,
+        trial_days: data.trial_days, max_tenants: data.max_tenants,
+        maintenance_mode: data.maintenance_mode, maintenance_message: data.maintenance_message ?? '',
+      }));
+  }, []);
+
+  const save = async () => {
+    if (!settings) return;
+    setErr(null);
+    const { error } = await supabase.from('platform_settings').update({ ...settings, updated_at: new Date().toISOString() }).eq('id', true);
+    if (error) { setErr(error.message); return; }
+    setSaved(true); setTimeout(() => setSaved(false), 2000);
+  };
+
+  if (!settings) return <div className="max-w-2xl"><Card className="p-6 text-sm text-gray-400">Loading...</Card></div>;
+
   return (
     <div className="max-w-2xl">
       <Card className="p-6">
-        <div className="flex items-center gap-3 mb-6"><SettingsIcon size={24} className="text-gray-600" /><h3 className="font-semibold text-gray-900">System Settings</h3></div>
+        <div className="flex items-center gap-3 mb-2"><SettingsIcon size={24} className="text-gray-600" /><h3 className="font-semibold text-gray-900">System Settings</h3></div>
+        <p className="text-xs text-gray-400 mb-6">These settings are stored in the database and take effect immediately across the whole platform -- they are not just displayed, they are actually enforced (trial length on new signups, maintenance mode blocking non-admin access, the maximum tenant count).</p>
         <div className="space-y-4">
-          <Input label="Platform Name" value={settings.platformName} onChange={(e) => setSettings({ ...settings, platformName: e.target.value })} />
-          <Input label="Support Email" type="email" value={settings.supportEmail} onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })} />
+          <Input label="Platform Name" value={settings.platform_name} onChange={(e) => setSettings({ ...settings, platform_name: e.target.value })} />
+          <Input label="Support Email" type="email" value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Trial Days" type="number" value={settings.trialDays} onChange={(e) => setSettings({ ...settings, trialDays: e.target.value })} />
-            <Input label="Max Tenants" type="number" value={settings.maxTenants} onChange={(e) => setSettings({ ...settings, maxTenants: e.target.value })} />
+            <Input label="Trial Days (applies to new signups)" type="number" value={String(settings.trial_days)} onChange={(e) => setSettings({ ...settings, trial_days: parseInt(e.target.value) || 1 })} />
+            <Input label="Max Tenants (blank = unlimited)" type="number" value={settings.max_tenants === null ? '' : String(settings.max_tenants)} onChange={(e) => setSettings({ ...settings, max_tenants: e.target.value === '' ? null : parseInt(e.target.value) })} />
           </div>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={settings.maintenanceMode} onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Maintenance Mode</span></label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={settings.maintenance_mode} onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Maintenance Mode (blocks all non-super-admin access)</span></label>
+          {settings.maintenance_mode && <Input label="Maintenance message shown to users" value={settings.maintenance_message} onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })} />}
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={save} className="w-full">Save Settings</Button>
-          {saved && <p className="text-sm text-emerald-600 text-center">Settings saved!</p>}
+          {saved && <p className="text-sm text-emerald-600 text-center">Settings saved and now active platform-wide.</p>}
         </div>
       </Card>
     </div>

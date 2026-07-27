@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from './lib/auth';
+import { supabase } from './lib/supabase';
 import { I18nProvider, useI18n } from './lib/i18n';
 import { LandingPage } from './pages/Landing';
 import { AuthPage } from './pages/Auth';
@@ -25,15 +26,38 @@ function FullScreenLoader() {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
 }
 
+function useMaintenanceMode() {
+  const [state, setState] = useState<{ loading: boolean; active: boolean; message: string | null }>({ loading: true, active: false, message: null });
+  useEffect(() => {
+    supabase.from('platform_settings').select('maintenance_mode, maintenance_message').eq('id', true).single()
+      .then(({ data }) => setState({ loading: false, active: !!data?.maintenance_mode, message: data?.maintenance_message ?? null }));
+  }, []);
+  return state;
+}
+
+function MaintenanceScreen({ message }: { message: string | null }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Maintenance in progress</h1>
+        <p className="text-sm text-gray-500">{message || "Health Cloud is temporarily unavailable for scheduled maintenance. Please check back shortly."}</p>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading, activeTenant, profile } = useAuth();
-  if (loading) return <FullScreenLoader />;
+  const maintenance = useMaintenanceMode();
+  if (loading || maintenance.loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
 
-  // Super admins bypass onboarding, subscription, and tenant requirements
+  // Super admins bypass onboarding, subscription, tenant requirements, AND maintenance mode
   if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
     return <>{children}</>;
   }
+
+  if (maintenance.active) return <MaintenanceScreen message={maintenance.message} />;
 
   if (!activeTenant) return <Navigate to="/onboarding" replace />;
   return <BillingGate>{children}</BillingGate>;
