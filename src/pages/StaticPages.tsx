@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
+import { privacyPolicy, termsOfService } from '../lib/legalContent';
 import { useI18n } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
@@ -90,21 +91,45 @@ export function FeaturesPage() {
 }
 
 export function PrivacyPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const doc = privacyPolicy[lang];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('page.privacy.title')}</h1>
-      <Card className="p-6"><p className="text-gray-600 leading-relaxed">{t('page.privacy.body')}</p></Card>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.privacy.title')}</h1>
+      <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
+      <Card className="p-6 space-y-6">
+        <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
+        {doc.sections.map((s, i) => (
+          <div key={i}>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">{s.heading}</h2>
+            <div className="space-y-2">
+              {s.body.map((p, j) => <p key={j} className="text-sm text-gray-600 leading-relaxed">{p}</p>)}
+            </div>
+          </div>
+        ))}
+      </Card>
     </StaticPageLayout>
   );
 }
 
 export function TermsPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const doc = termsOfService[lang];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('page.terms.title')}</h1>
-      <Card className="p-6"><p className="text-gray-600 leading-relaxed">{t('page.terms.body')}</p></Card>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.terms.title')}</h1>
+      <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
+      <Card className="p-6 space-y-6">
+        <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
+        {doc.sections.map((s, i) => (
+          <div key={i}>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">{s.heading}</h2>
+            <div className="space-y-2">
+              {s.body.map((p, j) => <p key={j} className="text-sm text-gray-600 leading-relaxed">{p}</p>)}
+            </div>
+          </div>
+        ))}
+      </Card>
     </StaticPageLayout>
   );
 }

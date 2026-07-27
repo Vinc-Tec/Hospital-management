@@ -117,7 +117,7 @@ export type LabOrder = {
   id: string; tenant_id: string; patient_id: string; doctor_id: string | null;
   test_name: string; test_code: string | null;
   status: 'ordered' | 'collected' | 'resulted' | 'validated' | 'cancelled';
-  result: string | null; reference_values: string | null;
+  result: string | null; reference_values: string | null; attachment_path: string | null;
   ordered_at: string; resulted_at: string | null; created_at: string;
 };
 
@@ -125,7 +125,7 @@ export type RadiologyOrder = {
   id: string; tenant_id: string; patient_id: string; doctor_id: string | null;
   modality: string; body_part: string;
   status: 'ordered' | 'performed' | 'reported' | 'validated' | 'cancelled';
-  report: string | null; ordered_at: string; reported_at: string | null; created_at: string;
+  report: string | null; attachment_path: string | null; ordered_at: string; reported_at: string | null; created_at: string;
 };
 
 export type PharmacyItem = {
