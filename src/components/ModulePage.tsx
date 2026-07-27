@@ -3,9 +3,10 @@ import { Plus, Pencil, Trash2, Search, FileDown, Inbox } from 'lucide-react';
 import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
 import { useCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
+import { supabase } from '../lib/supabase';
 
 export type FieldDef = {
-  key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local';
+  key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local' | 'datalist' | 'file';
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string;
 };
 
@@ -31,6 +32,17 @@ export function ModulePage({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [delId, setDelId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+
+  const uploadFile = async (fieldKey: string, file: File) => {
+    setUploading(fieldKey); setUploadErr(null);
+    const path = `${tenantId}/${table}/${crypto.randomUUID()}-${file.name}`;
+    const { error } = await supabase.storage.from('clinical-attachments').upload(path, file, { upsert: false });
+    if (error) { setUploadErr(error.message); setUploading(null); return; }
+    setForm((f) => ({ ...f, [fieldKey]: path }));
+    setUploading(null);
+  };
 
   const filtered = useMemo(() => {
     if (!search) return crud.rows;
@@ -144,6 +156,25 @@ export function ModulePage({
           {formFields.map((f) => {
             const val = form[f.key] as string ?? '';
             if (f.type === 'textarea') return <textarea key={f.key} placeholder={f.placeholder ?? f.label} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} />;
+            if (f.type === 'file') return (
+              <label key={f.key} className="block">
+                <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
+                <input type="file" onChange={(e) => e.target.files?.[0] && uploadFile(f.key, e.target.files[0])}
+                  className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 file:text-sm file:font-medium hover:file:bg-blue-100" />
+                {uploading === f.key && <p className="text-xs text-blue-500 mt-1">{t('common.loading')}</p>}
+                {!!val && uploading !== f.key && <p className="text-xs text-emerald-600 mt-1">✓ {val.split('/').pop()}</p>}
+              </label>
+            );
+            if (f.type === 'datalist') return (
+              <label key={f.key} className="block">
+                <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
+                <input list={`${f.key}-list`} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <datalist id={`${f.key}-list`}>
+                  {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </datalist>
+              </label>
+            );
             if (f.type === 'select') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
@@ -156,6 +187,7 @@ export function ModulePage({
             return <Input key={f.key} label={f.label} required={f.required} type={f.type ?? 'text'} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />;
           })}
           {err && <p className="text-sm text-red-600">{err}</p>}
+          {uploadErr && <p className="text-sm text-red-600">{uploadErr}</p>}
         </div>
       </Modal>
 

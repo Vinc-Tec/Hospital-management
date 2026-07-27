@@ -6,7 +6,7 @@ import {
   Building2, Stethoscope, FlaskConical, Pill,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
-import { Logo, LangToggle } from '../components/brand';
+import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 
 export function LandingPage() {
   const { t } = useI18n();
@@ -359,8 +359,8 @@ export function LandingPage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.product')}</p>
               <ul className="space-y-2.5">
-                {[t('footer.features'), t('footer.pricing'), 'API'].map((item, i) => (
-                  <li key={i}><a href="#" className="text-sm text-white/50 hover:text-white transition-colors">{item}</a></li>
+                {[[t('footer.features'), '#features'], [t('footer.pricing'), '#plans']].map(([item, href], i) => (
+                  <li key={i}><a href={href} className="text-sm text-white/50 hover:text-white transition-colors">{item}</a></li>
                 ))}
               </ul>
             </div>
@@ -382,7 +382,7 @@ export function LandingPage() {
             </div>
           </div>
           <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-white/30">Health Cloud™ — Powered by LIYAH GROUP — © 2026 All Rights Reserved.</p>
+            <CopyrightLine className="text-xs text-white/30" />
             <LangToggle variant="dark" />
           </div>
         </div>

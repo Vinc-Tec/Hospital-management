@@ -4,8 +4,9 @@ import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
+  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput,
 } from 'lucide-react';
-import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
+import { useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
@@ -14,24 +15,34 @@ import { TrialBanner } from './Billing';
 import { Footer } from '../components/Footer';
 
 const NAV = [
-  { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview' },
-  { to: '/app/patients', icon: Users, key: 'dash.nav.patients' },
-  { to: '/app/appointments', icon: CalendarDays, key: 'dash.nav.appointments' },
-  { to: '/app/doctors', icon: Stethoscope, key: 'dash.nav.doctors' },
-  { to: '/app/records', icon: FileText, key: 'dash.nav.records' },
-  { to: '/app/consultations', icon: ClipboardList, key: 'dash.nav.consultations' },
-  { to: '/app/prescriptions', icon: Pill, key: 'dash.nav.prescriptions' },
-  { to: '/app/lab', icon: FlaskConical, key: 'dash.nav.lab' },
-  { to: '/app/radiology', icon: ScanLine, key: 'dash.nav.radiology' },
-  { to: '/app/pharmacy', icon: Pill, key: 'dash.nav.pharmacy' },
-  { to: '/app/beds', icon: BedDouble, key: 'dash.nav.beds' },
-  { to: '/app/admissions', icon: LogIn, key: 'dash.nav.admissions' },
-  { to: '/app/invoices', icon: Receipt, key: 'dash.nav.invoices' },
-  { to: '/app/reports', icon: FileBarChart, key: 'dash.nav.reports' },
-  { to: '/app/staff', icon: UserCog, key: 'dash.nav.staff' },
-  { to: '/app/roles', icon: ShieldCheck, key: 'dash.nav.roles' },
-  { to: '/app/performance', icon: TrendingUp, key: 'dash.nav.performance' },
-  { to: '/app/settings', icon: Settings, key: 'dash.nav.settings' },
+  { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview', moduleKey: 'overview' },
+  { to: '/app/patients', icon: Users, key: 'dash.nav.patients', moduleKey: 'patients' },
+  { to: '/app/appointments', icon: CalendarDays, key: 'dash.nav.appointments', moduleKey: 'appointments' },
+  { to: '/app/doctors', icon: Stethoscope, key: 'dash.nav.doctors', moduleKey: 'doctors' },
+  { to: '/app/records', icon: FileText, key: 'dash.nav.records', moduleKey: 'records' },
+  { to: '/app/consultations', icon: ClipboardList, key: 'dash.nav.consultations', moduleKey: 'consultations' },
+  { to: '/app/prescriptions', icon: Pill, key: 'dash.nav.prescriptions', moduleKey: 'prescriptions' },
+  { to: '/app/lab', icon: FlaskConical, key: 'dash.nav.lab', moduleKey: 'lab' },
+  { to: '/app/radiology', icon: ScanLine, key: 'dash.nav.radiology', moduleKey: 'radiology' },
+  { to: '/app/pharmacy', icon: Pill, key: 'dash.nav.pharmacy', moduleKey: 'pharmacy' },
+  { to: '/app/beds', icon: BedDouble, key: 'dash.nav.beds', moduleKey: 'beds' },
+  { to: '/app/admissions', icon: LogIn, key: 'dash.nav.admissions', moduleKey: 'admissions' },
+  { to: '/app/surgeries', icon: Scissors, key: 'dash.nav.surgeries', moduleKey: 'surgeries' },
+  { to: '/app/emergency', icon: Siren, key: 'dash.nav.emergency', moduleKey: 'emergency' },
+  { to: '/app/telemedicine', icon: Video, key: 'dash.nav.telemedicine', moduleKey: 'telemedicine' },
+  { to: '/app/immunizations', icon: Syringe, key: 'dash.nav.immunizations', moduleKey: 'immunizations' },
+  { to: '/app/discharge', icon: FileOutput, key: 'dash.nav.discharge', moduleKey: 'discharge' },
+  { to: '/app/insurance', icon: ShieldPlus, key: 'dash.nav.insurance', moduleKey: 'insurance' },
+  { to: '/app/invoices', icon: Receipt, key: 'dash.nav.invoices', moduleKey: 'invoices' },
+  { to: '/app/inventory', icon: Boxes, key: 'dash.nav.inventory', moduleKey: 'inventory' },
+  { to: '/app/reports', icon: FileBarChart, key: 'dash.nav.reports', moduleKey: 'reports' },
+  { to: '/app/staff', icon: UserCog, key: 'dash.nav.staff', moduleKey: 'staff' },
+  { to: '/app/hr', icon: Briefcase, key: 'dash.nav.hr', moduleKey: 'hr' },
+  { to: '/app/leave', icon: CalendarOff, key: 'dash.nav.leave', moduleKey: 'hr' },
+  { to: '/app/payroll', icon: Wallet, key: 'dash.nav.payroll', moduleKey: 'payroll' },
+  { to: '/app/roles', icon: ShieldCheck, key: 'dash.nav.roles', moduleKey: 'roles' },
+  { to: '/app/performance', icon: TrendingUp, key: 'dash.nav.performance', moduleKey: 'performance' },
+  { to: '/app/settings', icon: Settings, key: 'dash.nav.settings', moduleKey: 'settings' },
 ];
 
 function TrialDaysWidget({ tenant }: { tenant: any }) {
@@ -52,7 +63,7 @@ function TrialDaysWidget({ tenant }: { tenant: any }) {
 
 export function Dashboard() {
   const { t } = useI18n();
-  const { user, profile, activeTenant, signOut } = useAuth();
+  const { user, profile, activeTenant, activePlan, signOut } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -106,7 +117,7 @@ export function Dashboard() {
       <aside className={`fixed lg:sticky top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-16 flex items-center px-4 border-b border-gray-100 flex-shrink-0"><Logo size={32} /></div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-          {NAV.map((n) => {
+          {NAV.filter((n) => (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) || hasModuleAccess(activePlan, n.moduleKey)).map((n) => {
             const active = loc.pathname === n.to;
             return (
               <Link key={n.to} to={n.to} onClick={() => setSidebarOpen(false)}

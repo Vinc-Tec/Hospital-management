@@ -6,7 +6,7 @@ import { useI18n } from '../lib/i18n';
 import { useGeography } from '../lib/geography';
 import { supabase } from '../lib/supabase';
 import { Button, Input, Select, Card } from '../components/ui';
-import { Logo, LangToggle } from '../components/brand';
+import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 
 const STEPS = [
   { key: 'org', icon: Building2 },
@@ -204,7 +204,7 @@ export function Onboarding() {
         </div>
         <footer className="bg-gray-900 text-gray-400 py-6">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+            <CopyrightLine className="text-sm font-medium text-gray-300" />
           </div>
         </footer>
       </div>
@@ -436,7 +436,7 @@ export function Onboarding() {
 
       <footer className="bg-gray-900 text-gray-400 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+          <CopyrightLine className="text-sm font-medium text-gray-300" />
         </div>
       </footer>
     </div>

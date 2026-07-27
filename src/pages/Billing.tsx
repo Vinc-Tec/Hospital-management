@@ -4,7 +4,7 @@ import { Shield, Check, ArrowRight, CreditCard, Smartphone, Building2, AlertCirc
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
-import { Logo } from '../components/brand';
+import { Logo, CopyrightLine } from '../components/brand';
 import { Card, Button } from '../components/ui';
 
 type AccessState = 'loading' | 'ok' | 'grace' | 'expired';
@@ -233,7 +233,7 @@ function SubscriptionScreen() {
               {t('nav.signout')}
             </button>
           </div>
-          <p className="text-center text-white/30 text-xs mt-4">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+          <CopyrightLine className="text-center text-white/30 text-xs mt-4" />
         </div>
       </div>
     </div>

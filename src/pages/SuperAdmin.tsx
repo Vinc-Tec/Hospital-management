@@ -11,7 +11,7 @@ import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../lib/supabase';
 import { Button, Card, Input, Modal, Badge, EmptyState } from '../components/ui';
-import { Logo, LangToggle, StatusBadge } from '../components/brand';
+import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/brand';
 
 const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com', 'liyahjoha@gmail.com'];
 const PROTECTED_EMAILS = SUPER_ADMIN_EMAILS;
@@ -170,7 +170,7 @@ export function SuperAdmin() {
         </main>
         <footer className="bg-gray-900 text-gray-400 py-4 flex-shrink-0">
           <div className="text-center px-4">
-            <p className="text-sm font-medium text-gray-300">Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; 2026 All Rights Reserved.</p>
+            <CopyrightLine className="text-sm font-medium text-gray-300" />
           </div>
         </footer>
       </div>

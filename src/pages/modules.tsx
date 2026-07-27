@@ -90,10 +90,20 @@ export function AppointmentsModule({ tenantId }: { tenantId: string }) {
   return <ModulePage table="appointments" tenantId={tenantId} title={t('mod.appointments.title')} desc={t('mod.appointments.desc')} icon={CalendarDays} columns={cols} formFields={fields} />;
 }
 
+function useIcd10Reference(lang: 'fr' | 'en') {
+  const [rows, setRows] = useState<{ code: string; label_en: string; label_fr: string }[]>([]);
+  useEffect(() => {
+    supabase.from('icd10_reference').select('code, label_en, label_fr').order('code')
+      .then(({ data }) => setRows((data as typeof rows) ?? []));
+  }, []);
+  return rows.map((r) => ({ value: r.code, label: `${r.code} — ${lang === 'fr' ? r.label_fr : r.label_en}` }));
+}
+
 export function MedicalRecordsModule({ tenantId }: { tenantId: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const icd10Options = useIcd10Reference(lang);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'record_date', label: t('col.date') },
@@ -108,7 +118,7 @@ export function MedicalRecordsModule({ tenantId }: { tenantId: string }) {
     { key: 'history', label: t('fld.history'), type: 'textarea' },
     { key: 'examination', label: t('fld.examination'), type: 'textarea' },
     { key: 'diagnosis', label: t('fld.diagnosis'), type: 'textarea' },
-    { key: 'icd10_code', label: t('fld.icd10_code') },
+    { key: 'icd10_code', label: t('fld.icd10_code'), type: 'datalist', options: icd10Options, placeholder: t('fld.icd10_placeholder') },
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
   return <ModulePage table="medical_records" tenantId={tenantId} title={t('mod.records.title')} desc={t('mod.records.desc')} icon={FileText} columns={cols} formFields={fields}
@@ -136,10 +146,40 @@ export function ConsultationsModule({ tenantId }: { tenantId: string }) {
   return <ModulePage table="consultations" tenantId={tenantId} title={t('mod.consultations.title')} desc={t('mod.consultations.desc')} icon={ClipboardList} columns={cols} formFields={fields} />;
 }
 
+type DrugInteraction = { drug_a: string; drug_b: string; severity: 'minor' | 'moderate' | 'major'; description_en: string; description_fr: string };
+
+function useDrugInteractionWarnings(tenantId: string, lang: 'fr' | 'en') {
+  const { rows: prescriptions } = useCrud<Prescription>('prescriptions', tenantId);
+  const [interactions, setInteractions] = useState<DrugInteraction[]>([]);
+  useEffect(() => {
+    supabase.from('drug_interactions').select('drug_a, drug_b, severity, description_en, description_fr')
+      .then(({ data }) => setInteractions((data as DrugInteraction[]) ?? []));
+  }, []);
+
+  const activeByPatient = new Map<string, string[]>();
+  for (const rx of prescriptions) {
+    if (rx.status !== 'active' || !rx.medication) continue;
+    const list = activeByPatient.get(rx.patient_id) ?? [];
+    list.push(rx.medication.toLowerCase());
+    activeByPatient.set(rx.patient_id, list);
+  }
+
+  const warnings: { patientId: string; interaction: DrugInteraction }[] = [];
+  for (const [patientId, meds] of activeByPatient) {
+    for (const interaction of interactions) {
+      const hasA = meds.some((m) => m.includes(interaction.drug_a));
+      const hasB = meds.some((m) => m.includes(interaction.drug_b));
+      if (hasA && hasB) warnings.push({ patientId, interaction });
+    }
+  }
+  return warnings;
+}
+
 export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const warnings = useDrugInteractionWarnings(tenantId, lang as 'fr' | 'en');
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'medication', label: t('col.medication') },
@@ -156,8 +196,40 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'dispensed', 'cancelled'], t) },
   ];
-  return <ModulePage table="prescriptions" tenantId={tenantId} title={t('mod.prescriptions.title')} desc={t('mod.prescriptions.desc')} icon={Pill} columns={cols} formFields={fields}
-    pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
+  return (
+    <div>
+      {warnings.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {warnings.map((w, i) => (
+            <div key={i} className={`p-3 rounded-xl border text-sm flex items-start gap-2 ${w.interaction.severity === 'major' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+              <span className="text-lg leading-none">⚠️</span>
+              <div>
+                <p className="font-semibold">
+                  {t('rx.interaction_warning_title')} — {pMap.get(w.patientId)?.first_name ?? '—'} {pMap.get(w.patientId)?.last_name ?? ''} ({w.interaction.drug_a} + {w.interaction.drug_b})
+                </p>
+                <p>{lang === 'fr' ? w.interaction.description_fr : w.interaction.description_en}</p>
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-gray-400 italic">{t('rx.interaction_disclaimer')}</p>
+        </div>
+      )}
+      <ModulePage table="prescriptions" tenantId={tenantId} title={t('mod.prescriptions.title')} desc={t('mod.prescriptions.desc')} icon={Pill} columns={cols} formFields={fields}
+        pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />
+    </div>
+  );
+}
+
+function AttachmentLink({ path, label }: { path: string | null | undefined; label: string }) {
+  const [loading, setLoading] = useState(false);
+  if (!path) return <span className="text-sm text-gray-300">—</span>;
+  const open = async () => {
+    setLoading(true);
+    const { data } = await supabase.storage.from('clinical-attachments').createSignedUrl(path, 60);
+    setLoading(false);
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  };
+  return <button onClick={open} disabled={loading} className="text-sm text-blue-600 hover:underline flex items-center gap-1">📎 {loading ? '...' : label}</button>;
 }
 
 export function LabModule({ tenantId }: { tenantId: string }) {
@@ -169,6 +241,7 @@ export function LabModule({ tenantId }: { tenantId: string }) {
     { key: 'test_name', label: t('col.test') },
     { key: 'status', label: t('col.status') },
     { key: 'ordered_at', label: t('col.ordered') },
+    { key: 'attachment_path', label: t('col.attachment'), render: (r) => <AttachmentLink path={r.attachment_path as string} label={t('common.download')} /> },
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
@@ -178,6 +251,7 @@ export function LabModule({ tenantId }: { tenantId: string }) {
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['ordered', 'collected', 'resulted', 'validated', 'cancelled'], t) },
     { key: 'result', label: t('fld.result'), type: 'textarea' },
     { key: 'reference_values', label: t('fld.reference_values'), type: 'textarea' },
+    { key: 'attachment_path', label: t('fld.attachment'), type: 'file' },
   ];
   return <ModulePage table="lab_orders" tenantId={tenantId} title={t('mod.lab.title')} desc={t('mod.lab.desc')} icon={FlaskConical} columns={cols} formFields={fields}
     pdfAction={(row) => generateLabReportPDF(activeTenant!, row as unknown as LabOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
@@ -192,6 +266,7 @@ export function RadiologyModule({ tenantId }: { tenantId: string }) {
     { key: 'modality', label: t('col.modality') },
     { key: 'body_part', label: t('col.body_part') },
     { key: 'status', label: t('col.status') },
+    { key: 'attachment_path', label: t('col.attachment'), render: (r) => <AttachmentLink path={r.attachment_path as string} label={t('common.download')} /> },
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
@@ -200,6 +275,7 @@ export function RadiologyModule({ tenantId }: { tenantId: string }) {
     { key: 'body_part', label: t('fld.body_part'), required: true },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['ordered', 'performed', 'reported', 'validated', 'cancelled'], t) },
     { key: 'report', label: t('fld.report'), type: 'textarea' },
+    { key: 'attachment_path', label: t('fld.attachment'), type: 'file' },
   ];
   return <ModulePage table="radiology_orders" tenantId={tenantId} title={t('mod.radiology.title')} desc={t('mod.radiology.desc')} icon={ScanLine} columns={cols} formFields={fields}
     pdfAction={(row) => generateRadiologyReportPDF(activeTenant!, row as unknown as RadiologyOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;

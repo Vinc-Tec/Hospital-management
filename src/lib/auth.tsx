@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, type Profile, type Tenant, type Membership } from './supabase';
+import { supabase, type Profile, type Tenant, type Membership, type SubscriptionPlan } from './supabase';
 
 export const PROTECTED_SUPER_ADMIN_EMAILS = [
   'vincentnogue2@gmail.com',
@@ -13,9 +13,19 @@ export function isProtectedSuperAdminEmail(email: string | null | undefined): bo
   return !!email && PROTECTED_SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
 }
 
+// Modules that every plan (including no plan / trial) can always access.
+// Everything else must be explicitly enabled in the plan's module_flags.
+const ALWAYS_ALLOWED_MODULES = new Set(['overview', 'settings']);
+
+export function hasModuleAccess(plan: { module_flags?: Record<string, boolean> } | null, moduleKey: string): boolean {
+  if (ALWAYS_ALLOWED_MODULES.has(moduleKey)) return true;
+  if (!plan?.module_flags) return false;
+  return plan.module_flags[moduleKey] === true;
+}
+
 type AuthState = {
   session: Session | null; user: User | null; profile: Profile | null;
-  memberships: Membership[]; activeTenant: Tenant | null; loading: boolean;
+  memberships: Membership[]; activeTenant: Tenant | null; activePlan: SubscriptionPlan | null; loading: boolean;
   signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => void;
@@ -47,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
+  const [activePlan, setActivePlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndTenants = async (currentUser: User) => {
@@ -89,6 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; sub.subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!activeTenant?.plan_id) { setActivePlan(null); return; }
+    supabase.from('subscription_plans').select('*').eq('id', activeTenant.plan_id).maybeSingle()
+      .then(({ data }) => { if (mounted) setActivePlan((data as SubscriptionPlan) ?? null); });
+    return () => { mounted = false; };
+  }, [activeTenant?.plan_id]);
 
   const recordLoginActivity = async (userId: string, success: boolean, tenantId?: string | null, failureReason?: string) => {
     const ua = navigator.userAgent;
@@ -203,13 +222,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await supabase.auth.signOut();
     localStorage.removeItem('hc_active_tenant_id');
-    setProfile(null); setMemberships([]); setActiveTenant(null);
+    setProfile(null); setMemberships([]); setActiveTenant(null); setActivePlan(null);
   };
 
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
   const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, loading, signIn, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, loading]);
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activePlan, loading, signIn, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activePlan, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
