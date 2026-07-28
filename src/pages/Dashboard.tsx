@@ -90,7 +90,7 @@ function NotificationBell() {
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-lg z-40">
             {notifications.length === 0 ? (
-              <p className="text-sm text-gray-400 p-4 text-center">No notifications</p>
+              <p className="text-sm text-gray-400 p-4 text-center">{t('common.no_notifications')}</p>
             ) : notifications.map((n) => (
               <div key={n.id} className="p-3 border-b border-gray-50 last:border-0">
                 <p className="text-sm font-medium text-gray-900">{n.title}</p>
@@ -224,7 +224,7 @@ export function Dashboard() {
                   <div className="flex items-start gap-3">
                     <ShieldCheck size={24} className="text-emerald-600 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold text-emerald-800">Super Admin Access</p>
+                      <p className="font-semibold text-emerald-800">{t('dash.super_admin_access')}</p>
                       <p className="text-sm text-emerald-600 mt-1">You have unrestricted platform access. No subscription or onboarding is required. Use the Super Admin link in the sidebar to manage institutions, plans, and platform settings.</p>
                     </div>
                   </div>

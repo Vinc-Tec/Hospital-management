@@ -45,6 +45,10 @@ export function ModulePage({
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
   const uploadFile = async (fieldKey: string, file: File) => {
+    const MAX_SIZE = 20 * 1024 * 1024;
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (file.size > MAX_SIZE) { setUploadErr(t('upload.too_large')); return; }
+    if (!ALLOWED_TYPES.includes(file.type)) { setUploadErr(t('upload.bad_type')); return; }
     setUploading(fieldKey); setUploadErr(null);
     const path = `${tenantId}/${table}/${crypto.randomUUID()}-${file.name}`;
     const { error } = await supabase.storage.from('clinical-attachments').upload(path, file, { upsert: false });
@@ -173,7 +177,7 @@ export function ModulePage({
             if (f.type === 'file') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
-                <input type="file" onChange={(e) => e.target.files?.[0] && uploadFile(f.key, e.target.files[0])}
+                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => e.target.files?.[0] && uploadFile(f.key, e.target.files[0])}
                   className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 file:text-sm file:font-medium hover:file:bg-blue-100" />
                 {uploading === f.key && <p className="text-xs text-blue-500 mt-1">{t('common.loading')}</p>}
                 {!!val && uploading !== f.key && <p className="text-xs text-emerald-600 mt-1">✓ {val.split('/').pop()}</p>}

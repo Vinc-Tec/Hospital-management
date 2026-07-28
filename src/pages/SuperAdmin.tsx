@@ -205,7 +205,7 @@ function SaOverview({ stats, tenants, loginActivity }: { stats: { total: number;
           )}
         </Card>
         <Card className="p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Recent Logins</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('sa.recent_logins')}</h3>
           {loginActivity.length === 0 ? <EmptyState icon={Activity} title={t('common.none')} /> : (
             <div className="space-y-2">{loginActivity.slice(0, 10).map((la) => <div key={la.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p className="text-sm font-medium text-gray-900">{la.device} · {la.browser}</p><p className="text-xs text-gray-400">{new Date(la.login_at).toLocaleString()}</p></div><Badge color={la.success ? 'green' : 'red'}>{la.success ? 'Success' : 'Failed'}</Badge></div>)}</div>
           )}
@@ -289,7 +289,7 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Institution</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.institution')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.plan')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.status')}</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
               {tenants.map((tn) => (
                 <tr key={tn.id} className="hover:bg-gray-50/50">
@@ -329,13 +329,13 @@ function SaRevenue({ tenants, plans, billingInvoices }: { tenants: Tenant[]; pla
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><DollarSign size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">${totalMrr}</p><p className="text-sm text-gray-500">{t('sa.mrr')}</p></Card>
         <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><TrendingUp size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${totalArr}</p><p className="text-sm text-gray-500">{t('sa.arr')}</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><Wallet size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${collected}</p><p className="text-sm text-gray-500">Collected</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><AlertCircle size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">${outstanding}</p><p className="text-sm text-gray-500">Outstanding</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><Wallet size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${collected}</p><p className="text-sm text-gray-500">{t('sa.collected')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><AlertCircle size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">${outstanding}</p><p className="text-sm text-gray-500">{t('sa.outstanding')}</p></Card>
       </div>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Institution</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Monthly</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Yearly</th></tr></thead>
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.institution')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.plan')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.monthly')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.yearly')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
               {active.map((tn) => {
                 const plan = plans.find((p) => p.id === tn.plan_id);
@@ -449,9 +449,9 @@ function SaCities({ countries, regions, cities, onAction }: { countries: { id: s
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Add City</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_city')}</h3>
         <div className="space-y-3">
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">Region</span>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.region_single')}</span>
             <select value={form.region_id} onChange={(e) => setForm({ ...form, region_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
               <option value="">...</option>
               {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -479,7 +479,7 @@ function SaLocalities({ countries, regions, cities, localities, onAction }: { co
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Add Locality</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_locality')}</h3>
         <div className="space-y-3">
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">City</span>
             <select value={form.city_id} onChange={(e) => setForm({ ...form, city_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
@@ -531,7 +531,7 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
         {codes.length === 0 ? <div className="p-8"><EmptyState icon={Ticket} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Code</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Discount</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Uses</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+              <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.code')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.discount')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.uses')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.status')}</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {codes.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50/50">
@@ -568,7 +568,7 @@ function SaPayments({ billingInvoices, tenants }: { billingInvoices: any[]; tena
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead><tr className="bg-gray-50 border-b border-gray-100">{['Invoice #', 'Institution', 'Amount', 'Paid', 'Status', 'Due Date'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
+          <thead><tr className="bg-gray-50 border-b border-gray-100">{[t('common.invoice_no'), t('sa.institution'), t('common.amount'), t('common.paid'), t('common.status'), t('common.due_date')].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
           <tbody className="divide-y divide-gray-50">
             {billingInvoices.map((bi) => (
               <tr key={bi.id} className="hover:bg-gray-50/50">
@@ -612,14 +612,14 @@ function SaSupport({ tickets, onAction }: { tickets: any[]; onAction: () => void
                   <td className="px-4 py-3"><Badge color={tk.priority === 'high' ? 'red' : tk.priority === 'medium' ? 'amber' : 'gray'}>{tk.priority || 'low'}</Badge></td>
                   <td className="px-4 py-3"><Badge color={tk.status === 'open' ? 'blue' : tk.status === 'resolved' ? 'green' : 'gray'}>{tk.status}</Badge></td>
                   <td className="px-4 py-3 text-sm text-gray-600">{new Date(tk.created_at).toLocaleDateString()}</td>
-                  <td className="px-4 py-3"><Button size="sm" variant="outline" onClick={() => setSelected(tk)}>Respond</Button></td>
+                  <td className="px-4 py-3"><Button size="sm" variant="outline" onClick={() => setSelected(tk)}>{t('sa.respond')}</Button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
-      <Modal open={!!selected} onClose={() => setSelected(null)} title="Respond to Ticket" footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={respond}>Resolve</Button></>}>
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={t('sa.respond_to_ticket')} footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={respond}>{t('sa.resolve')}</Button></>}>
         {selected && (
           <div className="space-y-3">
             <p className="text-sm font-medium text-gray-900">{selected.subject}</p>
@@ -730,7 +730,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Super Admin</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
+            <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.name')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.email')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.super_admin_label')}</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
               {profiles.map((p) => {
                 const isProtected = PROTECTED_EMAILS.includes((p.email ?? '').toLowerCase());
@@ -741,7 +741,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Badge color={p.is_super_admin ? 'green' : 'gray'}>{p.is_super_admin ? 'Yes' : 'No'}</Badge>
-                        {isProtected && <Badge color="blue">Protected</Badge>}
+                        {isProtected && <Badge color="blue">{t('sa.protected')}</Badge>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -761,7 +761,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
           <Input label={t('common.name')} required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           <Input label={t('col.email')} type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <Input label={t('auth.password')} type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_super_admin} onChange={(e) => setForm({ ...form, is_super_admin: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Super Admin</span></label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_super_admin} onChange={(e) => setForm({ ...form, is_super_admin: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">{t('sa.super_admin_label')}</span></label>
         </div>
       </Modal>
     </div>
@@ -793,14 +793,14 @@ function SaBilling({ tenants, plans, billingInvoices }: { tenants: Tenant[]; pla
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><DollarSign size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${totalCollected}</p><p className="text-sm text-gray-500">Total Collected</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><AlertCircle size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">${totalOutstanding}</p><p className="text-sm text-gray-500">Outstanding</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><Building2 size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{billingInvoices.length}</p><p className="text-sm text-gray-500">Total Invoices</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><DollarSign size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">${totalCollected}</p><p className="text-sm text-gray-500">{t('sa.total_collected')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><AlertCircle size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">${totalOutstanding}</p><p className="text-sm text-gray-500">{t('sa.outstanding')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><Building2 size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{billingInvoices.length}</p><p className="text-sm text-gray-500">{t('sa.total_invoices')}</p></Card>
       </div>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="bg-gray-50 border-b border-gray-100">{['Invoice #', 'Institution', 'Amount', 'Status', 'Due Date'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
+            <thead><tr className="bg-gray-50 border-b border-gray-100">{[t('common.invoice_no'), t('sa.institution'), t('common.amount'), t('common.status'), t('common.due_date')].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-50">
               {billingInvoices.map((bi) => {
                 const tn = tenants.find((t) => t.id === bi.tenant_id);
@@ -834,7 +834,7 @@ function SaReports({ tenants, plans, logs }: { tenants: Tenant[]; plans: Subscri
         ))}
       </div>
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Plan Distribution</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.plan_distribution')}</h3>
         <div className="space-y-2">
           {plans.map((p) => {
             const count = tenants.filter((tn) => tn.plan_id === p.id).length;
@@ -862,18 +862,18 @@ function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActiv
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><Activity size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">{loginActivity.length}</p><p className="text-sm text-gray-500">Total Logins</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><Check size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{successful}</p><p className="text-sm text-gray-500">Successful</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><X size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">{failed}</p><p className="text-sm text-gray-500">Failed</p></Card>
-        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-amber-50"><Building2 size={20} className="text-amber-600" /></div><p className="text-2xl font-bold text-gray-900">{tenants.length}</p><p className="text-sm text-gray-500">Institutions</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-50"><Activity size={20} className="text-emerald-600" /></div><p className="text-2xl font-bold text-gray-900">{loginActivity.length}</p><p className="text-sm text-gray-500">{t('sa.total_logins')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-blue-50"><Check size={20} className="text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{successful}</p><p className="text-sm text-gray-500">{t('sa.successful')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-red-50"><X size={20} className="text-red-600" /></div><p className="text-2xl font-bold text-gray-900">{failed}</p><p className="text-sm text-gray-500">{t('sa.failed')}</p></Card>
+        <Card className="p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-amber-50"><Building2 size={20} className="text-amber-600" /></div><p className="text-2xl font-bold text-gray-900">{tenants.length}</p><p className="text-sm text-gray-500">{t('sa.institutions_label')}</p></Card>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">By Device</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('sa.by_device')}</h3>
           <div className="space-y-2">{Object.entries(byDevice).map(([k, v]) => <div key={k} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><span className="text-sm text-gray-600">{k}</span><Badge color="gray">{v}</Badge></div>)}</div>
         </Card>
         <Card className="p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">By Browser</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('sa.by_browser')}</h3>
           <div className="space-y-2">{Object.entries(byBrowser).map(([k, v]) => <div key={k} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><span className="text-sm text-gray-600">{k}</span><Badge color="gray">{v}</Badge></div>)}</div>
         </Card>
       </div>
@@ -913,7 +913,7 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
         <div className="space-y-3">
           <Input label="Title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Input label="Message" required value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">Target</span><select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="all">All Users</option><option value="admins">Admins Only</option><option value="tenants">All Tenants</option></select></label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.target')}</span><select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="all">{t('sa.all_users')}</option><option value="admins">{t('sa.admins_only')}</option><option value="tenants">{t('sa.all_tenants_target')}</option></select></label>
         </div>
       </Modal>
     </div>
@@ -921,6 +921,7 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
 }
 
 function SaSystemSettings() {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<{ platform_name: string; support_email: string; trial_days: number; max_tenants: number | null; maintenance_mode: boolean; maintenance_message: string } | null>(null);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -947,7 +948,7 @@ function SaSystemSettings() {
   return (
     <div className="max-w-2xl">
       <Card className="p-6">
-        <div className="flex items-center gap-3 mb-2"><SettingsIcon size={24} className="text-gray-600" /><h3 className="font-semibold text-gray-900">System Settings</h3></div>
+        <div className="flex items-center gap-3 mb-2"><SettingsIcon size={24} className="text-gray-600" /><h3 className="font-semibold text-gray-900">{t('sa.system_settings')}</h3></div>
         <p className="text-xs text-gray-400 mb-6">These settings are stored in the database and take effect immediately across the whole platform -- they are not just displayed, they are actually enforced (trial length on new signups, maintenance mode blocking non-admin access, the maximum tenant count).</p>
         <div className="space-y-4">
           <Input label="Platform Name" value={settings.platform_name} onChange={(e) => setSettings({ ...settings, platform_name: e.target.value })} />
@@ -959,7 +960,7 @@ function SaSystemSettings() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={settings.maintenance_mode} onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Maintenance Mode (blocks all non-super-admin access)</span></label>
           {settings.maintenance_mode && <Input label="Maintenance message shown to users" value={settings.maintenance_message} onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })} />}
           {err && <p className="text-sm text-red-600">{err}</p>}
-          <Button onClick={save} className="w-full">Save Settings</Button>
+          <Button onClick={save} className="w-full">{t('sa.save_settings')}</Button>
           {saved && <p className="text-sm text-emerald-600 text-center">Settings saved and now active platform-wide.</p>}
         </div>
       </Card>
