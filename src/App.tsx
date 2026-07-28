@@ -1,26 +1,83 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState, Suspense, lazy, Component } from 'react';
 import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from './lib/auth';
 import { supabase } from './lib/supabase';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown, info: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('Unhandled UI error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+            <p className="text-sm text-gray-500 mb-6">An unexpected error occurred. Reloading the page usually fixes it.</p>
+            <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { I18nProvider, useI18n } from './lib/i18n';
-import { LandingPage } from './pages/Landing';
-import { AuthPage } from './pages/Auth';
-import { Onboarding } from './pages/Onboarding';
-import { Dashboard } from './pages/Dashboard';
-import { SuperAdmin } from './pages/SuperAdmin';
+
+const LandingPage = lazy(() => import('./pages/Landing').then((m) => ({ default: m.LandingPage })));
+const AuthPage = lazy(() => import('./pages/Auth').then((m) => ({ default: m.AuthPage })));
+const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const SuperAdmin = lazy(() => import('./pages/SuperAdmin').then((m) => ({ default: m.SuperAdmin })));
+const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
+const AboutPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.AboutPage })));
+const FeaturesPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.FeaturesPage })));
+const PrivacyPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.TermsPage })));
+const ContactPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.ContactPage })));
+
+// BillingGate/TrialBanner stay eagerly loaded: they wrap every authenticated
+// route and are needed immediately, so splitting them out would just move
+// the same code into a different chunk fetched at the same time.
 import { BillingGate, TrialBanner } from './pages/Billing';
-import {
-  PatientsModule, DoctorsModule, AppointmentsModule, MedicalRecordsModule,
-  ConsultationsModule, PrescriptionsModule, LabModule, RadiologyModule,
-  PharmacyModule, BedsModule, AdmissionsModule, InvoicesModule, StaffModule, RolesModule,
-  ReportsModule, PerformanceModule,
-} from './pages/modules';
-import {
-  SurgeriesModule, HRModule, LeaveModule, PayrollModule, InventoryModule,
-  InsuranceModule, TelemedicineModule, EmergencyModule, ImmunizationsModule, DischargeModule,
-} from './pages/modules_extra';
-import { SettingsPage } from './pages/Settings';
-import { AboutPage, FeaturesPage, PrivacyPage, TermsPage, ContactPage } from './pages/StaticPages';
+
+const PatientsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.PatientsModule })));
+const DoctorsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.DoctorsModule })));
+const AppointmentsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.AppointmentsModule })));
+const MedicalRecordsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.MedicalRecordsModule })));
+const ConsultationsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.ConsultationsModule })));
+const PrescriptionsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.PrescriptionsModule })));
+const LabModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.LabModule })));
+const RadiologyModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.RadiologyModule })));
+const PharmacyModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.PharmacyModule })));
+const BedsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.BedsModule })));
+const AdmissionsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.AdmissionsModule })));
+const InvoicesModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.InvoicesModule })));
+const StaffModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.StaffModule })));
+const RolesModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.RolesModule })));
+const ReportsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.ReportsModule })));
+const PerformanceModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.PerformanceModule })));
+
+const SurgeriesModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.SurgeriesModule })));
+const HRModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.HRModule })));
+const LeaveModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.LeaveModule })));
+const PayrollModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.PayrollModule })));
+const InventoryModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.InventoryModule })));
+const InsuranceModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.InsuranceModule })));
+const TelemedicineModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.TelemedicineModule })));
+const EmergencyModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.EmergencyModule })));
+const ImmunizationsModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.ImmunizationsModule })));
+const DischargeModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.DischargeModule })));
 
 function FullScreenLoader() {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
@@ -111,7 +168,8 @@ function AppRoutes() {
   const { activeTenant } = useAuth();
   const tid = activeTenant?.id ?? '';
   return (
-    <Routes>
+    <Suspense fallback={<FullScreenLoader />}>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<AuthPage mode="signin" />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
@@ -153,18 +211,21 @@ function AppRoutes() {
       </Route>
       <Route path="/admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
 export default function App() {
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
