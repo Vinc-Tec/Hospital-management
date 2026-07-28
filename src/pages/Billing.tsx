@@ -99,6 +99,27 @@ export function BillingGate({ children }: { children: React.ReactNode }) {
 function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
   const { t } = useI18n();
   const { activeTenant, signOut } = useAuth();
+  const [exporting, setExporting] = useState(false);
+
+  const exportData = async () => {
+    if (!activeTenant) return;
+    setExporting(true);
+    const tables = ['patients', 'doctors', 'appointments', 'invoices', 'medical_records', 'prescriptions'];
+    const bundle: Record<string, unknown> = { exported_at: new Date().toISOString(), tenant: activeTenant.legal_name };
+    for (const table of tables) {
+      const { data } = await supabase.from(table).select('*').eq('tenant_id', activeTenant.id).limit(10000);
+      bundle[table] = data ?? [];
+    }
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeTenant.legal_name.replace(/\s+/g, '_')}_export_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl border border-red-100 p-10 text-center">
@@ -111,9 +132,9 @@ function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
           <Link to="/app/settings" className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors text-center">
             {t('billing.subscribe_now')}
           </Link>
-          <button className="flex items-center justify-center gap-2 w-full py-3 border border-gray-200 text-gray-600 font-medium rounded-2xl hover:bg-gray-50 transition-colors">
+          <button onClick={exportData} disabled={exporting} className="flex items-center justify-center gap-2 w-full py-3 border border-gray-200 text-gray-600 font-medium rounded-2xl hover:bg-gray-50 transition-colors disabled:opacity-50">
             <Download size={16} />
-            {t('billing.export_data')}
+            {exporting ? t('common.loading') : t('billing.export_data')}
           </button>
           <button onClick={signOut} className="text-sm text-gray-400 hover:text-gray-600 mt-2">{t('nav.signout')}</button>
         </div>

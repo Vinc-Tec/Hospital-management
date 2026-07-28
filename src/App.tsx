@@ -17,13 +17,17 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
   render() {
     if (this.state.hasError) {
+      const lang = (localStorage.getItem('hc_lang') || 'fr') === 'fr' ? 'fr' : 'en';
+      const copy = lang === 'fr'
+        ? { title: 'Une erreur est survenue', body: "Un problème inattendu s'est produit. Recharger la page résout généralement ce souci.", cta: 'Recharger' }
+        : { title: 'Something went wrong', body: 'An unexpected error occurred. Reloading the page usually fixes it.', cta: 'Reload' };
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
           <div className="max-w-md text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-            <p className="text-sm text-gray-500 mb-6">An unexpected error occurred. Reloading the page usually fixes it.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{copy.title}</h1>
+            <p className="text-sm text-gray-500 mb-6">{copy.body}</p>
             <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">
-              Reload
+              {copy.cta}
             </button>
           </div>
         </div>
@@ -93,11 +97,12 @@ function useMaintenanceMode() {
 }
 
 function MaintenanceScreen({ message }: { message: string | null }) {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Maintenance in progress</h1>
-        <p className="text-sm text-gray-500">{message || "Health Cloud is temporarily unavailable for scheduled maintenance. Please check back shortly."}</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('maintenance.title')}</h1>
+        <p className="text-sm text-gray-500">{message || t('maintenance.default_message')}</p>
       </div>
     </div>
   );
