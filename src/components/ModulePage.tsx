@@ -1,7 +1,7 @@
-import { type ReactNode, useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, FileDown, Inbox } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
+import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
-import { useCrud } from '../lib/useCrud';
+import { usePaginatedCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
 
@@ -12,9 +12,18 @@ export type FieldDef = {
 
 export type ColumnDef = {
   key: string; label: string; render?: (row: any) => ReactNode;
+  searchKeys?: string[]; // real DB columns this displayed column searches, if different from `key` (e.g. a combined "name" column backed by first_name + last_name)
 };
 
 type Row = { id: string; [k: string]: unknown };
+
+// Columns whose underlying Postgres type can't be filtered with ILIKE
+// (uuid foreign keys, timestamps/dates) are excluded from server-side
+// search -- this is a naming-convention heuristic (every such column in
+// this schema ends in _id, _at, or _date), not per-column type metadata.
+function isSearchableColumn(key: string) {
+  return !/_id$|_at$|_date$/.test(key);
+}
 
 export function ModulePage({
   table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction,
@@ -24,8 +33,8 @@ export function ModulePage({
   pdfAction?: (row: any) => void;
 }) {
   const { t } = useI18n();
-  const crud = useCrud<Row>(table, tenantId);
-  const [search, setSearch] = useState('');
+  const searchableColumns = columns.flatMap((c) => c.searchKeys ?? [c.key]).filter(isSearchableColumn);
+  const crud = usePaginatedCrud<Row>(table, tenantId, searchableColumns);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
@@ -44,11 +53,7 @@ export function ModulePage({
     setUploading(null);
   };
 
-  const filtered = useMemo(() => {
-    if (!search) return crud.rows;
-    const q = search.toLowerCase();
-    return crud.rows.filter((r) => columns.some((c) => String(r[c.key] ?? '').toLowerCase().includes(q)));
-  }, [crud.rows, search, columns]);
+  const filtered = crud.rows;
 
   const openAdd = () => {
     setEditing(null);
@@ -108,7 +113,7 @@ export function ModulePage({
         <div className="p-4 border-b border-gray-100">
           <div className="relative max-w-sm">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={crud.search} onChange={(e) => crud.setSearch(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
         {crud.loading ? (
@@ -144,6 +149,15 @@ export function ModulePage({
           </div>
         )}
         {crud.error && <div className="p-4 text-sm text-red-600 bg-red-50">{crud.error}</div>}
+        {!crud.loading && crud.totalCount > crud.pageSize && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
+            <span>{crud.page * crud.pageSize + 1}–{Math.min((crud.page + 1) * crud.pageSize, crud.totalCount)} / {crud.totalCount}</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => crud.setPage(crud.page - 1)} disabled={!crud.hasPrevPage} className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50"><ChevronLeft size={16} /></button>
+              <button onClick={() => crud.setPage(crud.page + 1)} disabled={!crud.hasNextPage} className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50"><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('common.edit') : t('common.add')} footer={

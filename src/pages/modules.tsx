@@ -28,7 +28,7 @@ const statusOpts = (keys: string[], t: (k: string) => string) =>
 export function PatientsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
     { key: 'gender', label: t('col.gender') },
     { key: 'phone', label: t('col.phone') },
     { key: 'email', label: t('col.email') },
@@ -50,7 +50,7 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
 export function DoctorsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
     { key: 'specialty', label: t('col.specialty') },
     { key: 'phone', label: t('col.phone') },
     { key: 'email', label: t('col.email') },
@@ -377,7 +377,7 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
 export function StaffModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
     { key: 'role', label: t('col.role') },
     { key: 'department', label: t('col.department') },
     { key: 'phone', label: t('col.phone') },
