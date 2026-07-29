@@ -10,7 +10,8 @@ import {
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../lib/supabase';
-import { Button, Card, Input, Modal, Badge, EmptyState } from '../components/ui';
+import { Button, Card, Input, Modal, Badge, EmptyState, Select } from '../components/ui';
+import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/brand';
 
 const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com', 'liyahjoha@gmail.com'];
@@ -662,11 +663,14 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', scopes: 'read' });
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
 
   const createKey = async () => {
-    const keyValue = `hck_${crypto.randomUUID().replace(/-/g, '')}`;
-    await supabase.from('api_keys').insert({ name: form.name, key_hash: btoa(keyValue).slice(0, 64), scopes: form.scopes.split(','), is_active: true });
+    const keyValue = generateApiKey();
+    const hash = await sha256Hex(keyValue);
+    await supabase.from('api_keys').insert({ name: form.name, key_hash: hash, scopes: form.scopes.split(','), is_active: true });
     setForm({ name: '', scopes: 'read' }); setOpen(false); onAction();
+    setRevealedKey(keyValue);
   };
 
   const toggle = async (k: any) => { await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id); onAction(); };
@@ -674,14 +678,14 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
   return (
     <div>
       <div className="mb-4 p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
-        ⚠️ Health Cloud does not yet expose a public API for external integrations. Keys generated here are stored but not currently validated against any endpoint -- this section is provisioned for a future public API and has no effect yet.
+        {t('sa.api_disclaimer')}
       </div>
-      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Key size={16} /> Generate API Key</Button></div>
+      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Key size={16} /> {t('sa.generate_api_key')}</Button></div>
       <Card className="overflow-hidden">
         {apiKeys.length === 0 ? <div className="p-8"><EmptyState icon={Key} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-gray-50 border-b border-gray-100">{['Name', 'Scopes', 'Status', t('common.actions')].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
+              <thead><tr className="bg-gray-50 border-b border-gray-100">{[t('common.name'), t('sa.scopes'), t('common.status'), t('common.actions')].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {apiKeys.map((k) => (
                   <tr key={k.id} className="hover:bg-gray-50/50">
@@ -696,10 +700,17 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
           </div>
         )}
       </Card>
-      <Modal open={open} onClose={() => setOpen(false)} title="Generate API Key" footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={createKey}>{t('common.save')}</Button></>}>
+      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.generate_api_key')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={createKey}>{t('common.save')}</Button></>}>
         <div className="space-y-3">
-          <Input label="Key Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input label="Scopes (comma-separated)" value={form.scopes} onChange={(e) => setForm({ ...form, scopes: e.target.value })} />
+          <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Select label={t('sa.scopes')} value={form.scopes} onChange={(e) => setForm({ ...form, scopes: e.target.value })}
+            options={[{ value: 'read', label: t('sa.scope_read') }, { value: 'read,write', label: t('sa.scope_read_write') }]} />
+        </div>
+      </Modal>
+      <Modal open={!!revealedKey} onClose={() => setRevealedKey(null)} title={t('sa.key_generated')} footer={<Button onClick={() => setRevealedKey(null)}>{t('sa.key_saved_it')}</Button>}>
+        <div className="space-y-3">
+          <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-xl">{t('sa.key_shown_once')}</p>
+          <code className="block p-3 bg-gray-900 text-emerald-400 rounded-xl text-sm break-all select-all">{revealedKey}</code>
         </div>
       </Modal>
     </div>
