@@ -1,7 +1,22 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
+
+// Error monitoring: inactive by default. Set VITE_SENTRY_DSN (in a .env
+// file or your hosting provider's environment variables) to a real
+// Sentry project DSN to turn this on -- until then, this silently does
+// nothing rather than throwing or logging noise. No Sentry account is
+// created or required by this code; you provide the DSN once you have one.
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 0.1,
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

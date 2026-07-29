@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../lib/auth';
+import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
-import { Button, Card, Input, Badge, Select } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck } from 'lucide-react';
+import { Button, Card, Input, Badge, Select, Modal } from '../components/ui';
+import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key } from 'lucide-react';
+import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 
 export function SettingsPage() {
   const { t } = useI18n();
-  const { activeTenant, user, profile, refresh } = useAuth();
-  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support'>('general');
+  const { activeTenant, activePlan, user, profile, refresh } = useAuth();
+  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support' | 'api'>('general');
   const [form, setForm] = useState({ legal_name: '', commercial_name: '', email: '', phone: '', website: '', address: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -50,6 +51,7 @@ export function SettingsPage() {
     { key: 'billing' as const, icon: CreditCard, label: t('settings.billing') },
     { key: 'branches' as const, icon: Building2, label: t('settings.branches') },
     { key: 'support' as const, icon: HeadphonesIcon, label: t('settings.support') },
+    ...(hasModuleAccess(activePlan, 'api') ? [{ key: 'api' as const, icon: Key, label: t('settings.api') }] : []),
   ];
 
   return (
@@ -109,6 +111,83 @@ export function SettingsPage() {
       )}
 
       {tab === 'support' && <SupportTab />}
+      {tab === 'api' && <ApiTab tenantId={activeTenant.id} />}
+    </div>
+  );
+}
+
+function ApiTab({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
+  const [keys, setKeys] = useState<{ id: string; name: string; scopes: string[]; is_active: boolean; last_used_at: string | null; created_at: string }[]>([]);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', scopes: 'read' });
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = () => {
+    supabase.from('api_keys').select('id, name, scopes, is_active, last_used_at, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false })
+      .then(({ data }) => setKeys((data as typeof keys) ?? []));
+  };
+  useEffect(() => { load(); }, [tenantId]);
+
+  const createKey = async () => {
+    setErr(null);
+    const keyValue = generateApiKey();
+    const hash = await sha256Hex(keyValue);
+    const { error } = await supabase.from('api_keys').insert({ name: form.name, key_hash: hash, scopes: form.scopes.split(','), is_active: true, tenant_id: tenantId });
+    if (error) { setErr(error.message); return; }
+    setForm({ name: '', scopes: 'read' }); setOpen(false); load();
+    setRevealedKey(keyValue);
+  };
+
+  const toggle = async (k: { id: string; is_active: boolean }) => {
+    await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id);
+    load();
+  };
+
+  const remove = async (id: string) => {
+    await supabase.from('api_keys').delete().eq('id', id);
+    load();
+  };
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 text-sm text-blue-800">{t('settings.api_desc')}</div>
+      <div className="flex justify-end"><Button onClick={() => setOpen(true)}><Key size={16} /> {t('sa.generate_api_key')}</Button></div>
+      {keys.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-gray-400">{t('common.none')}</Card>
+      ) : (
+        <div className="space-y-3">
+          {keys.map((k) => (
+            <Card key={k.id} className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{k.name}</p>
+                <p className="text-xs text-gray-400">{Array.isArray(k.scopes) ? k.scopes.join(', ') : k.scopes} — {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : t('settings.api_never_used')}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge color={k.is_active ? 'green' : 'gray'}>{k.is_active ? t('opt.active') : t('opt.inactive')}</Badge>
+                <Button size="sm" variant="outline" onClick={() => toggle(k)}>{k.is_active ? t('sa.deactivate') : t('sa.activate')}</Button>
+                <Button size="sm" variant="outline" onClick={() => remove(k.id)}><Trash2 size={14} /></Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.generate_api_key')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={createKey}>{t('common.save')}</Button></>}>
+        <div className="space-y-3">
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Select label={t('sa.scopes')} value={form.scopes} onChange={(e) => setForm({ ...form, scopes: e.target.value })}
+            options={[{ value: 'read', label: t('sa.scope_read') }, { value: 'read,write', label: t('sa.scope_read_write') }]} />
+        </div>
+      </Modal>
+      <Modal open={!!revealedKey} onClose={() => setRevealedKey(null)} title={t('sa.key_generated')} footer={<Button onClick={() => setRevealedKey(null)}>{t('sa.key_saved_it')}</Button>}>
+        <div className="space-y-3">
+          <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-xl">{t('sa.key_shown_once')}</p>
+          <code className="block p-3 bg-gray-900 text-emerald-400 rounded-xl text-sm break-all select-all">{revealedKey}</code>
+        </div>
+      </Modal>
     </div>
   );
 }
