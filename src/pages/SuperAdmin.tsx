@@ -50,6 +50,7 @@ export function SuperAdmin() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [countries, setCountries] = useState<{ id: string; name: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; name: string; region_id: string }[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [localities, setLocalities] = useState<any[]>([]);
   const [commercialCodes, setCommercialCodes] = useState<any[]>([]);
@@ -62,12 +63,13 @@ export function SuperAdmin() {
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, mrr: 0, totalRevenue: 0 });
 
   const loadAll = async () => {
-    const [{ data: tns }, { data: pl }, { data: lg }, { data: cs }, { data: cts }, { data: lcs }, { data: cc }, { data: pr }, { data: la }, { data: bi }, { data: st }, { data: ak }, { data: nt }] = await Promise.all([
+    const [{ data: tns }, { data: pl }, { data: lg }, { data: cs }, { data: dst }, { data: cts }, { data: lcs }, { data: cc }, { data: pr }, { data: la }, { data: bi }, { data: st }, { data: ak }, { data: nt }] = await Promise.all([
       supabase.from('tenants').select('*').order('created_at', { ascending: false }),
       supabase.from('subscription_plans').select('*').order('sort_order'),
       supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('countries').select('id, name').order('name'),
-      supabase.from('cities').select('id, name, region_id').order('name'),
+      supabase.from('districts').select('id, name, region_id').order('name'),
+      supabase.from('cities').select('id, name, district_id').order('name'),
       supabase.from('localities').select('id, name, city_id').order('name'),
       supabase.from('commercial_codes').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, full_name, email, is_super_admin').order('full_name'),
@@ -82,6 +84,7 @@ export function SuperAdmin() {
     setPlans((pl as SubscriptionPlan[]) ?? []);
     setLogs((lg as AuditLog[]) ?? []);
     setCountries((cs as { id: string; name: string }[]) ?? []);
+    setDistricts((dst as { id: string; name: string; region_id: string }[]) ?? []);
     setCities(cts ?? []);
     setLocalities(lcs ?? []);
     setCommercialCodes(cc ?? []);
@@ -156,8 +159,8 @@ export function SuperAdmin() {
           {section === 'subscriptions' && <SaSubscriptions tenants={tenants} plans={plans} onAction={loadAll} />}
           {section === 'revenue' && <SaRevenue tenants={tenants} plans={plans} billingInvoices={billingInvoices} />}
           {section === 'performance' && <SaPerformance tenants={tenants} />}
-          {section === 'geography' && <SaGeography countries={countries} regions={regions} setRegions={setRegions} onAction={loadAll} />}
-          {section === 'cities' && <SaCities countries={countries} regions={regions} cities={cities} onAction={loadAll} />}
+          {section === 'geography' && <SaGeography countries={countries} regions={regions} setRegions={setRegions} districts={districts} setDistricts={setDistricts} onAction={loadAll} />}
+          {section === 'cities' && <SaCities regions={regions} districts={districts} cities={cities} onAction={loadAll} />}
           {section === 'localities' && <SaLocalities countries={countries} regions={regions} cities={cities} localities={localities} onAction={loadAll} />}
           {section === 'marketplace' && <SaMarketplace codes={commercialCodes} onAction={loadAll} />}
           {section === 'payments' && <SaPayments billingInvoices={billingInvoices} tenants={tenants} />}
@@ -397,10 +400,11 @@ function SaPerformance({ tenants }: { tenants: Tenant[] }) {
   );
 }
 
-function SaGeography({ countries, regions, setRegions, onAction }: { countries: { id: string; name: string }[]; regions: { id: string; name: string }[]; setRegions: (r: { id: string; name: string }[]) => void; onAction: () => void }) {
+function SaGeography({ countries, regions, setRegions, districts, setDistricts, onAction }: { countries: { id: string; name: string }[]; regions: { id: string; name: string }[]; setRegions: (r: { id: string; name: string }[]) => void; districts: { id: string; name: string; region_id: string }[]; setDistricts: (d: { id: string; name: string; region_id: string }[]) => void; onAction: () => void }) {
   const { t } = useI18n();
   const [cForm, setCForm] = useState({ name: '', iso2: '', phone_code: '', currency_code: '' });
   const [rForm, setRForm] = useState({ country_id: '', name: '' });
+  const [dForm, setDForm] = useState({ region_id: '', name: '' });
   const addCountry = async () => {
     await supabase.from('countries').insert({ name: cForm.name, iso2: cForm.iso2.toUpperCase(), phone_code: cForm.phone_code || null, currency_code: cForm.currency_code || null });
     setCForm({ name: '', iso2: '', phone_code: '', currency_code: '' }); onAction();
@@ -410,6 +414,12 @@ function SaGeography({ countries, regions, setRegions, onAction }: { countries: 
     setRForm({ country_id: '', name: '' });
     const { data: regData } = await supabase.from('regions').select('id, name').eq('country_id', rForm.country_id).order('name');
     setRegions((regData as { id: string; name: string }[]) ?? []);
+  };
+  const addDistrict = async () => {
+    await supabase.from('districts').insert({ region_id: dForm.region_id, name: dForm.name });
+    setDForm({ region_id: '', name: '' });
+    const { data: distData } = await supabase.from('districts').select('id, name, region_id').order('name');
+    setDistricts((distData as { id: string; name: string; region_id: string }[]) ?? []);
   };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -435,16 +445,26 @@ function SaGeography({ countries, regions, setRegions, onAction }: { countries: 
         </div>
         <div className="mt-4 max-h-48 overflow-y-auto space-y-1">{regions.map((r) => <div key={r.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{r.name}</div>)}</div>
       </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_district')}</h3>
+        <div className="space-y-3">
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.region_single')}</span><select value={dForm.region_id} onChange={(e) => setDForm({ ...dForm, region_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">...</option>{regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
+          <Input label={t('common.name')} value={dForm.name} onChange={(e) => setDForm({ ...dForm, name: e.target.value })} />
+          <Button onClick={addDistrict} className="w-full" disabled={!dForm.region_id}>{t('common.save')}</Button>
+        </div>
+        <div className="mt-4 max-h-48 overflow-y-auto space-y-1">{districts.map((d) => <div key={d.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{d.name}</div>)}</div>
+      </Card>
     </div>
   );
 }
 
-function SaCities({ countries, regions, cities, onAction }: { countries: { id: string; name: string }[]; regions: { id: string; name: string }[]; cities: any[]; onAction: () => void }) {
+function SaCities({ regions, districts, cities, onAction }: { regions: { id: string; name: string }[]; districts: { id: string; name: string; region_id: string }[]; cities: any[]; onAction: () => void }) {
   const { t } = useI18n();
-  const [form, setForm] = useState({ region_id: '', name: '' });
+  const [form, setForm] = useState({ region_id: '', district_id: '', name: '' });
+  const filteredDistricts = districts.filter((d) => d.region_id === form.region_id);
   const addCity = async () => {
-    await supabase.from('cities').insert({ region_id: form.region_id, name: form.name });
-    setForm({ region_id: '', name: '' }); onAction();
+    await supabase.from('cities').insert({ district_id: form.district_id, name: form.name });
+    setForm({ region_id: '', district_id: '', name: '' }); onAction();
   };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -452,17 +472,23 @@ function SaCities({ countries, regions, cities, onAction }: { countries: { id: s
         <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_city')}</h3>
         <div className="space-y-3">
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.region_single')}</span>
-            <select value={form.region_id} onChange={(e) => setForm({ ...form, region_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
+            <select value={form.region_id} onChange={(e) => setForm({ region_id: e.target.value, district_id: '', name: form.name })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
               <option value="">...</option>
               {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('onb.district')}</span>
+            <select value={form.district_id} onChange={(e) => setForm({ ...form, district_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm" disabled={!form.region_id}>
+              <option value="">...</option>
+              {filteredDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </label>
           <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Button onClick={addCity} className="w-full" disabled={!form.region_id}>{t('common.save')}</Button>
+          <Button onClick={addCity} className="w-full" disabled={!form.district_id}>{t('common.save')}</Button>
         </div>
       </Card>
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Cities ({cities.length})</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('sa.cities_count').replace('{n}', String(cities.length))}</h3>
         <div className="max-h-96 overflow-y-auto space-y-1">{cities.map((c) => <div key={c.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{c.name}</div>)}</div>
       </Card>
     </div>
