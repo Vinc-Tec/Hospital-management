@@ -27,7 +27,7 @@ export function CopyrightLine({ className = '' }: { className?: string }) {
   const year = new Date().getFullYear();
   return (
     <p className={className}>
-      Health Cloud&#8482; — Powered by LIYAH GROUP — &copy; {year} All Rights Reserved.
+      Health Cloud&#8482; — Powered by LiAfrik — Dubaï &amp; Yaoundé — &copy; {year} All Rights Reserved.
     </p>
   );
 }

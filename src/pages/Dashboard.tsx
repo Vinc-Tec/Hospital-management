@@ -216,7 +216,7 @@ export function Dashboard() {
             <>
               <div className="mb-6">
                 <h1 className="text-2xl font-black text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
-                <p className="text-sm text-gray-500 mt-1">{isSuperAdmin ? 'Super Admin — LIYAH GROUP' : activeTenant?.healthcare_type}</p>
+                <p className="text-sm text-gray-500 mt-1">{isSuperAdmin ? 'Super Admin — LiAfrik' : activeTenant?.healthcare_type}</p>
               </div>
 
               {isSuperAdmin && (
