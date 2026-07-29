@@ -8,11 +8,11 @@ import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
 
 // Coordonnées réelles de contact. CONTACT_PHONE volontairement vide tant qu'un
-// vrai numéro n'est pas fourni par LIYAH GROUP — mieux vaut ne pas afficher de
+// vrai numéro n'est pas fourni par LiAfrik — mieux vaut ne pas afficher de
 // numéro que d'en afficher un faux ("+237 6XX XXX XXX").
-const CONTACT_EMAIL = 'contact@liyahgroup.com';
+const CONTACT_EMAIL = 'cs@liafrik.com';
 const CONTACT_PHONE = ''; // TODO: renseigner le vrai numéro avant mise en production
-const CONTACT_ADDRESS = 'Douala, Cameroun';
+const CONTACT_ADDRESS = 'Dubaï, EAU & Yaoundé, Cameroun';
 
 function StaticPageLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();

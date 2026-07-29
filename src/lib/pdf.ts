@@ -23,7 +23,7 @@ function header(doc: jsPDF, tenant: Tenant, title: string, ref: string) {
   doc.text(title, 32, 14);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Health Cloud — LIYAH GROUP', 32, 21);
+  doc.text('Health Cloud — LiAfrik', 32, 21);
   // Reference + date (right)
   doc.setFontSize(9);
   doc.text(`Ref: ${ref}`, pageW - 14, 14, { align: 'right' });
@@ -61,7 +61,7 @@ function footer(doc: jsPDF) {
   doc.line(14, pageH - 16, pageW - 14, pageH - 16);
   doc.setFontSize(7);
   doc.setTextColor(...GRAY);
-  doc.text('Developed by LIYAH GROUP — 100% Cameroonian Technology', 14, pageH - 11);
+  doc.text('Developed by LiAfrik — Dubai & Yaoundé', 14, pageH - 11);
   doc.text('Health Cloud — One Platform. Every Healthcare Institution.', pageW - 14, pageH - 11, { align: 'right' });
   // QR-ish placeholder block (simple square with ref)
   const pages = doc.getNumberOfPages();

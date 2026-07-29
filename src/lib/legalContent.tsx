@@ -4,9 +4,10 @@
 // one-paragraph placeholder. It is NOT a substitute for review by a lawyer
 // familiar with health-data regulation in the jurisdictions Health Cloud
 // operates in (GDPR if serving EU residents, local African data-protection
-// laws, etc.). Placeholders like [DPO_EMAIL] / [COMPANY_ADDRESS] /
-// [JURISDICTION] must be filled in with real values before publishing, and
-// the whole document should be validated by counsel before being relied on
+// laws, etc.). Support email, address, and governing law are filled in
+// (Cameroon for governing law -- a starting choice given the operational
+// base, expected to be revisited once confirmed with counsel). The whole
+// document should still be validated by counsel before being relied on
 // as an actual legal commitment to customers.
 
 export type LegalSection = { heading: string; body: string[] };
@@ -17,12 +18,12 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
   fr: {
     lastUpdated: 'Dernière mise à jour : à compléter avant publication',
     intro:
-      "Cette politique explique quelles données Health Cloud (édité par LIYAH GROUP) collecte, pourquoi, et quels droits vous avez. Health Cloud héberge des données de santé pour le compte d'établissements clients (hôpitaux, cliniques) : dans ce cadre, l'établissement client est responsable du traitement des données de ses patients, et LIYAH GROUP agit comme sous-traitant technique.",
+      "Cette politique explique quelles données Health Cloud (édité par LiAfrik) collecte, pourquoi, et quels droits vous avez. Health Cloud héberge des données de santé pour le compte d'établissements clients (hôpitaux, cliniques) : dans ce cadre, l'établissement client est responsable du traitement des données de ses patients, et LiAfrik agit comme sous-traitant technique.",
     sections: [
       {
         heading: '1. Qui sommes-nous',
         body: [
-          "Health Cloud est édité par LIYAH GROUP. Pour toute question relative à cette politique ou à vos données, contactez [DPO_EMAIL].",
+          "Health Cloud est édité par LiAfrik. Pour toute question relative à cette politique ou à vos données, contactez support@liafrik.com.",
         ],
       },
       {
@@ -30,7 +31,7 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
         body: [
           "Données de compte : nom, adresse email, mot de passe (chiffré), rôle au sein de l'établissement.",
           "Données de l'établissement client : nom légal et commercial, adresse, documents de vérification (licence médicale, immatriculation), informations de facturation.",
-          "Données cliniques saisies par l'établissement client : dossiers patients, rendez-vous, prescriptions, résultats d'examens, factures. Ces données appartiennent à l'établissement client et à ses patients, pas à LIYAH GROUP.",
+          "Données cliniques saisies par l'établissement client : dossiers patients, rendez-vous, prescriptions, résultats d'examens, factures. Ces données appartiennent à l'établissement client et à ses patients, pas à LiAfrik.",
           "Données techniques : adresse IP, type de navigateur, journaux de connexion, à des fins de sécurité et de lutte contre la fraude.",
         ],
       },
@@ -48,9 +49,9 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
         heading: '4. Base légale du traitement',
         body: [
           "L'exécution du contrat d'abonnement conclu avec l'établissement client.",
-          "L'intérêt légitime de LIYAH GROUP à sécuriser et améliorer le service.",
+          "L'intérêt légitime de LiAfrik à sécuriser et améliorer le service.",
           "Le respect d'obligations légales applicables (comptabilité, lutte contre la fraude).",
-          "Pour les données cliniques des patients, la base légale relève de la relation entre l'établissement client et son patient ; LIYAH GROUP n'intervient qu'en qualité de sous-traitant technique.",
+          "Pour les données cliniques des patients, la base légale relève de la relation entre l'établissement client et son patient ; LiAfrik n'intervient qu'en qualité de sous-traitant technique.",
         ],
       },
       {
@@ -82,7 +83,7 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
         body: [
           "Selon votre juridiction, vous pouvez disposer d'un droit d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité de vos données personnelles.",
           "Pour les données cliniques d'un patient, ces demandes doivent en priorité être adressées à l'établissement de santé concerné, qui reste responsable du traitement de ces données.",
-          "Pour les données de compte utilisateur ou d'établissement client gérées directement par LIYAH GROUP, contactez [DPO_EMAIL].",
+          "Pour les données de compte utilisateur ou d'établissement client gérées directement par LiAfrik, contactez support@liafrik.com.",
         ],
       },
       {
@@ -111,22 +112,22 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
       },
       {
         heading: '13. Contact',
-        body: ["Pour toute question : [DPO_EMAIL] — [COMPANY_ADDRESS]."],
+        body: ["Pour toute question : support@liafrik.com — Dubaï, EAU & Yaoundé, Cameroun."],
       },
     ],
   },
   en: {
     lastUpdated: 'Last updated: to be completed before publication',
     intro:
-      "This policy explains what data Health Cloud (published by LIYAH GROUP) collects, why, and what rights you have. Health Cloud hosts health data on behalf of client institutions (hospitals, clinics): in that context, the client institution is the data controller for its patients' data, and LIYAH GROUP acts as a technical data processor.",
+      "This policy explains what data Health Cloud (published by LiAfrik) collects, why, and what rights you have. Health Cloud hosts health data on behalf of client institutions (hospitals, clinics): in that context, the client institution is the data controller for its patients' data, and LiAfrik acts as a technical data processor.",
     sections: [
-      { heading: '1. Who we are', body: ["Health Cloud is published by LIYAH GROUP. For any question about this policy or your data, contact [DPO_EMAIL]."] },
+      { heading: '1. Who we are', body: ["Health Cloud is published by LiAfrik. For any question about this policy or your data, contact support@liafrik.com."] },
       {
         heading: '2. Data we collect',
         body: [
           "Account data: name, email address, password (hashed), role within the institution.",
           "Client institution data: legal and commercial name, address, verification documents (medical license, business registration), billing information.",
-          "Clinical data entered by the client institution: patient records, appointments, prescriptions, test results, invoices. This data belongs to the client institution and its patients, not to LIYAH GROUP.",
+          "Clinical data entered by the client institution: patient records, appointments, prescriptions, test results, invoices. This data belongs to the client institution and its patients, not to LiAfrik.",
           "Technical data: IP address, browser type, login logs, for security and fraud-prevention purposes.",
         ],
       },
@@ -144,9 +145,9 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
         heading: '4. Legal basis',
         body: [
           "Performance of the subscription contract with the client institution.",
-          "LIYAH GROUP's legitimate interest in securing and improving the service.",
+          "LiAfrik's legitimate interest in securing and improving the service.",
           "Compliance with applicable legal obligations (accounting, fraud prevention).",
-          "For patients' clinical data, the legal basis arises from the relationship between the client institution and its patient; LIYAH GROUP only acts as a technical processor.",
+          "For patients' clinical data, the legal basis arises from the relationship between the client institution and its patient; LiAfrik only acts as a technical processor.",
         ],
       },
       {
@@ -178,14 +179,14 @@ export const privacyPolicy: Record<'fr' | 'en', LegalDoc> = {
         body: [
           "Depending on your jurisdiction, you may have a right of access, rectification, erasure, restriction, objection, and portability regarding your personal data.",
           "For a patient's clinical data, such requests should primarily be directed to the healthcare institution concerned, which remains the data controller for that data.",
-          "For user account or client institution data managed directly by LIYAH GROUP, contact [DPO_EMAIL].",
+          "For user account or client institution data managed directly by LiAfrik, contact support@liafrik.com.",
         ],
       },
       { heading: '9. International transfers', body: ["Where data is transferred outside your jurisdiction, we ensure that transfer benefits from appropriate safeguards under applicable regulation."] },
       { heading: '10. Cookies', body: ["We use cookies strictly necessary for the service to function (authentication, language preference). We do not use third-party advertising cookies."] },
       { heading: '11. Changes to this policy', body: ["This policy may be updated. Material changes will be notified to client institutions by email or via the platform."] },
       { heading: '12. Complaints', body: ["You have the right to lodge a complaint with the competent data protection authority if you believe processing of your data does not comply with applicable regulation."] },
-      { heading: '13. Contact', body: ["For any question: [DPO_EMAIL] — [COMPANY_ADDRESS]."] },
+      { heading: '13. Contact', body: ["For any question: support@liafrik.com — Dubai, UAE & Yaoundé, Cameroon."] },
     ],
   },
 };
@@ -194,7 +195,7 @@ export const termsOfService: Record<'fr' | 'en', LegalDoc> = {
   fr: {
     lastUpdated: 'Dernière mise à jour : à compléter avant publication',
     intro:
-      "Les présentes conditions générales d'utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Health Cloud, éditée par LIYAH GROUP, par tout établissement client et ses utilisateurs.",
+      "Les présentes conditions générales d'utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Health Cloud, éditée par LiAfrik, par tout établissement client et ses utilisateurs.",
     sections: [
       {
         heading: '1. Objet',
@@ -227,51 +228,51 @@ export const termsOfService: Record<'fr' | 'en', LegalDoc> = {
         heading: "5. Responsabilité de l'établissement client sur les données patients",
         body: [
           "L'établissement client demeure seul responsable du traitement des données de ses patients (exactitude, base légale, durée de conservation, information des patients) et du respect des obligations réglementaires propres à son secteur d'activité dans sa juridiction.",
-          "LIYAH GROUP agit en qualité de sous-traitant technique et met en œuvre les mesures de sécurité décrites dans la politique de confidentialité.",
+          "LiAfrik agit en qualité de sous-traitant technique et met en œuvre les mesures de sécurité décrites dans la politique de confidentialité.",
         ],
       },
       {
         heading: '6. Propriété intellectuelle',
         body: [
-          "La plateforme Health Cloud, son code, son design et sa marque demeurent la propriété exclusive de LIYAH GROUP. Aucune licence autre que le droit d'usage prévu par les présentes CGU n'est concédée à l'établissement client.",
+          "La plateforme Health Cloud, son code, son design et sa marque demeurent la propriété exclusive de LiAfrik. Aucune licence autre que le droit d'usage prévu par les présentes CGU n'est concédée à l'établissement client.",
           "Les données saisies par l'établissement client (dossiers patients, contenus propres) restent sa propriété.",
         ],
       },
       {
         heading: '7. Disponibilité du service',
         body: [
-          "LIYAH GROUP met en œuvre ses meilleurs efforts pour assurer la disponibilité continue de la plateforme, sans garantie de disponibilité contractuelle formelle (SLA) à ce stade. Des interruptions ponctuelles pour maintenance peuvent survenir, avec notification préalable dans la mesure du possible.",
+          "LiAfrik met en œuvre ses meilleurs efforts pour assurer la disponibilité continue de la plateforme, sans garantie de disponibilité contractuelle formelle (SLA) à ce stade. Des interruptions ponctuelles pour maintenance peuvent survenir, avec notification préalable dans la mesure du possible.",
         ],
       },
       {
         heading: '8. Limitation de responsabilité',
         body: [
-          "Dans la limite permise par la loi applicable, la responsabilité de LIYAH GROUP ne saurait être engagée pour les dommages indirects résultant de l'utilisation ou de l'impossibilité d'utiliser la plateforme.",
-          "LIYAH GROUP ne saurait être tenu responsable des décisions cliniques prises par l'établissement client ou son personnel sur la base des informations saisies dans la plateforme.",
+          "Dans la limite permise par la loi applicable, la responsabilité de LiAfrik ne saurait être engagée pour les dommages indirects résultant de l'utilisation ou de l'impossibilité d'utiliser la plateforme.",
+          "LiAfrik ne saurait être tenu responsable des décisions cliniques prises par l'établissement client ou son personnel sur la base des informations saisies dans la plateforme.",
         ],
       },
       {
         heading: '9. Résiliation',
         body: [
           "L'établissement client peut résilier son abonnement selon les modalités précisées lors de la souscription.",
-          "LIYAH GROUP peut suspendre ou résilier l'accès en cas de manquement grave aux présentes CGU, avec notification préalable sauf urgence justifiée (par exemple en cas de risque pour la sécurité de la plateforme ou d'autres établissements clients).",
+          "LiAfrik peut suspendre ou résilier l'accès en cas de manquement grave aux présentes CGU, avec notification préalable sauf urgence justifiée (par exemple en cas de risque pour la sécurité de la plateforme ou d'autres établissements clients).",
         ],
       },
       {
         heading: '10. Droit applicable',
-        body: ["Les présentes CGU sont soumises au droit de [JURISDICTION], sans préjudice des dispositions impératives éventuellement applicables au lieu d'établissement du client."],
+        body: ["Les présentes CGU sont soumises au droit du Cameroun, sans préjudice des dispositions impératives éventuellement applicables au lieu d'établissement du client."],
       },
       {
         heading: '11. Modification des CGU',
-        body: ["LIYAH GROUP peut modifier les présentes CGU ; les établissements clients seront informés de toute modification substantielle."],
+        body: ["LiAfrik peut modifier les présentes CGU ; les établissements clients seront informés de toute modification substantielle."],
       },
-      { heading: '12. Contact', body: ["Pour toute question relative aux présentes CGU : [DPO_EMAIL] — [COMPANY_ADDRESS]."] },
+      { heading: '12. Contact', body: ["Pour toute question relative aux présentes CGU : support@liafrik.com — Dubaï, EAU & Yaoundé, Cameroun."] },
     ],
   },
   en: {
     lastUpdated: 'Last updated: to be completed before publication',
     intro:
-      "These Terms of Service govern access to and use of the Health Cloud platform, published by LIYAH GROUP, by any client institution and its users.",
+      "These Terms of Service govern access to and use of the Health Cloud platform, published by LiAfrik, by any client institution and its users.",
     sections: [
       { heading: '1. Purpose', body: ["Health Cloud is a SaaS platform for managing healthcare institutions (patients, appointments, medical records, billing, and additional modules depending on the subscribed plan)."] },
       { heading: '2. Acceptance of terms', body: ["Creating an account and using the platform constitutes full acceptance of these Terms by the client institution and the person registering on its behalf."] },
@@ -294,34 +295,34 @@ export const termsOfService: Record<'fr' | 'en', LegalDoc> = {
         heading: "5. Client institution's responsibility for patient data",
         body: [
           "The client institution remains solely responsible for processing its patients' data (accuracy, legal basis, retention period, patient information) and for complying with the regulatory obligations specific to its sector of activity in its jurisdiction.",
-          "LIYAH GROUP acts as a technical processor and implements the security measures described in the Privacy Policy.",
+          "LiAfrik acts as a technical processor and implements the security measures described in the Privacy Policy.",
         ],
       },
       {
         heading: '6. Intellectual property',
         body: [
-          "The Health Cloud platform, its code, design, and brand remain the exclusive property of LIYAH GROUP. No license other than the right of use granted under these Terms is given to the client institution.",
+          "The Health Cloud platform, its code, design, and brand remain the exclusive property of LiAfrik. No license other than the right of use granted under these Terms is given to the client institution.",
           "Data entered by the client institution (patient records, own content) remains its property.",
         ],
       },
-      { heading: '7. Service availability', body: ["LIYAH GROUP uses reasonable efforts to ensure continuous availability of the platform, without a formal contractual service-level guarantee (SLA) at this stage. Occasional maintenance downtime may occur, with prior notice where possible."] },
+      { heading: '7. Service availability', body: ["LiAfrik uses reasonable efforts to ensure continuous availability of the platform, without a formal contractual service-level guarantee (SLA) at this stage. Occasional maintenance downtime may occur, with prior notice where possible."] },
       {
         heading: '8. Limitation of liability',
         body: [
-          "To the extent permitted by applicable law, LIYAH GROUP shall not be liable for indirect damages resulting from the use or inability to use the platform.",
-          "LIYAH GROUP shall not be liable for clinical decisions made by the client institution or its staff based on information entered into the platform.",
+          "To the extent permitted by applicable law, LiAfrik shall not be liable for indirect damages resulting from the use or inability to use the platform.",
+          "LiAfrik shall not be liable for clinical decisions made by the client institution or its staff based on information entered into the platform.",
         ],
       },
       {
         heading: '9. Termination',
         body: [
           "The client institution may terminate its subscription under the terms specified at the time of subscription.",
-          "LIYAH GROUP may suspend or terminate access in the event of a serious breach of these Terms, with prior notice except in justified emergencies (e.g. a risk to the security of the platform or other client institutions).",
+          "LiAfrik may suspend or terminate access in the event of a serious breach of these Terms, with prior notice except in justified emergencies (e.g. a risk to the security of the platform or other client institutions).",
         ],
       },
-      { heading: '10. Governing law', body: ["These Terms are governed by the law of [JURISDICTION], without prejudice to any mandatory provisions applicable at the client's place of establishment."] },
-      { heading: '11. Changes to these terms', body: ["LIYAH GROUP may modify these Terms; client institutions will be informed of any material change."] },
-      { heading: '12. Contact', body: ["For any question about these Terms: [DPO_EMAIL] — [COMPANY_ADDRESS]."] },
+      { heading: '10. Governing law', body: ["These Terms are governed by the law of Cameroon, without prejudice to any mandatory provisions applicable at the client's place of establishment."] },
+      { heading: '11. Changes to these terms', body: ["LiAfrik may modify these Terms; client institutions will be informed of any material change."] },
+      { heading: '12. Contact', body: ["For any question about these Terms: support@liafrik.com — Dubai, UAE & Yaoundé, Cameroon."] },
     ],
   },
 };
