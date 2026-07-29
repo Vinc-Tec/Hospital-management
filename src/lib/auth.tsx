@@ -26,7 +26,8 @@ export function hasModuleAccess(plan: { module_flags?: Record<string, boolean> }
 type AuthState = {
   session: Session | null; user: User | null; profile: Profile | null;
   memberships: Membership[]; activeTenant: Tenant | null; activePlan: SubscriptionPlan | null; loading: boolean;
-  signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null; mfaRequired?: boolean; mfaFactorId?: string }>;
+  verifyMfaChallenge: (factorId: string, code: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => void;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -177,6 +178,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error.message };
     }
 
+    // Check if this account has MFA enrolled and still needs to complete the
+    // second factor before the session is fully authenticated (AAL2).
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const factorId = factors?.totp?.[0]?.id;
+      return { error: null, mfaRequired: true, mfaFactorId: factorId };
+    }
+
     // Record successful login
     if (data.user) {
       // Load profile to get tenant info
@@ -191,6 +201,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await recordLoginActivity(data.user.id, true, tenantId);
     }
 
+    return { error: null };
+  };
+
+  const verifyMfaChallenge = async (factorId: string, code: string) => {
+    const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId });
+    if (challengeErr) return { error: challengeErr.message };
+    const { data, error } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+    if (error) return { error: error.message };
+
+    if (data.user) {
+      const { data: prof } = await supabase.from('profiles')
+        .select('id, is_super_admin').eq('id', data.user.id).maybeSingle();
+      let tenantId: string | null = null;
+      if (!prof?.is_super_admin) {
+        const { data: mem } = await supabase.from('tenant_memberships')
+          .select('tenant_id').eq('user_id', data.user.id).limit(1).maybeSingle();
+        tenantId = mem?.tenant_id ?? null;
+      }
+      await recordLoginActivity(data.user.id, true, tenantId);
+    }
     return { error: null };
   };
 
@@ -228,7 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
   const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activePlan, loading, signIn, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activePlan, loading]);
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activePlan, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

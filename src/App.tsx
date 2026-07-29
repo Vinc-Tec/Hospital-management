@@ -111,8 +111,18 @@ function MaintenanceScreen({ message }: { message: string | null }) {
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading, activeTenant, profile } = useAuth();
   const maintenance = useMaintenanceMode();
-  if (loading || maintenance.loading) return <FullScreenLoader />;
+  const [mfaPending, setMfaPending] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) { setMfaPending(false); return; }
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+      setMfaPending(!!data && data.nextLevel === 'aal2' && data.currentLevel !== data.nextLevel);
+    });
+  }, [user]);
+
+  if (loading || maintenance.loading || mfaPending === null) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
+  if (mfaPending) return <Navigate to="/signin" replace />;
 
   // Super admins bypass onboarding, subscription, tenant requirements, AND maintenance mode
   if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
