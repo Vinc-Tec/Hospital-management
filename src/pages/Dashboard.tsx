@@ -105,6 +105,25 @@ function NotificationBell() {
   );
 }
 
+function OfflineBanner() {
+  const { t } = useI18n();
+  const [offline, setOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    const goOffline = () => setOffline(true);
+    const goOnline = () => setOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => { window.removeEventListener('offline', goOffline); window.removeEventListener('online', goOnline); };
+  }, []);
+  if (!offline) return null;
+  return (
+    <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800 flex items-center gap-2">
+      <AlertCircle size={16} />
+      {t('dash.offline_banner')}
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { t } = useI18n();
   const { user, profile, activeTenant, activePlan, signOut } = useAuth();
@@ -212,6 +231,7 @@ export function Dashboard() {
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <OfflineBanner />
           {isOverview ? (
             <>
               <div className="mb-6">
