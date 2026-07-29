@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ArrowLeft, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { Button, Input } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
+import { supabase } from '../lib/supabase';
 
-type Mode = 'signin' | 'signup' | 'forgot' | 'reset' | 'verify';
+type Mode = 'signin' | 'signup' | 'forgot' | 'reset' | 'verify' | 'mfa';
 
 export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, verifyMfaChallenge } = useAuth();
   const { t } = useI18n();
   const nav = useNavigate();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -20,6 +21,19 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+
+  useEffect(() => {
+    if (initialMode !== 'signin') return;
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(async ({ data }) => {
+      if (data && data.nextLevel === 'aal2' && data.currentLevel !== data.nextLevel) {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const factorId = factors?.totp?.[0]?.id;
+        if (factorId) { setMfaFactorId(factorId); setMode('mfa'); }
+      }
+    });
+  }, [initialMode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +41,14 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
 
     if (mode === 'signin') {
       const res = await signIn(email, password, remember);
+      if (res.error) setError(res.error);
+      else if (res.mfaRequired && res.mfaFactorId) {
+        setMfaFactorId(res.mfaFactorId);
+        setMode('mfa');
+      } else nav('/app');
+    } else if (mode === 'mfa') {
+      if (!mfaFactorId) { setError(t('auth.mfa_error')); setLoading(false); return; }
+      const res = await verifyMfaChallenge(mfaFactorId, mfaCode);
       if (res.error) setError(res.error);
       else nav('/app');
     } else if (mode === 'signup') {
@@ -63,10 +85,11 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               {mode === 'signup' && t('auth.signup.title')}
               {mode === 'forgot' && t('auth.forgot.title')}
               {mode === 'verify' && t('auth.verify.title')}
+              {mode === 'mfa' && t('auth.mfa.title')}
             </h1>
-            {(mode === 'forgot' || mode === 'verify') && (
+            {(mode === 'forgot' || mode === 'verify' || mode === 'mfa') && (
               <p className="text-sm text-gray-500 mt-2">
-                {mode === 'forgot' ? t('auth.forgot.subtitle') : t('auth.verify.subtitle')}
+                {mode === 'forgot' ? t('auth.forgot.subtitle') : mode === 'mfa' ? t('auth.mfa.subtitle') : t('auth.verify.subtitle')}
               </p>
             )}
           </div>
@@ -82,10 +105,16 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
             </div>
           ) : (
             <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-              {mode === 'signup' && <Input label={t('auth.fullname')} required value={fullName} onChange={(e) => setFullName(e.target.value)} />}
-              <Input label={t('auth.email')} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              {(mode === 'signin' || mode === 'signup') && (
-                <Input label={t('auth.password')} type="password" required minLength={mode === 'signup' ? 6 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
+              {mode === 'mfa' ? (
+                <Input label={t('auth.mfa.code_label')} required value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="000000" maxLength={6} autoFocus />
+              ) : (
+                <>
+                  {mode === 'signup' && <Input label={t('auth.fullname')} required value={fullName} onChange={(e) => setFullName(e.target.value)} />}
+                  <Input label={t('auth.email')} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  {(mode === 'signin' || mode === 'signup') && (
+                    <Input label={t('auth.password')} type="password" required minLength={mode === 'signup' ? 6 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
+                  )}
+                </>
               )}
 
               {mode === 'signin' && (
@@ -117,6 +146,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
                 {mode === 'signin' && t('auth.signin.cta')}
                 {mode === 'signup' && t('auth.signup.cta')}
                 {mode === 'forgot' && t('auth.forgot.cta')}
+                {mode === 'mfa' && t('auth.mfa.cta')}
               </Button>
             </form>
           )}

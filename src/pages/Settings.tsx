@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
 import { Button, Card, Input, Badge, Select } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck } from 'lucide-react';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -88,13 +88,16 @@ export function SettingsPage() {
       )}
 
       {tab === 'profile' && (
-        <Card className="p-6 max-w-2xl">
-          <div className="space-y-4">
-            <Input label={t('settings.profile_name')} value={profile?.full_name ?? ''} disabled />
-            <Input label={t('settings.profile_email')} value={user?.email ?? ''} disabled />
-          </div>
-          <p className="mt-4 text-xs text-gray-400">Profile editing is managed via your account settings.</p>
-        </Card>
+        <div className="space-y-6 max-w-2xl">
+          <Card className="p-6">
+            <div className="space-y-4">
+              <Input label={t('settings.profile_name')} value={profile?.full_name ?? ''} disabled />
+              <Input label={t('settings.profile_email')} value={user?.email ?? ''} disabled />
+            </div>
+            <p className="mt-4 text-xs text-gray-400">{t('settings.profile_managed_note')}</p>
+          </Card>
+          <MfaSection />
+        </div>
       )}
 
       {tab === 'billing' && (
@@ -107,6 +110,89 @@ export function SettingsPage() {
 
       {tab === 'support' && <SupportTab />}
     </div>
+  );
+}
+
+function MfaSection() {
+  const { t } = useI18n();
+  const [factors, setFactors] = useState<{ id: string; status: string }[]>([]);
+  const [enrolling, setEnrolling] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [pendingFactorId, setPendingFactorId] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.auth.mfa.listFactors();
+    setFactors((data?.totp ?? []).map((f) => ({ id: f.id, status: f.status })));
+  };
+  useEffect(() => { load(); }, []);
+
+  const verifiedFactor = factors.find((f) => f.status === 'verified');
+
+  const startEnroll = async () => {
+    setErr(null); setLoading(true);
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setQrCode(data.totp.qr_code);
+    setSecret(data.totp.secret);
+    setPendingFactorId(data.id);
+    setEnrolling(true);
+  };
+
+  const confirmEnroll = async () => {
+    if (!pendingFactorId) return;
+    setErr(null); setLoading(true);
+    const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: pendingFactorId });
+    if (challengeErr) { setErr(challengeErr.message); setLoading(false); return; }
+    const { error } = await supabase.auth.mfa.verify({ factorId: pendingFactorId, challengeId: challenge.id, code });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setEnrolling(false); setQrCode(null); setSecret(null); setPendingFactorId(null); setCode('');
+    load();
+  };
+
+  const disable = async (factorId: string) => {
+    setLoading(true);
+    await supabase.auth.mfa.unenroll({ factorId });
+    setLoading(false);
+    load();
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-3 mb-2">
+        <ShieldCheck size={20} className={verifiedFactor ? 'text-emerald-600' : 'text-gray-400'} />
+        <h3 className="font-semibold text-gray-900">{t('settings.mfa_title')}</h3>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">{t('settings.mfa_desc')}</p>
+
+      {verifiedFactor ? (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+          <span className="text-sm text-emerald-800 font-medium">{t('settings.mfa_enabled')}</span>
+          <Button variant="outline" onClick={() => disable(verifiedFactor.id)} loading={loading}>{t('settings.mfa_disable')}</Button>
+        </div>
+      ) : enrolling ? (
+        <div className="space-y-4">
+          {qrCode && <div className="flex justify-center p-4 bg-white border border-gray-200 rounded-xl" dangerouslySetInnerHTML={{ __html: qrCode }} />}
+          {secret && <p className="text-xs text-gray-400 text-center break-all">{t('settings.mfa_manual_key')}: {secret}</p>}
+          <Input label={t('auth.mfa.code_label')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000" maxLength={6} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <div className="flex gap-2">
+            <Button onClick={confirmEnroll} loading={loading}>{t('settings.mfa_confirm')}</Button>
+            <Button variant="outline" onClick={() => { setEnrolling(false); setErr(null); }}>{t('common.cancel')}</Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
+          <Button onClick={startEnroll} loading={loading}>{t('settings.mfa_enable')}</Button>
+        </>
+      )}
+    </Card>
   );
 }
 
