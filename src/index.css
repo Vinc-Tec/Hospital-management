@@ -1,4 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&display=swap');
+@import 'typeface-glacial-indifference/index.css';
 
 @tailwind base;
 @tailwind components;
@@ -15,9 +15,23 @@ html {
 
 body {
   height: 100%;
-  font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+  font-family: 'Glacial Indifference', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glacial Indifference ships only Regular (400) and Bold (700) -- there
+   is no true Medium weight in this typeface. Per the design direction
+   (Regular for body copy, a lighter "Medium" feel for headings/accents
+   instead of the previous Bold/Black), headings and accents use
+   font-weight 500 site-wide; since 500 isn't a registered face, browsers
+   substitute the nearest lighter match (Regular), which is the honest,
+   correct outcome given what this font actually offers -- not a
+   distinct "Medium" cut, but visually lighter than Bold/Black as
+   requested. True Bold (700) remains available and unaffected wherever
+   still explicitly needed. */
+.font-medium, .font-semibold, .font-bold, .font-black {
+  font-weight: 500;
 }
 
 #root {

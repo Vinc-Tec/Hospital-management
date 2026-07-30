@@ -23,9 +23,22 @@ export function hasModuleAccess(plan: { module_flags?: Record<string, boolean> }
   return plan.module_flags[moduleKey] === true;
 }
 
+// A membership with empty permissions ({}) is unrestricted -- this is the
+// default for every membership today (including the tenant's own owner),
+// so an empty object must mean "full access", not "no access", or every
+// existing account would suddenly lose access to everything. Only once a
+// tenant admin explicitly assigns a named role (copying that role's
+// permissions onto the membership, see the Team management screen) does
+// this actually restrict anything.
+export function hasRoleAccess(permissions: Record<string, unknown> | null | undefined, moduleKey: string): boolean {
+  if (ALWAYS_ALLOWED_MODULES.has(moduleKey)) return true;
+  if (!permissions || Object.keys(permissions).length === 0) return true;
+  return permissions[`${moduleKey}.view`] === true;
+}
+
 type AuthState = {
   session: Session | null; user: User | null; profile: Profile | null;
-  memberships: Membership[]; activeTenant: Tenant | null; activePlan: SubscriptionPlan | null; loading: boolean;
+  memberships: Membership[]; activeTenant: Tenant | null; activeMembership: Membership | null; activePlan: SubscriptionPlan | null; loading: boolean;
   signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null; mfaRequired?: boolean; mfaFactorId?: string }>;
   verifyMfaChallenge: (factorId: string, code: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
@@ -258,7 +271,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
   const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activePlan, loading]);
+  const activeMembership = useMemo(() => memberships.find((m) => m.tenant_id === activeTenant?.id) ?? null, [memberships, activeTenant]);
+
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

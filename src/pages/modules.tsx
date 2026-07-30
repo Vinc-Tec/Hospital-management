@@ -408,7 +408,9 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
   const MODULE_KEYS = [
     'patients', 'appointments', 'doctors', 'records', 'consultations',
     'prescriptions', 'lab', 'radiology', 'pharmacy', 'beds', 'admissions',
-    'invoices', 'reports', 'staff', 'roles', 'settings',
+    'invoices', 'reports', 'staff', 'roles', 'settings', 'performance',
+    'surgeries', 'hr', 'payroll', 'inventory', 'insurance', 'telemedicine',
+    'emergency', 'immunizations', 'discharge',
   ];
   const ACTIONS = ['view', 'create', 'edit', 'delete', 'export'];
 

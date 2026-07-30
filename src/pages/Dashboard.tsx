@@ -4,15 +4,16 @@ import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
-  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell,
+  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send,
 } from 'lucide-react';
-import { useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from '../lib/auth';
+import { useAuth, isProtectedSuperAdminEmail, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 import { TrialBanner } from './Billing';
 import { Footer } from '../components/Footer';
+import { matchFaq } from '../lib/supportFaq';
 
 const NAV = [
   { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview', moduleKey: 'overview' },
@@ -124,9 +125,77 @@ function OfflineBanner() {
   );
 }
 
+type ChatMessage = { from: 'user' | 'bot'; text: string };
+
+function SupportChatWidget() {
+  const { t, lang } = useI18n();
+  const { user, activeTenant } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([{ from: 'bot', text: t('chat.greeting') }]);
+  const [awaitingEscalation, setAwaitingEscalation] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+
+  const send = async () => {
+    const query = input.trim();
+    if (!query) return;
+    setMessages((m) => [...m, { from: 'user', text: query }]);
+    setInput('');
+
+    if (awaitingEscalation) {
+      setEscalating(true);
+      await supabase.from('support_tickets').insert({
+        tenant_id: activeTenant?.id ?? null, user_id: user!.id,
+        subject: t('chat.escalated_subject'), description: query, priority: 'medium', status: 'open',
+      });
+      setEscalating(false);
+      setAwaitingEscalation(false);
+      setMessages((m) => [...m, { from: 'bot', text: t('chat.escalated_confirm') }]);
+      return;
+    }
+
+    const match = matchFaq(query, lang as 'fr' | 'en');
+    if (match) {
+      setMessages((m) => [...m, { from: 'bot', text: match.answer[lang as 'fr' | 'en'] }]);
+    } else {
+      setMessages((m) => [...m, { from: 'bot', text: t('chat.no_match') }]);
+      setAwaitingEscalation(true);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-5 right-5 z-40">
+      {open && (
+        <div className="mb-3 w-80 sm:w-96 h-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+          <div className="px-4 py-3 bg-blue-600 text-white flex items-center justify-between flex-shrink-0">
+            <span className="text-sm font-semibold">{t('chat.title')}</span>
+            <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white">✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
+            {messages.map((m, i) => (
+              <div key={i} className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${m.from === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}>
+                {m.text}
+              </div>
+            ))}
+            {escalating && <div className="text-xs text-gray-400 px-2">{t('common.loading')}</div>}
+          </div>
+          <div className="p-2 border-t border-gray-100 flex gap-2 flex-shrink-0">
+            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
+              placeholder={t('chat.placeholder')} className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <button onClick={send} className="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"><Send size={16} /></button>
+          </div>
+        </div>
+      )}
+      <button onClick={() => setOpen(!open)} className="w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors">
+        <MessageCircle size={24} />
+      </button>
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { t } = useI18n();
-  const { user, profile, activeTenant, activePlan, signOut } = useAuth();
+  const { user, profile, activeTenant, activePlan, activeMembership, signOut } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -180,7 +249,7 @@ export function Dashboard() {
       <aside className={`fixed lg:sticky top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-16 flex items-center px-4 border-b border-gray-100 flex-shrink-0"><Logo size={32} /></div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-          {NAV.filter((n) => (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) || hasModuleAccess(activePlan, n.moduleKey)).map((n) => {
+          {NAV.filter((n) => (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) || (hasModuleAccess(activePlan, n.moduleKey) && hasRoleAccess(activeMembership?.permissions, n.moduleKey))).map((n) => {
             const active = loc.pathname === n.to;
             return (
               <Link key={n.to} to={n.to} onClick={() => setSidebarOpen(false)}
@@ -320,6 +389,7 @@ export function Dashboard() {
         </main>
         <Footer />
       </div>
+      <SupportChatWidget />
 
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('common.add')}
         footer={<><Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel')}</Button><Button onClick={addPatient} loading={saving}>{t('common.save')}</Button></>}>
