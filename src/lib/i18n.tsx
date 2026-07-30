@@ -306,6 +306,10 @@ const fr: Dict = {
   'billing.expired_desc': 'Choisissez un plan pour continuer à accéder à Health Cloud.',
   'billing.choose_gateway': 'Choisir votre mode de paiement',
   'billing.subscribe_cta': 'S\'abonner maintenant', 'billing.secure_note': 'Paiement sécurisé · Annulation à tout moment',
+  'billing.gateway_note': 'Carte bancaire, Mobile Money (Orange/MTN) ou virement — choisissez sur la page de paiement.',
+  'billing.error_no_session': 'Session expirée, veuillez vous reconnecter.', 'billing.error_not_configured': "Le paiement n'est pas encore activé sur cette plateforme. Contactez le support.",
+  'billing.error_generic': "Une erreur est survenue lors de l'initialisation du paiement. Veuillez réessayer.",
+  'billing.payment_confirmed': '✓ Paiement confirmé, votre plan est actif.', 'billing.payment_processing': "Paiement reçu par Flutterwave, en cours de confirmation — ça peut prendre quelques instants. Rechargez cette page si le statut ne change pas.",
   'billing.success_title': 'Abonnement activé !', 'billing.success_desc': 'Votre accès a été restauré. Bienvenue dans Health Cloud.',
 };
 
@@ -612,6 +616,10 @@ const en: Dict = {
   'billing.expired_desc': 'Choose a plan to continue accessing Health Cloud.',
   'billing.choose_gateway': 'Choose your payment method',
   'billing.subscribe_cta': 'Subscribe now', 'billing.secure_note': 'Secure payment · Cancel anytime',
+  'billing.gateway_note': 'Card, Mobile Money (Orange/MTN), or bank transfer — choose on the payment page.',
+  'billing.error_no_session': 'Session expired, please sign in again.', 'billing.error_not_configured': 'Payment is not yet enabled on this platform. Please contact support.',
+  'billing.error_generic': 'Something went wrong initiating payment. Please try again.',
+  'billing.payment_confirmed': '✓ Payment confirmed, your plan is active.', 'billing.payment_processing': 'Payment received by Flutterwave, confirmation in progress — this can take a few moments. Reload this page if the status doesn\u2019t update.',
   'billing.success_title': 'Subscription activated!', 'billing.success_desc': 'Your access has been restored. Welcome to Health Cloud.',
 };
 

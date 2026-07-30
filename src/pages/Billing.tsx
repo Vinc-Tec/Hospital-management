@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Check, ArrowRight, CreditCard, Smartphone, Building2, AlertCircle, Clock, Download } from 'lucide-react';
+import { Shield, Check, ArrowRight, CreditCard, AlertCircle, Clock, Download } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
@@ -11,14 +11,7 @@ type AccessState = 'loading' | 'ok' | 'grace' | 'expired';
 
 const GRACE_DAYS_DEFAULT = 3;
 
-const GATEWAYS = [
-  { id: 'stripe', label: 'Stripe', icon: CreditCard, color: '#635bff' },
-  { id: 'flutterwave', label: 'Flutterwave', icon: CreditCard, color: '#f5a623' },
-  { id: 'paystack', label: 'Paystack', icon: CreditCard, color: '#00c3f7' },
-  { id: 'orange_money', label: 'Orange Money', icon: Smartphone, color: '#ff7900' },
-  { id: 'mtn_momo', label: 'MTN Mobile Money', icon: Smartphone, color: '#ffcc00' },
-  { id: 'bank_transfer', label: 'Bank Transfer', icon: Building2, color: '#64748b' },
-];
+
 
 function useAccessState(): { state: AccessState; daysLeft: number; graceDaysLeft: number } {
   const { activeTenant } = useAuth();
@@ -148,7 +141,7 @@ function SubscriptionScreen() {
   const { activeTenant, signOut, refresh } = useAuth();
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [selectedGateway, setSelectedGateway] = useState<string>('');
+
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -160,18 +153,38 @@ function SubscriptionScreen() {
     });
   }, []);
 
+  const [err, setErr] = useState<string | null>(null);
   const handleSubscribe = async () => {
-    if (!selectedPlan || !selectedGateway || !activeTenant) return;
-    setLoading(true);
-    await supabase.from('tenants').update({ plan_id: selectedPlan, status: 'approved' }).eq('id', activeTenant.id);
-    await supabase.from('subscription_events').insert({
-      tenant_id: activeTenant.id,
-      event_type: 'subscription_created',
-      metadata: { plan_id: selectedPlan, gateway: selectedGateway, billing_cycle: billing },
-    }).then(() => {});
-    await refresh();
-    setSuccess(true);
-    setLoading(false);
+    if (!selectedPlan || !activeTenant) return;
+    setLoading(true); setErr(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) { setErr(t('billing.error_no_session')); setLoading(false); return; }
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flutterwave-initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan_id: selectedPlan, billing_cycle: billing }),
+    });
+    const data = await res.json();
+
+    if (data.status === 'not_configured') {
+      setErr(t('billing.error_not_configured'));
+      setLoading(false);
+      return;
+    }
+    if (!res.ok || !data.payment_link) {
+      setErr(data.message || t('billing.error_generic'));
+      setLoading(false);
+      return;
+    }
+
+    // Redirect to Flutterwave's hosted checkout. Access is only actually
+    // granted once flutterwave-webhook confirms the payment server-side
+    // and sets tenants.status/plan_id itself -- refreshing here (after
+    // the user returns via redirect_url) just reflects whatever the
+    // webhook has already done by then.
+    window.location.href = data.payment_link;
   };
 
   if (success) {
@@ -229,23 +242,20 @@ function SubscriptionScreen() {
             ))}
           </div>
 
-          {/* Payment gateways */}
+          {/* Payment provider */}
           <div className="mb-8">
-            <p className="text-white/60 text-sm font-semibold mb-3">{t('billing.choose_gateway')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {GATEWAYS.map((g) => (
-                <button key={g.id} onClick={() => setSelectedGateway(g.id)}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${selectedGateway === g.id ? 'border-blue-400 bg-blue-500/20' : 'border-white/10 hover:border-white/30 bg-white/5'}`}>
-                  <g.icon size={20} style={{ color: g.color }} />
-                  <span className="text-sm text-white font-medium">{g.label}</span>
-                  {selectedGateway === g.id && <Check size={14} className="text-blue-300 ml-auto" />}
-                </button>
-              ))}
+            <div className="flex items-center gap-3 p-4 rounded-2xl border-2 border-blue-400 bg-blue-500/20">
+              <CreditCard size={20} style={{ color: '#f5a623' }} />
+              <div>
+                <span className="text-sm text-white font-medium block">Flutterwave</span>
+                <span className="text-xs text-white/50">{t('billing.gateway_note')}</span>
+              </div>
             </div>
           </div>
 
+          {err && <p className="text-red-300 text-sm mb-4">{err}</p>}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={handleSubscribe} disabled={!selectedPlan || !selectedGateway || loading}
+            <button onClick={handleSubscribe} disabled={!selectedPlan || loading}
               className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
               {loading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
               {t('billing.subscribe_cta')}

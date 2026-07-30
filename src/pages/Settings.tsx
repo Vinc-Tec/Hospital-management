@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
@@ -10,6 +11,18 @@ export function SettingsPage() {
   const { t } = useI18n();
   const { activeTenant, activePlan, user, profile, refresh } = useAuth();
   const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support' | 'api'>('general');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [paymentReturn, setPaymentReturn] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('billing') === 'complete') {
+      setPaymentReturn(true);
+      refresh();
+      searchParams.delete('billing');
+      setSearchParams(searchParams, { replace: true });
+      setTab('billing');
+    }
+  }, []);
   const [form, setForm] = useState({ legal_name: '', commercial_name: '', email: '', phone: '', website: '', address: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -71,6 +84,12 @@ export function SettingsPage() {
           </button>
         ))}
       </div>
+
+      {paymentReturn && (
+        <div className="mb-6 p-4 rounded-xl border border-blue-200 bg-blue-50 text-sm text-blue-800">
+          {activeTenant?.status === 'approved' ? t('billing.payment_confirmed') : t('billing.payment_processing')}
+        </div>
+      )}
 
       {tab === 'general' && (
         <Card className="p-6 max-w-2xl">
@@ -363,12 +382,28 @@ function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => vo
     })();
   }, []);
 
+  const [err, setErr] = useState<string | null>(null);
   const selectPlan = async (planId: string) => {
-    setSaving(true);
-    await supabase.from('tenants').update({ plan_id: planId }).eq('id', tenant.id);
-    await onUpdated();
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true); setErr(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) { setErr(t('billing.error_no_session')); setSaving(false); return; }
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flutterwave-initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan_id: planId, billing_cycle: 'monthly' }),
+    });
+    const data = await res.json();
+    setSaving(false);
+
+    if (data.status === 'not_configured') { setErr(t('billing.error_not_configured')); return; }
+    if (!res.ok || !data.payment_link) { setErr(data.message || t('billing.error_generic')); return; }
+
+    // Real access change happens server-side in flutterwave-webhook once
+    // Flutterwave confirms payment -- this redirect just takes the admin
+    // to actually pay, it does not grant anything itself.
+    window.location.href = data.payment_link;
   };
 
   const currentPlan = plans.find((p) => p.id === tenant.plan_id);
@@ -411,6 +446,7 @@ function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => vo
           </div>
         )}
         {saved && <p className="mt-3 text-sm text-emerald-600 flex items-center gap-1"><Check size={16} /> {t('settings.saved')}</p>}
+        {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
       </div>
     </div>
   );
