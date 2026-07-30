@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { type ReactNode, useEffect, useState, Suspense, lazy, Component } from 'react';
-import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess } from './lib/auth';
+import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess, hasRoleAccess } from './lib/auth';
 import { supabase } from './lib/supabase';
+import { CursorEffect } from './components/CursorEffect';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -155,23 +156,36 @@ function TenantRoute({ children }: { children: ReactNode }) {
 }
 
 function ModuleGate({ moduleKey, children }: { moduleKey: string; children: ReactNode }) {
-  const { activePlan, profile, user } = useAuth();
+  const { activePlan, activeMembership, profile, user } = useAuth();
   const { t } = useI18n();
   // Super admins always have full access, regardless of any tenant's plan.
   if (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) return <>{children}</>;
-  if (hasModuleAccess(activePlan, moduleKey)) return <>{children}</>;
-  return (
-    <div className="flex flex-col items-center justify-center text-center py-24 px-6">
-      <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-        <span className="text-2xl">🔒</span>
+  if (!hasModuleAccess(activePlan, moduleKey)) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-24 px-6">
+        <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+          <span className="text-2xl">🔒</span>
+        </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('gate.title')}</h2>
+        <p className="text-sm text-gray-500 max-w-sm mb-6">{t('gate.body')}</p>
+        <a href="/app/settings#billing" className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+          {t('gate.cta')}
+        </a>
       </div>
-      <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('gate.title')}</h2>
-      <p className="text-sm text-gray-500 max-w-sm mb-6">{t('gate.body')}</p>
-      <a href="/app/settings#billing" className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-        {t('gate.cta')}
-      </a>
-    </div>
-  );
+    );
+  }
+  if (!hasRoleAccess(activeMembership?.permissions, moduleKey)) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-24 px-6">
+        <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <span className="text-2xl">🔒</span>
+        </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('gate.role_title')}</h2>
+        <p className="text-sm text-gray-500 max-w-sm">{t('gate.role_body')}</p>
+      </div>
+    );
+  }
+  return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
@@ -237,6 +251,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
+      <CursorEffect />
       <I18nProvider>
         <AuthProvider>
           <BrowserRouter>

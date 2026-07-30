@@ -4,13 +4,13 @@ import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
 import { Button, Card, Input, Badge, Select, Modal } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 
 export function SettingsPage() {
   const { t } = useI18n();
   const { activeTenant, activePlan, user, profile, refresh } = useAuth();
-  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support' | 'api'>('general');
+  const [tab, setTab] = useState<'general' | 'profile' | 'billing' | 'branches' | 'support' | 'api' | 'team'>('general');
   const [searchParams, setSearchParams] = useSearchParams();
   const [paymentReturn, setPaymentReturn] = useState(false);
 
@@ -63,6 +63,7 @@ export function SettingsPage() {
     { key: 'profile' as const, icon: User, label: t('settings.profile') },
     { key: 'billing' as const, icon: CreditCard, label: t('settings.billing') },
     { key: 'branches' as const, icon: Building2, label: t('settings.branches') },
+    ...(activeTenant?.owner_user_id === user?.id ? [{ key: 'team' as const, icon: Users, label: t('settings.team') }] : []),
     { key: 'support' as const, icon: HeadphonesIcon, label: t('settings.support') },
     ...(hasModuleAccess(activePlan, 'api') ? [{ key: 'api' as const, icon: Key, label: t('settings.api') }] : []),
   ];
@@ -130,6 +131,7 @@ export function SettingsPage() {
       )}
 
       {tab === 'support' && <SupportTab />}
+      {tab === 'team' && <TeamTab tenantId={activeTenant.id} />}
       {tab === 'api' && <ApiTab tenantId={activeTenant.id} />}
     </div>
   );
@@ -291,6 +293,77 @@ function MfaSection() {
         </>
       )}
     </Card>
+  );
+}
+
+function TeamTab({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
+  const [members, setMembers] = useState<{ id: string; user_id: string; role: string; profiles: { full_name: string; email: string } | null }[]>([]);
+  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [form, setForm] = useState({ email: '', role_name: 'admin' });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = () => {
+    supabase.from('tenant_memberships').select('id, user_id, role, profiles(full_name, email)').eq('tenant_id', tenantId)
+      .then(({ data }) => setMembers((data as any) ?? []));
+    supabase.from('roles').select('id, name').eq('tenant_id', tenantId).order('name')
+      .then(({ data }) => setRoles((data as typeof roles) ?? []));
+  };
+  useEffect(() => { load(); }, [tenantId]);
+
+  const invite = async () => {
+    if (!form.email.trim()) return;
+    setSubmitting(true); setErr(null); setMsg(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) { setErr(t('billing.error_no_session')); setSubmitting(false); return; }
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-team-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ email: form.email.trim(), role_name: form.role_name }),
+    });
+    const data = await res.json();
+    setSubmitting(false);
+
+    if (!res.ok) { setErr(data.message || t('settings.team_error_generic')); return; }
+    setMsg(data.status === 'invited' ? t('settings.team_invited') : t('settings.team_added'));
+    setForm({ email: '', role_name: 'admin' });
+    load();
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <Card className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-1">{t('settings.team_invite_title')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('settings.team_invite_desc')}</p>
+        <div className="space-y-3">
+          <Input label={t('common.email')} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Select label={t('fld.role_name')} value={form.role_name} onChange={(e) => setForm({ ...form, role_name: e.target.value })}
+            options={[{ value: 'admin', label: t('settings.team_role_admin') }, ...roles.map((r) => ({ value: r.name, label: r.name }))]} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          {msg && <p className="text-sm text-emerald-600">{msg}</p>}
+          <Button onClick={invite} loading={submitting}>{t('settings.team_invite_cta')}</Button>
+        </div>
+      </Card>
+
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-3">{t('settings.team_members')}</h3>
+        <div className="space-y-2">
+          {members.map((m) => (
+            <Card key={m.id} className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{m.profiles?.full_name || m.profiles?.email || m.user_id}</p>
+                <p className="text-xs text-gray-400">{m.profiles?.email}</p>
+              </div>
+              <Badge>{m.role}</Badge>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
