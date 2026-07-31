@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { type ReactNode, useEffect, useState, Suspense, lazy, Component } from 'react';
 import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess, hasRoleAccess } from './lib/auth';
 import { supabase } from './lib/supabase';
-import { CursorEffect } from './components/CursorEffect';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -251,7 +250,6 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <CursorEffect />
       <I18nProvider>
         <AuthProvider>
           <BrowserRouter>
