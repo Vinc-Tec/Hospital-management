@@ -260,7 +260,7 @@ function SaTenants({ tenants, onAction }: { tenants: Tenant[]; onAction: () => v
       <Modal open={!!selected} onClose={() => setSelected(null)} title={t('sa.tenant_detail')} footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={() => selected && setStatus(selected, selected.status)}>{t('sa.save_note')}</Button></>}>
         {selected && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-sm"><div><span className="text-gray-400">Legal:</span> {selected.legal_name}</div><div><span className="text-gray-400">Type:</span> {selected.healthcare_type}</div><div><span className="text-gray-400">Email:</span> {selected.email}</div><div><span className="text-gray-400">Phone:</span> {selected.phone || '—'}</div></div>
+            <div className="grid grid-cols-2 gap-2 text-sm"><div><span className="text-gray-400">{t('sa.field_legal')}</span> {selected.legal_name}</div><div><span className="text-gray-400">{t('sa.field_type')}</span> {selected.healthcare_type}</div><div><span className="text-gray-400">{t('sa.field_email')}</span> {selected.email}</div><div><span className="text-gray-400">{t('sa.field_phone')}</span> {selected.phone || '—'}</div></div>
             <Input label={t('sa.verification_note')} value={note} onChange={(e) => setNote(e.target.value)} />
             <div className="flex gap-2 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setStatus(selected, 'approved')}><Check size={14} /> {t('sa.approve')}</Button>
@@ -373,8 +373,8 @@ function SaPerformance({ tenants }: { tenants: Tenant[] }) {
       setData(results); setLoading(false);
     })();
   }, [tenants]);
-  if (loading) return <Card className="p-8"><div className="text-center text-sm text-gray-400">Loading...</div></Card>;
-  if (data.length === 0) return <Card className="p-8"><EmptyState icon={TrendingUp} title="No performance data" /></Card>;
+  if (loading) return <Card className="p-8"><div className="text-center text-sm text-gray-400">{t('common.loading')}</div></Card>;
+  if (data.length === 0) return <Card className="p-8"><EmptyState icon={TrendingUp} title={t('sa.no_performance_data')} /></Card>;
   return (
     <div className="space-y-6">
       {data.map((d) => (
@@ -508,7 +508,7 @@ function SaLocalities({ countries, regions, cities, localities, onAction }: { co
       <Card className="p-5">
         <h3 className="font-semibold text-gray-900 mb-4">{t('sa.add_locality')}</h3>
         <div className="space-y-3">
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">City</span>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.city_label')}</span>
             <select value={form.city_id} onChange={(e) => setForm({ ...form, city_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
               <option value="">...</option>
               {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -576,11 +576,11 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title={t('sa.add_code')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}>
         <div className="space-y-3">
-          <Input label="Country ISO (e.g. CMR)" required placeholder="CMR, CIV, SEN..." value={form.country_iso} onChange={(e) => setForm({ ...form, country_iso: e.target.value })} />
+          <Input label={t('sa.country_iso_label')} required placeholder={t('sa.country_iso_placeholder')} value={form.country_iso} onChange={(e) => setForm({ ...form, country_iso: e.target.value })} />
           <Input label={t('fld.description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          <Input label="Discount %" type="number" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} />
-          <Input label="Max uses" type="number" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })} />
-          <Input label="Valid until" type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
+          <Input label={t('sa.discount_percent')} type="number" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} />
+          <Input label={t('sa.max_uses')} type="number" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })} />
+          <Input label={t('sa.valid_until')} type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
       </Modal>
     </div>
@@ -651,7 +651,7 @@ function SaSupport({ tickets, onAction }: { tickets: any[]; onAction: () => void
           <div className="space-y-3">
             <p className="text-sm font-medium text-gray-900">{selected.subject}</p>
             <p className="text-sm text-gray-600">{selected.description}</p>
-            <Input label="Resolution" value={reply} onChange={(e) => setReply(e.target.value)} />
+            <Input label={t('sa.resolution_label')} value={reply} onChange={(e) => setReply(e.target.value)} />
           </div>
         )}
       </Modal>
@@ -946,10 +946,10 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
           </div>
         )}
       </Card>
-      <Modal open={open} onClose={() => setOpen(false)} title="Send Notification" footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={send}>{t('common.save')}</Button></>}>
+      <Modal open={open} onClose={() => setOpen(false)} title={t('sa.send_notification')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={send}>{t('common.save')}</Button></>}>
         <div className="space-y-3">
-          <Input label="Title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <Input label="Message" required value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+          <Input label={t('sa.notif_title_label')} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <Input label={t('sa.notif_message_label')} required value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.target')}</span><select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="all">{t('sa.all_users')}</option><option value="admins">{t('sa.admins_only')}</option><option value="tenants">{t('sa.all_tenants_target')}</option></select></label>
         </div>
       </Modal>
@@ -980,25 +980,25 @@ function SaSystemSettings() {
     setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
-  if (!settings) return <div className="max-w-2xl"><Card className="p-6 text-sm text-gray-400">Loading...</Card></div>;
+  if (!settings) return <div className="max-w-2xl"><Card className="p-6 text-sm text-gray-400">{t('common.loading')}</Card></div>;
 
   return (
     <div className="max-w-2xl">
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-2"><SettingsIcon size={24} className="text-gray-600" /><h3 className="font-semibold text-gray-900">{t('sa.system_settings')}</h3></div>
-        <p className="text-xs text-gray-400 mb-6">These settings are stored in the database and take effect immediately across the whole platform -- they are not just displayed, they are actually enforced (trial length on new signups, maintenance mode blocking non-admin access, the maximum tenant count).</p>
+        <p className="text-xs text-gray-400 mb-6">{t('sa.settings_desc')}</p>
         <div className="space-y-4">
-          <Input label="Platform Name" value={settings.platform_name} onChange={(e) => setSettings({ ...settings, platform_name: e.target.value })} />
-          <Input label="Support Email" type="email" value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} />
+          <Input label={t('sa.platform_name_label')} value={settings.platform_name} onChange={(e) => setSettings({ ...settings, platform_name: e.target.value })} />
+          <Input label={t('sa.support_email_label')} type="email" value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Trial Days (applies to new signups)" type="number" value={String(settings.trial_days)} onChange={(e) => setSettings({ ...settings, trial_days: parseInt(e.target.value) || 1 })} />
-            <Input label="Max Tenants (blank = unlimited)" type="number" value={settings.max_tenants === null ? '' : String(settings.max_tenants)} onChange={(e) => setSettings({ ...settings, max_tenants: e.target.value === '' ? null : parseInt(e.target.value) })} />
+            <Input label={t('sa.trial_days_label')} type="number" value={String(settings.trial_days)} onChange={(e) => setSettings({ ...settings, trial_days: parseInt(e.target.value) || 1 })} />
+            <Input label={t('sa.max_tenants_label')} type="number" value={settings.max_tenants === null ? '' : String(settings.max_tenants)} onChange={(e) => setSettings({ ...settings, max_tenants: e.target.value === '' ? null : parseInt(e.target.value) })} />
           </div>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={settings.maintenance_mode} onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">Maintenance Mode (blocks all non-super-admin access)</span></label>
-          {settings.maintenance_mode && <Input label="Maintenance message shown to users" value={settings.maintenance_message} onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })} />}
+          <label className="flex items-center gap-2"><input type="checkbox" checked={settings.maintenance_mode} onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">{t('sa.maintenance_mode_label')}</span></label>
+          {settings.maintenance_mode && <Input label={t('sa.maintenance_message_label')} value={settings.maintenance_message} onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })} />}
           {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={save} className="w-full">{t('sa.save_settings')}</Button>
-          {saved && <p className="text-sm text-emerald-600 text-center">Settings saved and now active platform-wide.</p>}
+          {saved && <p className="text-sm text-emerald-600 text-center">{t('sa.settings_saved_desc')}</p>}
         </div>
       </Card>
     </div>
