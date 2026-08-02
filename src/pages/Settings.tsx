@@ -40,10 +40,11 @@ export function SettingsPage() {
     }
   }, [activeTenant]);
 
+  const [err, setErr] = useState<string | null>(null);
   const save = async () => {
     if (!activeTenant) return;
-    setSaving(true); setSaved(false);
-    await supabase.from('tenants').update({
+    setSaving(true); setSaved(false); setErr(null);
+    const { error } = await supabase.from('tenants').update({
       legal_name: form.legal_name,
       commercial_name: form.commercial_name || null,
       email: form.email,
@@ -51,6 +52,7 @@ export function SettingsPage() {
       website: form.website || null,
       address: form.address || null,
     }).eq('id', activeTenant.id);
+    if (error) { setErr(error.message); setSaving(false); return; }
     await refresh();
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -105,6 +107,7 @@ export function SettingsPage() {
           <div className="mt-6 flex items-center gap-3">
             <Button onClick={save} loading={saving}>{t('settings.save')}</Button>
             {saved && <span className="flex items-center gap-1 text-sm text-emerald-600"><Check size={16} /> {t('settings.saved')}</span>}
+            {err && <span className="text-sm text-red-600">{err}</span>}
           </div>
         </Card>
       )}
@@ -162,18 +165,23 @@ function ApiTab({ tenantId }: { tenantId: string }) {
   };
 
   const toggle = async (k: { id: string; is_active: boolean }) => {
-    await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id);
+    setErr(null);
+    const { error } = await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id);
+    if (error) { setErr(error.message); return; }
     load();
   };
 
   const remove = async (id: string) => {
-    await supabase.from('api_keys').delete().eq('id', id);
+    setErr(null);
+    const { error } = await supabase.from('api_keys').delete().eq('id', id);
+    if (error) { setErr(error.message); return; }
     load();
   };
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 text-sm text-blue-800">{t('settings.api_desc')}</div>
+      {err && !open && <p className="text-sm text-red-600">{err}</p>}
       <div className="flex justify-end"><Button onClick={() => setOpen(true)}><Key size={16} /> {t('sa.generate_api_key')}</Button></div>
       {keys.length === 0 ? (
         <Card className="p-8 text-center text-sm text-gray-400">{t('common.none')}</Card>
@@ -559,25 +567,32 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
   const save = async () => {
     if (!tenant || !form.name) { setErr(t('onb.err.required')); return; }
     setSaving(true); setErr(null);
+    let saveError: string | null = null;
     if (editing) {
       const { error } = await supabase.from('branches').update({ name: form.name, healthcare_type: form.healthcare_type, address: form.address, phone: form.phone, email: form.email, manager_name: form.manager_name, manager_phone: form.manager_phone }).eq('id', editing.id);
-      if (error) setErr(error.message);
+      saveError = error?.message ?? null;
     } else {
       const { error } = await supabase.from('branches').insert({ tenant_id: tenant.id, name: form.name, healthcare_type: form.healthcare_type, is_head_office: false, address: form.address, phone: form.phone, email: form.email, manager_name: form.manager_name, manager_phone: form.manager_phone, status: 'active' });
-      if (error) setErr(error.message);
+      saveError = error?.message ?? null;
     }
     setSaving(false);
-    if (!err) { setShowModal(false); await load(); await onUpdated(); }
+    if (saveError) { setErr(saveError); return; }
+    setShowModal(false); await load(); await onUpdated();
   };
 
   const remove = async (id: string) => {
-    await supabase.from('branches').delete().eq('id', id);
+    setErr(null);
+    const { error } = await supabase.from('branches').delete().eq('id', id);
+    if (error) { setErr(error.message); return; }
     await load();
   };
 
+  const [accountingErr, setAccountingErr] = useState<string | null>(null);
   const updateAccountingMode = async (mode: string) => {
     if (!tenant) return;
-    await supabase.from('tenants').update({ accounting_mode: mode }).eq('id', tenant.id);
+    setAccountingErr(null);
+    const { error } = await supabase.from('tenants').update({ accounting_mode: mode }).eq('id', tenant.id);
+    if (error) { setAccountingErr(error.message); return; }
     await onUpdated();
   };
 
@@ -594,6 +609,7 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
             </button>
           ))}
         </div>
+        {accountingErr && <p className="text-sm text-red-600 mt-2">{accountingErr}</p>}
       </div>
 
       {/* Branches list */}
@@ -609,6 +625,7 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
         {!canAdd && branches.length > 0 && (
           <p className="text-xs text-amber-600 mb-3">{t('settings.branches.max_reached')}</p>
         )}
+        {err && !showModal && <p className="text-sm text-red-600 mb-3">{err}</p>}
 
         {loading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
