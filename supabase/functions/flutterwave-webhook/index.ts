@@ -82,7 +82,18 @@ Deno.serve(async (req) => {
 
   const meta = paymentRow.metadata as { plan_id: string; billing_cycle: 'monthly' | 'yearly' };
 
-  await db.from('payments').update({ status: 'succeeded', paid_at: new Date().toISOString() }).eq('id', paymentRow.id);
+  // Atomic guard against duplicate processing: only proceed if this
+  // update actually flips a still-'pending' row. If two webhook
+  // deliveries for the same payment arrive nearly simultaneously, only
+  // one of them will find a matching row here (WHERE status='pending')
+  // -- the other gets zero rows back and stops before granting access or
+  // inserting a second subscription row.
+  const { data: updatedRows } = await db.from('payments')
+    .update({ status: 'succeeded', paid_at: new Date().toISOString() })
+    .eq('id', paymentRow.id).eq('status', 'pending').select('id');
+  if (!updatedRows || updatedRows.length === 0) {
+    return json({ status: 'already_processed' });
+  }
 
   // This is the one and only place in the whole codebase that sets a
   // tenant's status to 'approved' with a plan_id, following a real,
