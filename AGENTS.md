@@ -48,6 +48,17 @@
   which bypasses RLS and breaks the cycle. Other tenant-scoped tables
   (patients, doctors, ...) keep their `EXISTS (... tenant_memberships ...)`
   form because the cycle is broken at the tenants/memberships layer.
+- `20260802010000_rls_recursion_bulletproof` makes this bulletproof: it
+  recreates the three helpers as SECURITY DEFINER (pinned search_path) so
+  they unambiguously bypass RLS, and rewrites the `branches` policies
+  (the last one that cross-joined tenants + tenant_memberships directly).
+  After both migrations, NO RLS policy references tenants/tenant_memberships
+  via a raw cross-table sub-query, so the recursion error cannot occur.
+- **IMPORTANT**: these migrations must be applied to the live Supabase DB
+  (`supabase db push` or the SQL editor). The frontend error persists until
+  they are applied. The helpers terminate even without RLS bypass because
+  `is_tenant_member` only reads the caller's own membership rows
+  (`user_id = auth.uid()`), so the cycle is structurally broken.
 
 ## Tenant memory / active-tenant switching
 - `loadProfileAndTenants()` reads `tenant_memberships` (user_id) AND
