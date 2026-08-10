@@ -892,6 +892,7 @@ function SaReports({ tenants, plans, logs }: { tenants: Tenant[]; plans: Subscri
 }
 
 function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActivity: any[] }) {
+  const { t } = useI18n();
   const successful = loginActivity.filter((la) => la.success).length;
   const failed = loginActivity.filter((la) => !la.success).length;
   const byDevice: Record<string, number> = {};

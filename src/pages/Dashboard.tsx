@@ -63,6 +63,7 @@ function TrialDaysWidget({ tenant }: { tenant: any }) {
 }
 
 function NotificationBell() {
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<{ id: string; title: string; message: string; created_at: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>(() => JSON.parse(localStorage.getItem('hc_seen_notifications') || '[]'));

@@ -8,6 +8,7 @@ export const supabase = createClient(
 
 export type Tenant = {
   id: string; legal_name: string; commercial_name: string | null;
+  owner_user_id: string | null;
   healthcare_type: string; country_id: string | null; region_id: string | null;
   district_id: string | null; city_id: string | null; locality_id: string | null;
   address: string | null; gps_lat: number | null; gps_lng: number | null;
