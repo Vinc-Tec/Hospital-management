@@ -87,7 +87,30 @@ Deno.serve(async (req) => {
   }).select().single();
   if (payErr) return json({ error: 'payment_row_failed', message: payErr.message }, 500);
 
-  const origin = req.headers.get('origin') ?? '';
+  // redirect_url must be a trusted, configured origin -- never derived
+  // from the request's Origin header, which a caller can spoof to send a
+  // paying user to an arbitrary site after checkout. Prefer APP_PUBLIC_URL
+  // (function secret) and fall back to the request Origin only if it is on
+  // the allow-list; otherwise reject rather than trust an unknown origin.
+  const allowedOriginsRaw = (Deno.env.get('ALLOWED_REDIRECT_ORIGINS') ?? '').trim();
+  const publicUrl = (Deno.env.get('APP_PUBLIC_URL') ?? '').trim().replace(/\/+$/, '');
+  const requestOrigin = (req.headers.get('origin') ?? '').trim().replace(/\/+$/, '');
+  const allowed = new Set(
+    allowedOriginsRaw
+      .split(',')
+      .map((s) => s.trim().replace(/\/+$/, ''))
+      .filter(Boolean)
+  );
+  if (publicUrl) allowed.add(publicUrl);
+
+  let redirectBase = publicUrl;
+  if (!redirectBase && allowed.has(requestOrigin)) redirectBase = requestOrigin;
+  if (!redirectBase) {
+    await db.from('payments').update({ status: 'failed', metadata: { ...(paymentRow.metadata as object), reason: 'no_allowed_redirect_origin' } }).eq('id', paymentRow.id);
+    return json({ error: 'no_allowed_redirect_origin', message: 'APP_PUBLIC_URL / ALLOWED_REDIRECT_ORIGINS is not configured.' }, 500);
+  }
+
+  const redirectUrl = `${redirectBase}/app/settings?billing=complete`;
   const flwResp = await fetch('https://api.flutterwave.com/v3/payments', {
     method: 'POST',
     headers: {
@@ -98,7 +121,7 @@ Deno.serve(async (req) => {
       tx_ref: txRef,
       amount,
       currency: 'USD',
-      redirect_url: `${origin}/app/settings?billing=complete`,
+      redirect_url: redirectUrl,
       customer: {
         email: tenant.email,
         name: tenant.commercial_name || tenant.legal_name,

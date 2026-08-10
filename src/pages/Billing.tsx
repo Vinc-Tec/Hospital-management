@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Check, ArrowRight, CreditCard, AlertCircle, Clock, Download } from 'lucide-react';
+import { Shield, Check, CreditCard, AlertCircle, Clock, Download } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
@@ -138,13 +138,12 @@ function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
 
 function SubscriptionScreen() {
   const { t } = useI18n();
-  const { activeTenant, signOut, refresh } = useAuth();
+  const { activeTenant, signOut } = useAuth();
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
 
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     supabase.from('subscription_plans').select('*').eq('is_active', true).order('sort_order').then(({ data }) => {
@@ -186,23 +185,6 @@ function SubscriptionScreen() {
     // webhook has already done by then.
     window.location.href = data.payment_link;
   };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 text-center">
-          <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check size={32} className="text-emerald-500" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-2">{t('billing.success_title')}</h2>
-          <p className="text-gray-500 mb-6">{t('billing.success_desc')}</p>
-          <Link to="/app" className="block w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors">
-            {t('onb.goto.dashboard')} <ArrowRight size={16} className="inline ml-1" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">

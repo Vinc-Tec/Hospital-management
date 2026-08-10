@@ -14,8 +14,10 @@ import { Button, Card, Input, Modal, Badge, EmptyState, Select } from '../compon
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/brand';
 
-const SUPER_ADMIN_EMAILS = ['vincentnogue2@gmail.com', 'vincentnogue@yahoo.com', 'webdxb1@gmail.com', 'liyahjoha@gmail.com'];
-const PROTECTED_EMAILS = SUPER_ADMIN_EMAILS;
+// The protected super-admin list is fetched from protected_admin_emails at
+// runtime (see auth.tsx); it is no longer hardcoded in this file. The
+// authoritative check is profiles.is_super_admin (enforced server-side),
+// and the email gate below is cosmetic only.
 
 const NAV = [
   { key: 'overview', icon: LayoutDashboard },
@@ -113,7 +115,7 @@ export function SuperAdmin() {
   };
   useEffect(() => { loadAll(); }, []);
 
-  const isAuthorized = profile?.is_super_admin && user?.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isAuthorized = profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email);
 
   if (!isAuthorized) {
     return (
@@ -755,7 +757,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
   };
 
   const toggleSuperAdmin = async (p: any) => {
-    const isProtected = PROTECTED_EMAILS.includes((p.email ?? '').toLowerCase());
+    const isProtected = isProtectedSuperAdminEmail(p.email);
     if (isProtected) return;
     await supabase.from('profiles').update({ is_super_admin: !p.is_super_admin }).eq('id', p.id);
     onAction();
@@ -770,7 +772,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
             <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.name')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('common.email')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('sa.super_admin_label')}</th><th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
               {profiles.map((p) => {
-                const isProtected = PROTECTED_EMAILS.includes((p.email ?? '').toLowerCase());
+                const isProtected = isProtectedSuperAdminEmail(p.email);
                 return (
                   <tr key={p.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.full_name || '—'}</td>

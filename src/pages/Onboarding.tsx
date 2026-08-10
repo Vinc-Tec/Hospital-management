@@ -158,17 +158,23 @@ export function Onboarding() {
       owner_identification: form.owner_identification || null,
       insurance_documents: form.insurance_documents || null,
       payment_gateway: selectedGateway || null,
-      plan_id: form.plan_id || null,
       currency_code: selectedCountry?.currency_code || 'XAF',
       timezone: selectedCountry?.timezone || 'Africa/Douala',
-      status: 'approved',
+      // Billing-sensitive columns are governed server-side by the
+      // fn_lock_tenant_insert trigger:
+      //   - status is forced to 'pending' (only the Flutterwave webhook sets
+      //     'approved' after a verified payment);
+      //   - trial_ends_at is recomputed from platform_settings (the client
+      //     value is ignored) so no arbitrary / infinite trial is possible;
+      //   - grace_period_ends_at is cleared.
+      // plan_id is intentionally kept (the chosen plan drives module access
+      // during the trial via tenant_module_enabled); plan_id alone grants no
+      // billing access because the "approved" branch also needs status =
+      // 'approved', which the client can never set.
+      plan_id: form.plan_id || null,
     };
 
-    const { data: settings } = await supabase.from('platform_settings').select('trial_days').eq('id', true).single();
-    const trialDays = settings?.trial_days ?? 7;
-    const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
-
-    const { data: tenant, error: e1 } = await supabase.from('tenants').insert({ ...payload, trial_ends_at: trialEndsAt, onboarding_completed: true }).select().single();
+    const { data: tenant, error: e1 } = await supabase.from('tenants').insert({ ...payload, onboarding_completed: true }).select().single();
     if (e1) { setErr(e1.message); setSubmitting(false); return; }
 
     const { error: e2 } = await supabase.from('tenant_memberships').insert({ tenant_id: tenant.id, user_id: user.id, role: 'admin', permissions: {} });

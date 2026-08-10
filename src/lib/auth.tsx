@@ -2,15 +2,21 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, type Profile, type Tenant, type Membership, type SubscriptionPlan } from './supabase';
 
-export const PROTECTED_SUPER_ADMIN_EMAILS = [
-  'vincentnogue2@gmail.com',
-  'vincentnogue@yahoo.com',
-  'webdxb1@gmail.com',
-  'liyahjoha@gmail.com',
-];
+// Protected super-admin emails are no longer hardcoded in the bundle.
+// They live in the `protected_admin_emails` table (admin-managed) and are
+// fetched once per session for the cosmetic gate below. The REAL authority
+// is `profiles.is_super_admin`, enforced server-side by handle_new_user()
+// and the RLS policies -- this client check only hides UI meant for
+// platform operators and must never be a security boundary.
+let protectedAdminEmails: Set<string> = new Set();
+
+export async function loadProtectedAdminEmails(): Promise<void> {
+  const { data } = await supabase.from('protected_admin_emails').select('email');
+  protectedAdminEmails = new Set((data ?? []).map((r: { email: string }) => r.email.toLowerCase()));
+}
 
 export function isProtectedSuperAdminEmail(email: string | null | undefined): boolean {
-  return !!email && PROTECTED_SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
+  return !!email && protectedAdminEmails.has(email.toLowerCase());
 }
 
 // Modules that every plan (including no plan / trial) can always access.
@@ -75,6 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndTenants = async (currentUser: User) => {
+    // Ensure the cosmetic super-admin email gate reflects the DB-managed
+    // list (kept out of the static bundle). Best-effort: a failure here
+    // just leaves the gate conservative (no extra UI shown).
+    loadProtectedAdminEmails().catch(() => {});
+
     const { data: prof } = await supabase.from('profiles')
       .select('id, full_name, is_super_admin, email')
       .eq('id', currentUser.id).maybeSingle();

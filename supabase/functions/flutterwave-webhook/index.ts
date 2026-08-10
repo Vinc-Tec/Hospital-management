@@ -90,17 +90,37 @@ Deno.serve(async (req) => {
   await db.from('tenants').update({ status: 'approved', plan_id: meta.plan_id }).eq('id', paymentRow.tenant_id);
 
   const startDate = new Date().toISOString().slice(0, 10);
-  const nextBilling = new Date();
-  nextBilling.setMonth(nextBilling.getMonth() + (meta.billing_cycle === 'yearly' ? 12 : 1));
+  // end_date drives recurring access: tenant_billing_active() requires an
+  // active subscription whose end_date (or next_billing_date) is still in
+  // the future. Set end_date to the end of the paid cycle; the billing
+  // housekeeping job lapses the subscription (past_due) once it passes.
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + (meta.billing_cycle === 'yearly' ? 365 : 30));
+
+  // Replace any prior subscription for this tenant with the new active one.
+  // A tenant should have a single active subscription at a time; multiple
+  // rows would let an old expired one keep a "live" look-alike around.
+  await db.from('tenant_subscriptions')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'superseded by new payment' })
+    .eq('tenant_id', paymentRow.tenant_id)
+    .eq('status', 'active');
 
   await db.from('tenant_subscriptions').insert({
     tenant_id: paymentRow.tenant_id,
     plan_id: meta.plan_id,
     billing_cycle: meta.billing_cycle,
     start_date: startDate,
+    end_date: endDate.toISOString().slice(0, 10),
+    next_billing_date: endDate.toISOString().slice(0, 10),
     status: 'active',
     payment_gateway: 'flutterwave',
-    next_billing_date: nextBilling.toISOString().slice(0, 10),
+  });
+
+  // Record the lifecycle event for auditability.
+  await db.from('subscription_events').insert({
+    tenant_id: paymentRow.tenant_id,
+    event_type: 'payment_succeeded',
+    metadata: { plan_id: meta.plan_id, billing_cycle: meta.billing_cycle, amount: verifiedAmount, currency: verifiedCurrency, tx_ref: txRef },
   });
 
   return json({ status: 'ok', tenant_id: paymentRow.tenant_id });

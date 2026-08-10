@@ -31,10 +31,31 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const PAGE_SIZE = 50;
 
-function json(body: unknown, status = 200) {
+// CORS: by default this public API uses a permissive origin (API-key auth,
+// not cookies, so broad CORS is safe). If API_ALLOWED_ORIGINS is set as a
+// function secret (comma-separated), CORS is locked to that allow-list
+// instead. The preflight always echoes the requesting Origin when it is
+// allowed, or '*' otherwise, so existing integrations keep working.
+function allowedCorsOrigin(reqOrigin: string | null): string {
+  const list = (Deno.env.get('API_ALLOWED_ORIGINS') ?? '').trim();
+  if (!list) return '*';
+  const allowed = new Set(list.split(',').map((s) => s.trim()).filter(Boolean));
+  if (reqOrigin && allowed.has(reqOrigin)) return reqOrigin;
+  return allowed.values().next().value ?? '*';
+}
+
+function corsHeaders(reqOrigin: string | null) {
+  return {
+    'Access-Control-Allow-Origin': allowedCorsOrigin(reqOrigin),
+    'Access-Control-Allow-Headers': 'x-api-key, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  };
+}
+
+function json(body: unknown, status = 200, reqOrigin: string | null = null) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(reqOrigin) },
   });
 }
 
@@ -45,18 +66,13 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const reqOrigin = req.headers.get('origin');
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'x-api-key, content-type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      },
-    });
+    return new Response(null, { status: 204, headers: corsHeaders(reqOrigin) });
   }
 
   const apiKey = req.headers.get('x-api-key');
-  if (!apiKey) return json({ error: 'missing_api_key', message: 'Provide your key in the X-API-Key header.' }, 401);
+  if (!apiKey) return json({ error: 'missing_api_key', message: 'Provide your key in the X-API-Key header.' }, 401, reqOrigin);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -70,12 +86,12 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (keyErr || !keyRow || !keyRow.is_active) {
-    return json({ error: 'invalid_api_key', message: 'This API key is invalid or has been deactivated.' }, 401);
+    return json({ error: 'invalid_api_key', message: 'This API key is invalid or has been deactivated.' }, 401, reqOrigin);
   }
   if (!keyRow.tenant_id) {
     // Platform-level keys (tenant_id IS NULL) are not served by this
     // tenant-scoped endpoint -- there is no defined use case for them here.
-    return json({ error: 'unsupported_key_type', message: 'This key is not scoped to a tenant.' }, 403);
+    return json({ error: 'unsupported_key_type', message: 'This key is not scoped to a tenant.' }, 403, reqOrigin);
   }
 
   // Confirm the owning tenant's plan actually includes API access, and its
@@ -88,18 +104,16 @@ Deno.serve(async (req) => {
     .eq('id', keyRow.tenant_id)
     .maybeSingle();
 
-  if (!tenant) return json({ error: 'tenant_not_found' }, 404);
+  if (!tenant) return json({ error: 'tenant_not_found' }, 404, reqOrigin);
 
-  const now = Date.now();
-  const billingActive =
-    (tenant.status === 'approved' && !!tenant.plan_id) ||
-    new Date(tenant.trial_ends_at).getTime() > now ||
-    new Date(tenant.grace_period_ends_at ?? tenant.trial_ends_at).getTime() + 3 * 24 * 60 * 60 * 1000 > now;
-
+  // Use the same server-side authority as RLS / the write trigger so the
+  // public API cannot grant access when the DB itself would refuse it
+  // (e.g. an active, non-expired subscription is required once "approved").
+  const { data: billingActive } = await db.rpc('tenant_billing_active', { p_tenant_id: keyRow.tenant_id });
   const apiModuleEnabled = (tenant as any).subscription_plans?.module_flags?.api === true;
 
-  if (!billingActive) return json({ error: 'subscription_inactive' }, 403);
-  if (!apiModuleEnabled) return json({ error: 'api_not_included_in_plan', message: 'Upgrade to a plan that includes API access.' }, 403);
+  if (!billingActive) return json({ error: 'subscription_inactive' }, 403, reqOrigin);
+  if (!apiModuleEnabled) return json({ error: 'api_not_included_in_plan', message: 'Upgrade to a plan that includes API access.' }, 403, reqOrigin);
 
   await db.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', keyRow.id);
 
@@ -117,35 +131,35 @@ Deno.serve(async (req) => {
     if (resource === 'patients' && req.method === 'GET' && !resourceId) {
       const { data, count } = await db.from('patients').select('*', { count: 'exact' }).eq('tenant_id', tenantId)
         .order('created_at', { ascending: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-      return json({ data, page, page_size: PAGE_SIZE, total: count });
+      return json({ data, page, page_size: PAGE_SIZE, total: count }, 200, reqOrigin);
     }
     if (resource === 'patients' && req.method === 'GET' && resourceId) {
       const { data, error } = await db.from('patients').select('*').eq('tenant_id', tenantId).eq('id', resourceId).maybeSingle();
-      if (error || !data) return json({ error: 'not_found' }, 404);
-      return json({ data });
+      if (error || !data) return json({ error: 'not_found' }, 404, reqOrigin);
+      return json({ data }, 200, reqOrigin);
     }
     if (resource === 'patients' && req.method === 'POST') {
-      if (!canWrite) return json({ error: 'insufficient_scope', message: 'This key is read-only.' }, 403);
+      if (!canWrite) return json({ error: 'insufficient_scope', message: 'This key is read-only.' }, 403, reqOrigin);
       const body = await req.json();
       const { data, error } = await db.from('patients').insert({ ...body, tenant_id: tenantId }).select().single();
-      if (error) return json({ error: 'insert_failed', message: error.message }, 400);
-      return json({ data }, 201);
+      if (error) return json({ error: 'insert_failed', message: error.message }, 400, reqOrigin);
+      return json({ data }, 201, reqOrigin);
     }
     if (resource === 'appointments' && req.method === 'GET' && !resourceId) {
       const { data, count } = await db.from('appointments').select('*', { count: 'exact' }).eq('tenant_id', tenantId)
         .order('created_at', { ascending: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-      return json({ data, page, page_size: PAGE_SIZE, total: count });
+      return json({ data, page, page_size: PAGE_SIZE, total: count }, 200, reqOrigin);
     }
     if (resource === 'appointments' && req.method === 'POST') {
-      if (!canWrite) return json({ error: 'insufficient_scope', message: 'This key is read-only.' }, 403);
+      if (!canWrite) return json({ error: 'insufficient_scope', message: 'This key is read-only.' }, 403, reqOrigin);
       const body = await req.json();
       const { data, error } = await db.from('appointments').insert({ ...body, tenant_id: tenantId }).select().single();
-      if (error) return json({ error: 'insert_failed', message: error.message }, 400);
-      return json({ data }, 201);
+      if (error) return json({ error: 'insert_failed', message: error.message }, 400, reqOrigin);
+      return json({ data }, 201, reqOrigin);
     }
 
-    return json({ error: 'not_found', message: `No such endpoint: ${req.method} /${resource ?? ''}` }, 404);
+    return json({ error: 'not_found', message: `No such endpoint: ${req.method} /${resource ?? ''}` }, 404, reqOrigin);
   } catch (e) {
-    return json({ error: 'internal_error', message: String(e) }, 500);
+    return json({ error: 'internal_error', message: String(e) }, 500, reqOrigin);
   }
 });
