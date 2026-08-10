@@ -49,6 +49,14 @@ export function Onboarding() {
   const [newLocalityName, setNewLocalityName] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Manual geography entry (country / region / district)
+  const [showCreateCountry, setShowCreateCountry] = useState(false);
+  const [newCountry, setNewCountry] = useState({ name: '', iso2: '', phone_code: '', currency_code: '', timezone: '' });
+  const [showCreateRegion, setShowCreateRegion] = useState(false);
+  const [newRegionName, setNewRegionName] = useState('');
+  const [showCreateDistrict, setShowCreateDistrict] = useState(false);
+  const [newDistrictName, setNewDistrictName] = useState('');
+
   const types = [
     { value: 'hospital', label: t('onb.type.hospital') },
     { value: 'clinic', label: t('onb.type.clinic') },
@@ -105,6 +113,58 @@ export function Onboarding() {
       set('locality_id', data.id);
       await geo.loadLocalities(form.city_id);
       setShowCreateLocality(false); setNewLocalityName('');
+    }
+    setCreating(false);
+  };
+
+  const createCountry = async () => {
+    if (!newCountry.name.trim() || !newCountry.iso2.trim()) return;
+    setCreating(true);
+    const { data, error } = await supabase.from('countries').insert({
+      name: newCountry.name.trim(),
+      iso2: newCountry.iso2.trim().toUpperCase(),
+      phone_code: newCountry.phone_code.trim() || null,
+      currency_code: newCountry.currency_code.trim() || null,
+      timezone: newCountry.timezone.trim() || null,
+    }).select().single();
+    if (!error && data) {
+      await geo.reloadCountries();
+      set('country_id', data.id);
+      set('region_id', ''); set('district_id', ''); set('city_id', ''); set('locality_id', '');
+      setShowCreateCountry(false);
+      setNewCountry({ name: '', iso2: '', phone_code: '', currency_code: '', timezone: '' });
+    } else if (error) {
+      setErr(error.message);
+    }
+    setCreating(false);
+  };
+
+  const createRegion = async () => {
+    if (!newRegionName.trim() || !form.country_id) return;
+    setCreating(true);
+    const { data, error } = await supabase.from('regions').insert({ country_id: form.country_id, name: newRegionName.trim() }).select().single();
+    if (!error && data) {
+      await geo.loadRegions(form.country_id);
+      set('region_id', data.id);
+      set('district_id', ''); set('city_id', ''); set('locality_id', '');
+      setShowCreateRegion(false); setNewRegionName('');
+    } else if (error) {
+      setErr(error.message);
+    }
+    setCreating(false);
+  };
+
+  const createDistrict = async () => {
+    if (!newDistrictName.trim() || !form.region_id) return;
+    setCreating(true);
+    const { data, error } = await supabase.from('districts').insert({ region_id: form.region_id, name: newDistrictName.trim() }).select().single();
+    if (!error && data) {
+      await geo.loadDistricts(form.region_id);
+      set('district_id', data.id);
+      set('city_id', ''); set('locality_id', '');
+      setShowCreateDistrict(false); setNewDistrictName('');
+    } else if (error) {
+      setErr(error.message);
     }
     setCreating(false);
   };
@@ -270,9 +330,28 @@ export function Onboarding() {
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('onb.loc.section.location')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select label={t('onb.country')} required value={form.country_id} options={geo.countries.map((c) => ({ value: c.id, label: c.name }))} loading={geo.loading} onChange={(e) => { set('country_id', e.target.value); set('region_id', ''); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadRegions(e.target.value); }} />
-                  <Select label={t('onb.region')} required value={form.region_id} options={geo.regions.map((r) => ({ value: r.id, label: r.name }))} onChange={(e) => { set('region_id', e.target.value); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadDistricts(e.target.value); }} />
-                  <Select label={t('onb.district')} value={form.district_id} options={geo.districts.map((d) => ({ value: d.id, label: d.name }))} onChange={(e) => { set('district_id', e.target.value); set('city_id', ''); set('locality_id', ''); geo.loadCities(e.target.value); }} />
+                  <div className="space-y-2">
+                    <Select label={t('onb.country')} required value={form.country_id} options={geo.countries.map((c) => ({ value: c.id, label: c.name }))} loading={geo.loading} onChange={(e) => { set('country_id', e.target.value); set('region_id', ''); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadRegions(e.target.value); }} />
+                    <button type="button" onClick={() => setShowCreateCountry(true)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                      <Plus size={12} /> {t('onb.add_country')}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <Select label={t('onb.region')} required value={form.region_id} options={geo.regions.map((r) => ({ value: r.id, label: r.name }))} onChange={(e) => { set('region_id', e.target.value); set('district_id', ''); set('city_id', ''); set('locality_id', ''); geo.loadDistricts(e.target.value); }} />
+                    {form.country_id && (
+                      <button type="button" onClick={() => setShowCreateRegion(true)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                        <Plus size={12} /> {t('onb.add_region')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Select label={t('onb.district')} value={form.district_id} options={geo.districts.map((d) => ({ value: d.id, label: d.name }))} onChange={(e) => { set('district_id', e.target.value); set('city_id', ''); set('locality_id', ''); geo.loadCities(e.target.value); }} />
+                    {form.region_id && (
+                      <button type="button" onClick={() => setShowCreateDistrict(true)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                        <Plus size={12} /> {t('onb.add_district')}
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-2">
                     <Select label={t('onb.city')} value={form.city_id} options={geo.cities.map((c) => ({ value: c.id, label: c.name }))} onChange={(e) => { set('city_id', e.target.value); set('locality_id', ''); geo.loadLocalities(e.target.value); }} />
                     {form.district_id && (
@@ -440,6 +519,56 @@ export function Onboarding() {
             </div>
             <Input label={t('onb.new_locality_name')} required value={newLocalityName} onChange={(e) => setNewLocalityName(e.target.value)} />
             <Button className="w-full mt-4" onClick={createLocality} loading={creating}>{t('onb.create_locality')}</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create country modal (manual entry) */}
+      {showCreateCountry && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setShowCreateCountry(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">{t('onb.create_country')}</h3>
+              <button onClick={() => setShowCreateCountry(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <div className="space-y-3">
+              <Input label={t('onb.new_country_name')} required value={newCountry.name} onChange={(e) => setNewCountry((c) => ({ ...c, name: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label={t('onb.country_iso2')} required maxLength={2} value={newCountry.iso2} onChange={(e) => setNewCountry((c) => ({ ...c, iso2: e.target.value }))} />
+                <Input label={t('onb.country_phone_code')} value={newCountry.phone_code} onChange={(e) => setNewCountry((c) => ({ ...c, phone_code: e.target.value }))} />
+                <Input label={t('onb.country_currency')} value={newCountry.currency_code} onChange={(e) => setNewCountry((c) => ({ ...c, currency_code: e.target.value }))} />
+                <Input label={t('onb.country_timezone')} value={newCountry.timezone} onChange={(e) => setNewCountry((c) => ({ ...c, timezone: e.target.value }))} />
+              </div>
+            </div>
+            <Button className="w-full mt-4" onClick={createCountry} loading={creating}>{t('onb.create_country')}</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create region modal (manual entry) */}
+      {showCreateRegion && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setShowCreateRegion(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">{t('onb.create_region')}</h3>
+              <button onClick={() => setShowCreateRegion(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <Input label={t('onb.new_region_name')} required value={newRegionName} onChange={(e) => setNewRegionName(e.target.value)} />
+            <Button className="w-full mt-4" onClick={createRegion} loading={creating}>{t('onb.create_region')}</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create district modal (manual entry) */}
+      {showCreateDistrict && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setShowCreateDistrict(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">{t('onb.create_district')}</h3>
+              <button onClick={() => setShowCreateDistrict(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <Input label={t('onb.new_district_name')} required value={newDistrictName} onChange={(e) => setNewDistrictName(e.target.value)} />
+            <Button className="w-full mt-4" onClick={createDistrict} loading={creating}>{t('onb.create_district')}</Button>
           </div>
         </div>
       )}

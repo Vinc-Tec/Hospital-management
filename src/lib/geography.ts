@@ -18,6 +18,11 @@ export function useGeography() {
     })();
   }, []);
 
+  const reloadCountries = async () => {
+    const { data } = await supabase.from('countries').select('*').order('name');
+    setCountries((data as Country[]) ?? []);
+  };
+
   const loadRegions = async (countryId: string | null) => {
     setRegions([]); setDistricts([]); setCities([]); setLocalities([]);
     if (!countryId) return;
@@ -43,5 +48,5 @@ export function useGeography() {
     setLocalities((data as Locality[]) ?? []);
   };
 
-  return { countries, regions, districts, cities, localities, loading, loadRegions, loadDistricts, loadCities, loadLocalities };
+  return { countries, regions, districts, cities, localities, loading, loadRegions, loadDistricts, loadCities, loadLocalities, reloadCountries };
 }
