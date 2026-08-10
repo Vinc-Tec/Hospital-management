@@ -143,23 +143,29 @@ export function LandingPage() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 animate-slide-up">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-white/80">100% African Technology — Built for Africa</span>
+              <span className="text-xs font-medium text-white/80">
+                {t('hero.badge')} <span className="text-white/40">—</span> {t('hero.badge.suffix')}
+              </span>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight mb-6 animate-slide-up delay-100 leading-[1.05]">
-              {t('hero.line1')}<br />
-              <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                {t('hero.line2')}
-              </span>
-            </h1>
+            {/* Headline with animated gradient ring accent */}
+            <div className="relative inline-block mb-6">
+              <div className="absolute -inset-x-16 -inset-y-6 -z-10 opacity-40 blur-3xl animate-gradient-pan"
+                style={{ background: 'conic-gradient(from 0deg, #0ea5e9, #10b981, #6366f1, #0ea5e9)' }} />
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight animate-slide-up delay-100 leading-[1.05]">
+                {t('hero.line1')}<br />
+                <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                  {t('hero.line2')}
+                </span>
+              </h1>
+            </div>
 
             <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 animate-slide-up delay-200 leading-relaxed">
               {t('hero.subtitle')}
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up delay-300">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 animate-slide-up delay-300">
               <Link to="/signup"
                 className="group flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-2xl shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-0.5 transition-all duration-200 text-base">
                 {t('hero.cta.start')}
@@ -170,6 +176,21 @@ export function LandingPage() {
                 <Play size={16} />
                 {t('hero.cta.plans')}
               </a>
+            </div>
+
+            {/* Trust strip */}
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-16 animate-slide-up delay-300">
+              {[
+                { icon: Shield, label: t('hero.trust.rls') },
+                { icon: Heart, label: t('hero.trust.hipaa') },
+                { icon: Globe, label: t('hero.trust.gdpr') },
+                { icon: Activity, label: t('hero.trust.uptime') },
+              ].map((item, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium text-white/55">
+                  <item.icon size={14} className="text-emerald-400/80" />
+                  {item.label}
+                </span>
+              ))}
             </div>
 
             {/* Stats */}

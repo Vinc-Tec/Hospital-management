@@ -48,7 +48,7 @@ type AuthState = {
   signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null; mfaRequired?: boolean; mfaFactorId?: string }>;
   verifyMfaChallenge: (factorId: string, code: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
-  signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => void;
+  signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   resendVerification: (email: string) => Promise<{ error: string | null }>;
 };
@@ -280,7 +280,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refresh = async () => { if (user) await loadProfileAndTenants(user); };
-  const setActiveTenantId = (id: string | null) => { if (id) localStorage.setItem('hc_active_tenant_id', id); else localStorage.removeItem('hc_active_tenant_id'); };
+  // Switching the active tenant must take effect immediately, not only on the
+  // next login. Persist the choice and reload that tenant's row so the rest
+  // of the app (BillingGate, modules, settings) reflects it right away.
+  const setActiveTenantId = async (id: string | null) => {
+    if (id) localStorage.setItem('hc_active_tenant_id', id);
+    else localStorage.removeItem('hc_active_tenant_id');
+    if (id && user) {
+      const { data: t } = await supabase.from('tenants').select('*').eq('id', id).maybeSingle();
+      setActiveTenant(t as Tenant | null);
+    } else {
+      setActiveTenant(null);
+    }
+  };
 
   const activeMembership = useMemo(() => memberships.find((m) => m.tenant_id === activeTenant?.id) ?? null, [memberships, activeTenant]);
 

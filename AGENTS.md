@@ -36,3 +36,29 @@
   payment `redirect_url` base (never trust the request `Origin` header).
 - `CRON_SECRET` — required to call `billing-housekeeping`.
 - Optional `API_ALLOWED_ORIGINS` — locks api-v1 CORS to an allow-list.
+
+## RLS: tenants / tenant_memberships recursion (fixed 2026-08-02)
+- The original `tenants` and `tenant_memberships` policies referenced each
+  other via plain `EXISTS (SELECT 1 FROM ...)` sub-queries, and both tables
+  have RLS → "infinite recursion detected in policy for relation tenants".
+  This also made `loadProfileAndTenants()` fail so the platform "forgot"
+  the user's tenant on reconnect and sent them back to onboarding.
+- Fix: every cross-table check in these policies now calls a SECURITY
+  DEFINER helper (`is_super_admin`, `is_tenant_member`, `is_tenant_owner`)
+  which bypasses RLS and breaks the cycle. Other tenant-scoped tables
+  (patients, doctors, ...) keep their `EXISTS (... tenant_memberships ...)`
+  form because the cycle is broken at the tenants/memberships layer.
+
+## Tenant memory / active-tenant switching
+- `loadProfileAndTenants()` reads `tenant_memberships` (user_id) AND
+  `tenants` (owner_user_id) so a returning user is never re-onboarded.
+- `setActiveTenantId(id)` is async: it persists `hc_active_tenant_id` AND
+  reloads that tenant row immediately (previously the switch only took
+  effect on next login).
+
+## i18n
+- `Lang = 'fr' | 'en'`, persisted in `localStorage('hc_lang')`, default `fr`.
+  `LangToggle` in `src/components/brand.tsx`. The hero badge and trust strip
+  use `hero.badge` / `hero.badge.suffix` / `hero.trust.*` keys (no hardcoded
+  English in the hero).
+
