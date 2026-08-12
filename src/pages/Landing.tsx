@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
+import hospitalBg from '../assets/hospital-bg.svg';
 
 export function LandingPage() {
   const { t } = useI18n();
@@ -119,9 +120,13 @@ export function LandingPage() {
         ref={heroRef}
         className="relative min-h-screen flex items-center overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #0c1a3a 40%, #0d2442 60%, #0f2d1e 100%)',
+          backgroundImage: `url(${hospitalBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
+        {/* Dark overlay on top of the hospital image */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(12,26,58,0.88) 40%, rgba(13,36,66,0.9) 60%, rgba(15,45,30,0.92) 100%)' }} />
         {/* Aurora blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-20 animate-pulse-glow"

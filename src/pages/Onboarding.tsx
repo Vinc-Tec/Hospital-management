@@ -7,6 +7,7 @@ import { useGeography } from '../lib/geography';
 import { supabase } from '../lib/supabase';
 import { Button, Input, Select, Card } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
+import hospitalBg from '../assets/hospital-bg-light.svg';
 
 const STEPS = [
   { key: 'org', icon: Building2 },
@@ -263,8 +264,9 @@ export function Onboarding() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-emerald-50">
-        <div className="flex-1 flex items-center justify-center px-4">
+      <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-blue-50 to-emerald-50">
+        <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})`, opacity: 0.16 }} />
+        <div className="relative flex-1 flex items-center justify-center px-4">
           <Card className="max-w-md w-full p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4"><CheckCircle2 size={32} className="text-emerald-600" /></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('onb.success.title')}</h2>
@@ -272,7 +274,7 @@ export function Onboarding() {
             <Button className="w-full" onClick={() => nav('/app')}>{t('onb.goto.dashboard')} <ArrowRight size={16} /></Button>
           </Card>
         </div>
-        <footer className="bg-gray-900 text-gray-400 py-6">
+        <footer className="relative bg-gray-900 text-gray-400 py-6">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <CopyrightLine className="text-sm font-medium text-gray-300" />
           </div>
@@ -284,14 +286,15 @@ export function Onboarding() {
   const selectedPlan = plans.find((p) => p.id === form.plan_id);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-white border-b border-gray-100">
+    <div className="min-h-screen flex flex-col relative bg-gray-50">
+      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})`, opacity: 0.12 }} />
+      <header className="relative bg-white/80 backdrop-blur border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Logo />
           <LangToggle />
         </div>
       </header>
-      <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
+      <div className="relative flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('onb.title')}</h1>
         <p className="text-sm text-gray-500 mb-8">{t('onb.subtitle')}</p>
 
@@ -573,7 +576,7 @@ export function Onboarding() {
         </div>
       )}
 
-      <footer className="bg-gray-900 text-gray-400 py-6">
+      <footer className="relative bg-gray-900 text-gray-400 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <CopyrightLine className="text-sm font-medium text-gray-300" />
         </div>
