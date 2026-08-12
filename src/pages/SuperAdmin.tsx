@@ -226,9 +226,12 @@ function SaTenants({ tenants, onAction }: { tenants: Tenant[]; onAction: () => v
   const { user } = useAuth();
   const [selected, setSelected] = useState<Tenant | null>(null);
   const [note, setNote] = useState('');
+  const [err, setErr] = useState<string | null>(null);
 
   const setStatus = async (tn: Tenant, status: Tenant['status']) => {
-    await supabase.from('tenants').update({ status, verification_note: note || null }).eq('id', tn.id);
+    setErr(null);
+    const { error } = await supabase.from('tenants').update({ status, verification_note: note || null }).eq('id', tn.id);
+    if (error) { setErr(error.message); return; }
     await supabase.from('audit_logs').insert({ tenant_id: tn.id, actor_user_id: user?.id, action: `tenant.${status}`, entity_type: 'tenants', entity_id: tn.id, details: { note } });
     setSelected(null); setNote(''); onAction();
   };
@@ -264,6 +267,7 @@ function SaTenants({ tenants, onAction }: { tenants: Tenant[]; onAction: () => v
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 text-sm"><div><span className="text-gray-400">Legal:</span> {selected.legal_name}</div><div><span className="text-gray-400">Type:</span> {selected.healthcare_type}</div><div><span className="text-gray-400">Email:</span> {selected.email}</div><div><span className="text-gray-400">Phone:</span> {selected.phone || '—'}</div></div>
             <Input label={t('sa.verification_note')} value={note} onChange={(e) => setNote(e.target.value)} />
+            {err && <p className="text-sm text-red-600">{err}</p>}
             <div className="flex gap-2 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setStatus(selected, 'approved')}><Check size={14} /> {t('sa.approve')}</Button>
               <Button variant="danger" size="sm" onClick={() => setStatus(selected, 'rejected')}><X size={14} /> {t('sa.reject')}</Button>
@@ -281,10 +285,13 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
   const { t } = useI18n();
   const [selected, setSelected] = useState<Tenant | null>(null);
   const [planId, setPlanId] = useState('');
+  const [err, setErr] = useState<string | null>(null);
 
   const assignPlan = async () => {
     if (!selected) return;
-    await supabase.from('tenants').update({ plan_id: planId || null }).eq('id', selected.id);
+    setErr(null);
+    const { error } = await supabase.from('tenants').update({ plan_id: planId || null }).eq('id', selected.id);
+    if (error) { setErr(error.message); return; }
     setSelected(null); onAction();
   };
 
@@ -313,6 +320,7 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
         <div className="space-y-3">
           <p className="text-sm text-gray-600">{selected?.commercial_name || selected?.legal_name}</p>
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.nav.plans')}</span><select value={planId} onChange={(e) => setPlanId(e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">—</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name} — ${p.price_monthly}/mo</option>)}</select></label>
+          {err && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
     </div>
@@ -408,18 +416,25 @@ function SaGeography({ countries, regions, setRegions, districts, setDistricts, 
   const [cForm, setCForm] = useState({ name: '', iso2: '', phone_code: '', currency_code: '' });
   const [rForm, setRForm] = useState({ country_id: '', name: '' });
   const [dForm, setDForm] = useState({ region_id: '', name: '' });
+  const [err, setErr] = useState<string | null>(null);
   const addCountry = async () => {
-    await supabase.from('countries').insert({ name: cForm.name, iso2: cForm.iso2.toUpperCase(), phone_code: cForm.phone_code || null, currency_code: cForm.currency_code || null });
+    setErr(null);
+    const { error } = await supabase.from('countries').insert({ name: cForm.name, iso2: cForm.iso2.toUpperCase(), phone_code: cForm.phone_code || null, currency_code: cForm.currency_code || null });
+    if (error) { setErr(error.message); return; }
     setCForm({ name: '', iso2: '', phone_code: '', currency_code: '' }); onAction();
   };
   const addRegion = async () => {
-    await supabase.from('regions').insert({ country_id: rForm.country_id, name: rForm.name });
+    setErr(null);
+    const { error } = await supabase.from('regions').insert({ country_id: rForm.country_id, name: rForm.name });
+    if (error) { setErr(error.message); return; }
     setRForm({ country_id: '', name: '' });
     const { data: regData } = await supabase.from('regions').select('id, name').eq('country_id', rForm.country_id).order('name');
     setRegions((regData as { id: string; name: string }[]) ?? []);
   };
   const addDistrict = async () => {
-    await supabase.from('districts').insert({ region_id: dForm.region_id, name: dForm.name });
+    setErr(null);
+    const { error } = await supabase.from('districts').insert({ region_id: dForm.region_id, name: dForm.name });
+    if (error) { setErr(error.message); return; }
     setDForm({ region_id: '', name: '' });
     const { data: distData } = await supabase.from('districts').select('id, name, region_id').order('name');
     setDistricts((distData as { id: string; name: string; region_id: string }[]) ?? []);
@@ -435,6 +450,7 @@ function SaGeography({ countries, regions, setRegions, districts, setDistricts, 
             <Input label={t('sa.phone_code')} value={cForm.phone_code} onChange={(e) => setCForm({ ...cForm, phone_code: e.target.value })} />
             <Input label={t('sa.currency')} value={cForm.currency_code} onChange={(e) => setCForm({ ...cForm, currency_code: e.target.value })} />
           </div>
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={addCountry} className="w-full">{t('common.save')}</Button>
         </div>
         <div className="mt-4 max-h-48 overflow-y-auto space-y-1">{countries.map((c) => <div key={c.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{c.name}</div>)}</div>
@@ -444,6 +460,7 @@ function SaGeography({ countries, regions, setRegions, districts, setDistricts, 
         <div className="space-y-3">
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('onb.country')}</span><select value={rForm.country_id} onChange={(e) => setRForm({ country_id: e.target.value, name: rForm.name })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">...</option>{countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <Input label={t('common.name')} value={rForm.name} onChange={(e) => setRForm({ ...rForm, name: e.target.value })} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={addRegion} className="w-full" disabled={!rForm.country_id}>{t('common.save')}</Button>
         </div>
         <div className="mt-4 max-h-48 overflow-y-auto space-y-1">{regions.map((r) => <div key={r.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{r.name}</div>)}</div>
@@ -453,6 +470,7 @@ function SaGeography({ countries, regions, setRegions, districts, setDistricts, 
         <div className="space-y-3">
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.region_single')}</span><select value={dForm.region_id} onChange={(e) => setDForm({ ...dForm, region_id: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">...</option>{regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
           <Input label={t('common.name')} value={dForm.name} onChange={(e) => setDForm({ ...dForm, name: e.target.value })} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={addDistrict} className="w-full" disabled={!dForm.region_id}>{t('common.save')}</Button>
         </div>
         <div className="mt-4 max-h-48 overflow-y-auto space-y-1">{districts.map((d) => <div key={d.id} className="text-sm text-gray-600 py-1 border-b border-gray-50">{d.name}</div>)}</div>
@@ -465,8 +483,11 @@ function SaCities({ regions, districts, cities, onAction }: { regions: { id: str
   const { t } = useI18n();
   const [form, setForm] = useState({ region_id: '', district_id: '', name: '' });
   const filteredDistricts = districts.filter((d) => d.region_id === form.region_id);
+  const [err, setErr] = useState<string | null>(null);
   const addCity = async () => {
-    await supabase.from('cities').insert({ district_id: form.district_id, name: form.name });
+    setErr(null);
+    const { error } = await supabase.from('cities').insert({ district_id: form.district_id, name: form.name });
+    if (error) { setErr(error.message); return; }
     setForm({ region_id: '', district_id: '', name: '' }); onAction();
   };
   return (
@@ -487,6 +508,7 @@ function SaCities({ regions, districts, cities, onAction }: { regions: { id: str
             </select>
           </label>
           <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={addCity} className="w-full" disabled={!form.district_id}>{t('common.save')}</Button>
         </div>
       </Card>
@@ -501,8 +523,11 @@ function SaCities({ regions, districts, cities, onAction }: { regions: { id: str
 function SaLocalities({ countries, regions, cities, localities, onAction }: { countries: { id: string; name: string }[]; regions: { id: string; name: string }[]; cities: any[]; localities: any[]; onAction: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({ city_id: '', name: '' });
+  const [err, setErr] = useState<string | null>(null);
   const addLocality = async () => {
-    await supabase.from('localities').insert({ city_id: form.city_id, name: form.name });
+    setErr(null);
+    const { error } = await supabase.from('localities').insert({ city_id: form.city_id, name: form.name });
+    if (error) { setErr(error.message); return; }
     setForm({ city_id: '', name: '' }); onAction();
   };
   return (
@@ -517,6 +542,7 @@ function SaLocalities({ countries, regions, cities, localities, onAction }: { co
             </select>
           </label>
           <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
           <Button onClick={addLocality} className="w-full" disabled={!form.city_id}>{t('common.save')}</Button>
         </div>
       </Card>
@@ -533,6 +559,7 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ country_iso: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' });
+  const [err, setErr] = useState<string | null>(null);
 
   const generateCode = async (iso: string) => {
     const prefix = `HC-${iso.toUpperCase().slice(0, 3)}`;
@@ -543,18 +570,25 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
 
   const save = async () => {
     if (!form.country_iso) return;
+    setErr(null);
     const code = await generateCode(form.country_iso);
-    await supabase.from('commercial_codes').insert({
+    const { error } = await supabase.from('commercial_codes').insert({
       code, description: form.description || null, discount_percent: parseFloat(form.discount_percent) || 0,
       max_uses: form.max_uses ? parseInt(form.max_uses) : null, valid_until: form.valid_until || null, created_by: user?.id,
     });
+    if (error) { setErr(error.message); return; }
     setForm({ country_iso: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' }); setOpen(false); onAction();
   };
 
-  const toggle = async (c: any) => { await supabase.from('commercial_codes').update({ is_active: !c.is_active }).eq('id', c.id); onAction(); };
+  const toggle = async (c: any) => {
+    const { error } = await supabase.from('commercial_codes').update({ is_active: !c.is_active }).eq('id', c.id);
+    if (error) { setErr(error.message); return; }
+    onAction();
+  };
 
   return (
     <div>
+      {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
       <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Ticket size={16} /> {t('sa.add_code')}</Button></div>
       <Card className="overflow-hidden">
         {codes.length === 0 ? <div className="p-8"><EmptyState icon={Ticket} title={t('common.none')} /></div> : (
@@ -620,10 +654,13 @@ function SaSupport({ tickets, onAction }: { tickets: any[]; onAction: () => void
   const { t } = useI18n();
   const [selected, setSelected] = useState<any | null>(null);
   const [reply, setReply] = useState('');
+  const [err, setErr] = useState<string | null>(null);
 
   const respond = async () => {
     if (!selected) return;
-    await supabase.from('support_tickets').update({ status: 'resolved', resolution: reply }).eq('id', selected.id);
+    setErr(null);
+    const { error } = await supabase.from('support_tickets').update({ status: 'resolved', resolution: reply }).eq('id', selected.id);
+    if (error) { setErr(error.message); return; }
     setSelected(null); setReply(''); onAction();
   };
 
@@ -653,7 +690,8 @@ function SaSupport({ tickets, onAction }: { tickets: any[]; onAction: () => void
           <div className="space-y-3">
             <p className="text-sm font-medium text-gray-900">{selected.subject}</p>
             <p className="text-sm text-gray-600">{selected.description}</p>
-            <Input label="Resolution" value={reply} onChange={(e) => setReply(e.target.value)} />
+            <Input label={t('sa.resolution_label')} value={reply} onChange={(e) => setReply(e.target.value)} />
+            {err && <p className="text-sm text-red-600">{err}</p>}
           </div>
         )}
       </Modal>
@@ -666,22 +704,30 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', scopes: 'read' });
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const createKey = async () => {
+    setErr(null);
     const keyValue = generateApiKey();
     const hash = await sha256Hex(keyValue);
-    await supabase.from('api_keys').insert({ name: form.name, key_hash: hash, scopes: form.scopes.split(','), is_active: true });
+    const { error } = await supabase.from('api_keys').insert({ name: form.name, key_hash: hash, scopes: form.scopes.split(','), is_active: true });
+    if (error) { setErr(error.message); return; }
     setForm({ name: '', scopes: 'read' }); setOpen(false); onAction();
     setRevealedKey(keyValue);
   };
 
-  const toggle = async (k: any) => { await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id); onAction(); };
+  const toggle = async (k: any) => {
+    const { error } = await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id);
+    if (error) { setErr(error.message); return; }
+    onAction();
+  };
 
   return (
     <div>
       <div className="mb-4 p-3 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
         {t('sa.api_disclaimer')}
       </div>
+      {err && !open && <p className="text-sm text-red-600 mb-3">{err}</p>}
       <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Key size={16} /> {t('sa.generate_api_key')}</Button></div>
       <Card className="overflow-hidden">
         {apiKeys.length === 0 ? <div className="p-8"><EmptyState icon={Key} title={t('common.none')} /></div> : (
@@ -707,6 +753,7 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
           <Input label={t('common.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Select label={t('sa.scopes')} value={form.scopes} onChange={(e) => setForm({ ...form, scopes: e.target.value })}
             options={[{ value: 'read', label: t('sa.scope_read') }, { value: 'read,write', label: t('sa.scope_read_write') }]} />
+          {err && open && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
       <Modal open={!!revealedKey} onClose={() => setRevealedKey(null)} title={t('sa.key_generated')} footer={<Button onClick={() => setRevealedKey(null)}>{t('sa.key_saved_it')}</Button>}>
@@ -747,24 +794,29 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: '', email: '', password: '', is_super_admin: false });
+  const [err, setErr] = useState<string | null>(null);
 
   const createStaff = async () => {
+    setErr(null);
     const { data: authData, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name } } });
-    if (!error && authData.user) {
-      await supabase.from('profiles').update({ full_name: form.full_name, is_super_admin: form.is_super_admin, email: form.email }).eq('id', authData.user.id);
-    }
+    if (error || !authData.user) { setErr(error?.message ?? t('sa.create_staff_error')); return; }
+    const { error: profileError } = await supabase.from('profiles').update({ full_name: form.full_name, is_super_admin: form.is_super_admin, email: form.email }).eq('id', authData.user.id);
+    if (profileError) { setErr(profileError.message); return; }
     setForm({ full_name: '', email: '', password: '', is_super_admin: false }); setOpen(false); onAction();
   };
 
   const toggleSuperAdmin = async (p: any) => {
     const isProtected = isProtectedSuperAdminEmail(p.email);
     if (isProtected) return;
-    await supabase.from('profiles').update({ is_super_admin: !p.is_super_admin }).eq('id', p.id);
+    setErr(null);
+    const { error } = await supabase.from('profiles').update({ is_super_admin: !p.is_super_admin }).eq('id', p.id);
+    if (error) { setErr(error.message); return; }
     onAction();
   };
 
   return (
     <div>
+      {err && !open && <p className="text-sm text-red-600 mb-3">{err}</p>}
       <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><UserPlus size={16} /> {t('sa.add_staff')}</Button></div>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -801,6 +853,7 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
           <Input label={t('col.email')} type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <Input label={t('auth.password')} type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_super_admin} onChange={(e) => setForm({ ...form, is_super_admin: e.target.checked })} className="accent-blue-600" /> <span className="text-sm text-gray-700">{t('sa.super_admin_label')}</span></label>
+          {err && open && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
     </div>
@@ -926,15 +979,18 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', message: '', target: 'all' });
+  const [err, setErr] = useState<string | null>(null);
 
   const send = async () => {
-    await supabase.from('platform_notifications').insert({ title: form.title, message: form.message, target: form.target });
+    setErr(null);
+    const { error } = await supabase.from('platform_notifications').insert({ title: form.title, message: form.message, target: form.target });
+    if (error) { setErr(error.message); return; }
     setForm({ title: '', message: '', target: 'all' }); setOpen(false); onAction();
   };
 
   return (
     <div>
-      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Bell size={16} /> Send Notification</Button></div>
+      <div className="flex justify-end mb-4"><Button onClick={() => setOpen(true)}><Bell size={16} /> {t('sa.send_notification')}</Button></div>
       <Card className="overflow-hidden">
         {notifications.length === 0 ? <div className="p-8"><EmptyState icon={Bell} title={t('common.none')} /></div> : (
           <div className="divide-y divide-gray-50">
@@ -954,6 +1010,7 @@ function SaNotifications({ notifications, onAction }: { notifications: any[]; on
           <Input label="Title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Input label="Message" required value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.target')}</span><select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="all">{t('sa.all_users')}</option><option value="admins">{t('sa.admins_only')}</option><option value="tenants">{t('sa.all_tenants_target')}</option></select></label>
+          {err && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
     </div>

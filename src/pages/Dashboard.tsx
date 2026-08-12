@@ -145,13 +145,13 @@ function SupportChatWidget() {
 
     if (awaitingEscalation) {
       setEscalating(true);
-      await supabase.from('support_tickets').insert({
+      const { error } = await supabase.from('support_tickets').insert({
         tenant_id: activeTenant?.id ?? null, user_id: user!.id,
         subject: t('chat.escalated_subject'), description: query, priority: 'medium', status: 'open',
       });
       setEscalating(false);
       setAwaitingEscalation(false);
-      setMessages((m) => [...m, { from: 'bot', text: t('chat.escalated_confirm') }]);
+      setMessages((m) => [...m, { from: 'bot', text: error ? t('chat.escalation_failed') : t('chat.escalated_confirm') }]);
       return;
     }
 
