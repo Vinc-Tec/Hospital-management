@@ -8,6 +8,7 @@ import {
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import hospitalBg from '../assets/hospital-bg.svg';
+import heroPhoto from '../assets/photos/waiting-room-tv.jpg';
 
 export function LandingPage() {
   const { t } = useI18n();
@@ -120,7 +121,7 @@ export function LandingPage() {
         ref={heroRef}
         className="relative min-h-screen flex items-center overflow-hidden"
         style={{
-          backgroundImage: `url(${hospitalBg})`,
+          backgroundImage: `url(${heroPhoto})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

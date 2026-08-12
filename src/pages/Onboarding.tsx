@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { Button, Input, Select, Card } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import hospitalBg from '../assets/hospital-bg-light.svg';
+import onbPhoto from '../assets/photos/reception-desk.jpg';
 
 const STEPS = [
   { key: 'org', icon: Building2 },
@@ -265,8 +266,8 @@ export function Onboarding() {
   if (done) {
     return (
       <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-blue-50 to-emerald-50">
-        <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})` }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/30 to-emerald-50/50 pointer-events-none" />
+        <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${onbPhoto})` }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/70 via-white/60 to-emerald-50/70 pointer-events-none" />
         <div className="relative flex-1 flex items-center justify-center px-4">
           <Card className="max-w-md w-full p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4"><CheckCircle2 size={32} className="text-emerald-600" /></div>
@@ -288,8 +289,8 @@ export function Onboarding() {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-gray-50">
-      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})` }} />
-      <div className="absolute inset-0 bg-white/40 pointer-events-none" />
+      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${onbPhoto})` }} />
+      <div className="absolute inset-0 bg-white/55 pointer-events-none" />
       <header className="relative bg-white/80 backdrop-blur border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Logo />

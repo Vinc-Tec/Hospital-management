@@ -1,5 +1,31 @@
 # Health Cloud — repository notes
 
+## Critical deployment note (root cause of "still broken" reports)
+**Migrations in `supabase/migrations/` do NOT auto-apply to the live DB.**
+Supabase only runs them via CI/CD (`supabase db push`) OR when pasted into
+the Dashboard SQL Editor. A git push of a migration file changes nothing
+at runtime until it is actually executed against the database.
+
+If a user reports an error that a migration is supposed to fix (e.g.
+"infinite recursion in policy for relation tenants", "trial bypass"),
+the migration almost certainly has not been applied to their live
+Supabase project yet. Tell them to paste `supabase/fix_recursion_one_shot.sql`
+in the SQL Editor and Run.
+
+## Real hospital photos (Unsplash)
+`src/assets/photos/` — real JPEGs (~200KB each), used as backgrounds:
+- `waiting-room-reception.jpg` → Auth split panel (left half on lg+)
+- `waiting-room-tv.jpg` → Landing hero background
+- `reception-desk.jpg` → Onboarding (form + success views)
+The old SVGs (`hospital-bg.svg`, `hospital-bg-light.svg`) are kept as a
+subtle fallback layer behind the real photos.
+
+## Session persistence
+`persistSession: true` in `src/lib/supabase.ts`. Sessions survive refresh
+via localStorage. Onboarding failure does NOT drop the session — the user
+stays logged in and can retry onboarding. The recursion error (now fixed)
+was what blocked completion, not auth loss.
+
 ## Security architecture (billing / trial enforcement)
 - `tenants` INSERT is locked by `fn_lock_tenant_insert()` (BEFORE INSERT
   trigger): non-super-admin inserts always get `status='pending'`,

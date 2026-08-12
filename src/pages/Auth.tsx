@@ -7,6 +7,7 @@ import { Button, Input } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { supabase } from '../lib/supabase';
 import hospitalBg from '../assets/hospital-bg-light.svg';
+import authPhoto from '../assets/photos/waiting-room-reception.jpg';
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'reset' | 'verify' | 'mfa';
 
@@ -72,7 +73,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-blue-50 via-white to-emerald-50">
-      {/* Hospital interior background */}
+      {/* Hospital interior background (subtle) */}
       <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})` }} />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/30 to-emerald-50/50 pointer-events-none" />
       <div className="relative flex items-center justify-between p-4">
@@ -80,7 +81,16 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
         <LangToggle />
       </div>
       <div className="relative flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
+        {/* Real hospital photo panel */}
+        <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-1/2">
+          <img src={authPhoto} alt="Hospital waiting room" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-blue-900/50 to-emerald-900/60" />
+          <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
+            <h2 className="text-3xl font-bold mb-3 drop-shadow-lg">{t('auth.brand.title')}</h2>
+            <p className="text-white/80 max-w-md drop-shadow">{t('auth.brand.subtitle')}</p>
+          </div>
+        </div>
+        <div className="w-full max-w-md lg:ml-auto lg:mr-16">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center mb-4"><Logo size={48} /></div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium mb-3"><Heart size={12} /> {t('app.developed')}</div>
