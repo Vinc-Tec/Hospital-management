@@ -73,8 +73,8 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
   return (
     <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-blue-50 via-white to-emerald-50">
       {/* Hospital interior background */}
-      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})`, opacity: 0.18 }} />
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 via-white/40 to-emerald-50/60 pointer-events-none" />
+      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})` }} />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/30 to-emerald-50/50 pointer-events-none" />
       <div className="relative flex items-center justify-between p-4">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft size={16} /> {t('nav.back')}</Link>
         <LangToggle />

@@ -126,7 +126,7 @@ export function LandingPage() {
         }}
       >
         {/* Dark overlay on top of the hospital image */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(12,26,58,0.88) 40%, rgba(13,36,66,0.9) 60%, rgba(15,45,30,0.92) 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.78) 0%, rgba(12,26,58,0.72) 40%, rgba(13,36,66,0.75) 60%, rgba(15,45,30,0.78) 100%)' }} />
         {/* Aurora blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-20 animate-pulse-glow"

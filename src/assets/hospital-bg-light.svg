@@ -107,6 +107,4 @@
     <circle cx="1320" cy="560" r="2"/>
   </g>
 
-  <!-- white overlay for form readability -->
-  <rect width="1600" height="1000" fill="#ffffff" opacity="0.35"/>
 </svg>
