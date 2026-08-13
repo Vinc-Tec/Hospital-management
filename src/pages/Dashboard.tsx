@@ -6,7 +6,7 @@ import {
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
   Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send,
 } from 'lucide-react';
-import { useAuth, isProtectedSuperAdminEmail, hasModuleAccess, hasRoleAccess } from '../lib/auth';
+import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
@@ -207,7 +207,7 @@ export function Dashboard() {
   const [pForm, setPForm] = useState({ first_name: '', last_name: '', phone: '', gender: 'male', date_of_birth: '' });
   const [saving, setSaving] = useState(false);
 
-  const isSuperAdmin = profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email);
+  const isSuperAdmin = profile?.is_super_admin;
 
   useEffect(() => {
     if (!activeTenant || isSuperAdmin) return;
@@ -250,7 +250,7 @@ export function Dashboard() {
       <aside className={`fixed lg:sticky top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-16 flex items-center px-4 border-b border-gray-100 flex-shrink-0"><Logo size={32} /></div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-          {NAV.filter((n) => (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) || (hasModuleAccess(activePlan, n.moduleKey) && hasRoleAccess(activeMembership?.permissions, n.moduleKey))).map((n) => {
+          {NAV.filter((n) => profile?.is_super_admin || (hasModuleAccess(activePlan, n.moduleKey) && hasRoleAccess(activeMembership?.permissions, n.moduleKey))).map((n) => {
             const active = loc.pathname === n.to;
             return (
               <Link key={n.to} to={n.to} onClick={() => setSidebarOpen(false)}

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { type ReactNode, useEffect, useState, Suspense, lazy, Component } from 'react';
-import { AuthProvider, useAuth, isProtectedSuperAdminEmail, hasModuleAccess, hasRoleAccess } from './lib/auth';
+import { AuthProvider, useAuth, hasModuleAccess, hasRoleAccess } from './lib/auth';
 import { supabase } from './lib/supabase';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -127,8 +127,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/signin" replace />;
   if (mfaPending) return <Navigate to="/signin" replace />;
 
-  // Super admins bypass onboarding, subscription, tenant requirements, AND maintenance mode
-  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
+  // Super admins bypass onboarding, subscription, tenant requirements, AND maintenance mode.
+  // `is_super_admin` is the real authority (enforced server-side by RLS);
+  // isProtectedSuperAdminEmail is cosmetic only and must not gate access.
+  if (profile?.is_super_admin) {
     return <>{children}</>;
   }
 
@@ -143,8 +145,8 @@ function TenantRoute({ children }: { children: ReactNode }) {
   if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/signin" replace />;
 
-  // Super admins never need onboarding
-  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user.email)) {
+  // Super admins never need onboarding (is_super_admin is the real authority)
+  if (profile?.is_super_admin) {
     return <Navigate to="/admin" replace />;
   }
 
@@ -158,7 +160,8 @@ function ModuleGate({ moduleKey, children }: { moduleKey: string; children: Reac
   const { activePlan, activeMembership, profile, user } = useAuth();
   const { t } = useI18n();
   // Super admins always have full access, regardless of any tenant's plan.
-  if (profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email)) return <>{children}</>;
+  // is_super_admin is enforced server-side by RLS; the email check is cosmetic.
+  if (profile?.is_super_admin) return <>{children}</>;
   if (!hasModuleAccess(activePlan, moduleKey)) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-24 px-6">

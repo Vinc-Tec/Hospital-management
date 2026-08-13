@@ -115,7 +115,7 @@ export function SuperAdmin() {
   };
   useEffect(() => { loadAll(); }, []);
 
-  const isAuthorized = profile?.is_super_admin && isProtectedSuperAdminEmail(user?.email);
+  const isAuthorized = profile?.is_super_admin;
 
   if (!isAuthorized) {
     return (
