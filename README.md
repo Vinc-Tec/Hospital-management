@@ -1,3 +1,3 @@
 # Hospital-management
 
-[![Open in Bolt](https://liafrik.com)](https://liafrik.com/~/sb1-ahq2yvau)
+[![Open in Liafrik.com](https://liafrik.com)](https://liafrik.com/~/sb1-ahq2yvau)
