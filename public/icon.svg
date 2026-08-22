@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#2563eb"/>
-  <path d="M256 128c-44 0-80 36-80 80v32h-32v128h224V240h-32v-32c0-44-36-80-80-80zm-48 80c0-26 22-48 48-48s48 22 48 48v32h-96v-32zm48 112c17 0 32 15 32 32 0 14-9 26-22 30v34h-20v-34c-13-4-22-16-22-30 0-17 15-32 32-32z" fill="white"/>
+<defs>
+  <linearGradient id="pin" x1="95" y1="110" x2="420" y2="260" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#056A9A"/>
+    <stop offset="1" stop-color="#0BB7D8"/>
+  </linearGradient>
+  <linearGradient id="ring" x1="45" y1="430" x2="470" y2="390" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#06336D"/>
+    <stop offset="1" stop-color="#0AA9D0"/>
+  </linearGradient>
+</defs>
+<path fill="url(#pin)" d="M256 2C166 2 94 73 94 162c0 91 81 177 162 281 81-104 162-190 162-281C418 73 346 2 256 2z"/>
+<path fill="#000" d="M221 62h70v70h70v69h-70v70h-70v-70h-70v-69h70z"/>
+<path fill="none" stroke="url(#ring)" stroke-width="25" stroke-linecap="round" d="M154 382c-65 12-106 34-106 56 0 39 93 66 208 66s208-27 208-66c0-22-41-44-106-56"/>
 </svg>
