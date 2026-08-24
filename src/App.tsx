@@ -85,6 +85,7 @@ const TelemedicineModule = lazy(() => import('./pages/modules_extra').then((m) =
 const EmergencyModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.EmergencyModule })));
 const ImmunizationsModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.ImmunizationsModule })));
 const DischargeModule = lazy(() => import('./pages/modules_extra').then((m) => ({ default: m.DischargeModule })));
+const IntegrationsModule = lazy(() => import('./pages/Integrations').then((m) => ({ default: m.IntegrationsModule })));
 
 function FullScreenLoader() {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full" /></div>;
@@ -241,6 +242,7 @@ function AppRoutes() {
         <Route path="emergency" element={<ModuleGate moduleKey="emergency"><EmergencyModule tenantId={tid} /></ModuleGate>} />
         <Route path="immunizations" element={<ModuleGate moduleKey="immunizations"><ImmunizationsModule tenantId={tid} /></ModuleGate>} />
         <Route path="discharge" element={<ModuleGate moduleKey="discharge"><DischargeModule tenantId={tid} /></ModuleGate>} />
+        <Route path="integrations" element={<ModuleGate moduleKey="integrations"><IntegrationsModule tenantId={tid} /></ModuleGate>} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="/admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />

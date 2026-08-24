@@ -43,6 +43,7 @@ const NAV = [
   { to: '/app/payroll', icon: Wallet, key: 'dash.nav.payroll', moduleKey: 'payroll' },
   { to: '/app/roles', icon: ShieldCheck, key: 'dash.nav.roles', moduleKey: 'roles' },
   { to: '/app/performance', icon: TrendingUp, key: 'dash.nav.performance', moduleKey: 'performance' },
+  { to: '/app/integrations', icon: Plug, key: 'dash.nav.integrations', moduleKey: 'integrations' },
   { to: '/app/settings', icon: Settings, key: 'dash.nav.settings', moduleKey: 'settings' },
 ];
 

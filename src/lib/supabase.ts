@@ -233,3 +233,15 @@ export type AuditLog = {
   action: string; entity_type: string | null; entity_id: string | null;
   details: Record<string, unknown>; created_at: string;
 };
+
+export type Integration = {
+  id: string; tenant_id: string;
+  provider: 'whatsapp' | 'sms' | 'google_calendar' | 'slack' | 'flutterwave' | 'webhook_generic';
+  name: string; config: Record<string, unknown>;
+  status: 'active' | 'inactive' | 'error';
+  created_at: string; updated_at: string;
+};
+export type Webhook = {
+  id: string; tenant_id: string; name: string; url: string; event: string;
+  secret: string | null; is_active: boolean; last_triggered_at: string | null; created_at: string;
+};
