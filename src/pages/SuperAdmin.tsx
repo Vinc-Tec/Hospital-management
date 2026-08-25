@@ -882,7 +882,7 @@ function SaUsers({ profiles, onAction }: { profiles: ProfileRow[]; onAction: () 
   );
 }
 
-function SaRoles({ profiles }: { profiles: any[] }) {
+function SaRoles({ profiles }: { profiles: ProfileRow[] }) {
   const roles = ['super_admin', 'tenant_admin', 'doctor', 'nurse', 'receptionist', 'pharmacist', 'lab_tech', 'accountant'];
   const counts: Record<string, number> = {};
   profiles.forEach((p) => { const r = p.is_super_admin ? 'super_admin' : 'tenant_admin'; counts[r] = (counts[r] ?? 0) + 1; });
@@ -899,7 +899,7 @@ function SaRoles({ profiles }: { profiles: any[] }) {
   );
 }
 
-function SaBilling({ tenants, billingInvoices }: { tenants: Tenant[]; billingInvoices: any[] }) {
+function SaBilling({ tenants, billingInvoices }: { tenants: Tenant[]; billingInvoices: BillingInvoiceRow[] }) {
   const { t } = useI18n();
   const totalCollected = billingInvoices.filter((bi) => bi.status === 'paid').reduce((s, bi) => s + Number(bi.amount_paid ?? 0), 0);
   const totalOutstanding = billingInvoices.filter((bi) => bi.status !== 'paid' && bi.status !== 'void').reduce((s, bi) => s + Number(bi.amount_due ?? 0), 0);
@@ -938,7 +938,7 @@ function SaBilling({ tenants, billingInvoices }: { tenants: Tenant[]; billingInv
 function SaReports({ tenants, plans, logs }: { tenants: Tenant[]; plans: SubscriptionPlan[]; logs: AuditLog[] }) {
   const { t } = useI18n();
   const byStatus = { pending: 0, approved: 0, suspended: 0, rejected: 0 };
-  tenants.forEach((tn) => { (byStatus as any)[tn.status] = ((byStatus as any)[tn.status] ?? 0) + 1; });
+  tenants.forEach((tn) => { (byStatus as Record<string, number>)[tn.status] = ((byStatus as Record<string, number>)[tn.status] ?? 0) + 1; });
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -965,14 +965,14 @@ function SaReports({ tenants, plans, logs }: { tenants: Tenant[]; plans: Subscri
   );
 }
 
-function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActivity: any[] }) {
+function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActivity: LoginActivityRow[] }) {
   const { t } = useI18n();
   const successful = loginActivity.filter((la) => la.success).length;
   const failed = loginActivity.filter((la) => !la.success).length;
   const byDevice: Record<string, number> = {};
-  loginActivity.forEach((la) => { byDevice[la.device] = (byDevice[la.device] ?? 0) + 1; });
+  loginActivity.forEach((la) => { const k = la.device ?? 'unknown'; byDevice[k] = (byDevice[k] ?? 0) + 1; });
   const byBrowser: Record<string, number> = {};
-  loginActivity.forEach((la) => { byBrowser[la.browser] = (byBrowser[la.browser] ?? 0) + 1; });
+  loginActivity.forEach((la) => { const k = la.browser ?? 'unknown'; byBrowser[k] = (byBrowser[k] ?? 0) + 1; });
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -996,7 +996,7 @@ function SaAnalytics({ tenants, loginActivity }: { tenants: Tenant[]; loginActiv
 }
 
 
-function SaNotifications({ notifications, onAction }: { notifications: any[]; onAction: () => void }) {
+function SaNotifications({ notifications, onAction }: { notifications: PlatformNotificationRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', message: '', target: 'all' });
