@@ -92,8 +92,8 @@ export function LandingPage() {
 
   const testimonials = [
     { name: 'Dr. Aminata Diallo', role: 'Directrice — Clinique Santé+, Dakar', stars: 5, text: t('testi.1') },
-    { name: 'Dr. Emmanuel Okafor', role: 'CEO — MedCenter Lagos, Nigeria', stars: 5, text: t('testi.2') },
-    { name: 'Dr. Fatima Al-Hassan', role: 'Directrice Médicale — HopitalPlus, Abidjan', stars: 5, text: t('testi.3') },
+    { name: 'Dr. Emmanuel Okafor', role: 'CEO — MedCenter, Dubai', stars: 5, text: t('testi.2') },
+    { name: 'Dr. Fatima Al-Hassan', role: 'Directrice Médicale — HopitalPlus, Manille', stars: 5, text: t('testi.3') },
   ];
 
   return (
@@ -377,7 +377,7 @@ export function LandingPage() {
             <div className="md:col-span-1">
               <Logo variant="dark" />
               <p className="text-white/40 text-sm mt-4 leading-relaxed">{t('footer.tagline')}</p>
-              <p className="text-white/30 text-xs mt-4">100% African Technology</p>
+              <p className="text-white/30 text-xs mt-4">{t('app.cameroon')}</p>
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.product')}</p>

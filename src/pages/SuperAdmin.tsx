@@ -721,7 +721,7 @@ function SaSupport({ tickets, onAction }: { tickets: SupportTicketRow[]; onActio
   );
 }
 
-function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) {
+function SaApi({ apiKeys, onAction }: { apiKeys: ApiKeyRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', scopes: 'read' });
@@ -738,7 +738,7 @@ function SaApi({ apiKeys, onAction }: { apiKeys: any[]; onAction: () => void }) 
     setRevealedKey(keyValue);
   };
 
-  const toggle = async (k: any) => {
+  const toggle = async (k: ApiKeyRow) => {
     const { error } = await supabase.from('api_keys').update({ is_active: !k.is_active }).eq('id', k.id);
     if (error) { setErr(error.message); return; }
     onAction();
@@ -812,7 +812,7 @@ function SaAudit({ logs }: { logs: AuditLog[] }) {
   );
 }
 
-function SaUsers({ profiles, onAction }: { profiles: any[]; onAction: () => void }) {
+function SaUsers({ profiles, onAction }: { profiles: ProfileRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: '', email: '', password: '', is_super_admin: false });
@@ -827,7 +827,7 @@ function SaUsers({ profiles, onAction }: { profiles: any[]; onAction: () => void
     setForm({ full_name: '', email: '', password: '', is_super_admin: false }); setOpen(false); onAction();
   };
 
-  const toggleSuperAdmin = async (p: any) => {
+  const toggleSuperAdmin = async (p: ProfileRow) => {
     const isProtected = isProtectedSuperAdminEmail(p.email);
     if (isProtected) return;
     setErr(null);

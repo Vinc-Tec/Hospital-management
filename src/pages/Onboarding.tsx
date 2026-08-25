@@ -219,8 +219,8 @@ export function Onboarding() {
       owner_identification: form.owner_identification || null,
       insurance_documents: form.insurance_documents || null,
       payment_gateway: selectedGateway || null,
-      currency_code: selectedCountry?.currency_code || 'XAF',
-      timezone: selectedCountry?.timezone || 'Africa/Douala',
+      currency_code: selectedCountry?.currency_code || 'USD',
+      timezone: selectedCountry?.timezone || 'UTC',
       // Billing-sensitive columns are governed server-side by the
       // fn_lock_tenant_insert trigger:
       //   - status is forced to 'pending' (only the Flutterwave webhook sets

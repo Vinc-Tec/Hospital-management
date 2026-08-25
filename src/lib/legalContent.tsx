@@ -3,8 +3,8 @@
 // IMPORTANT: this is a comprehensive DRAFT written to replace the previous
 // one-paragraph placeholder. It is NOT a substitute for review by a lawyer
 // familiar with health-data regulation in the jurisdictions Health Cloud
-// operates in (GDPR if serving EU residents, local African data-protection
-// laws, etc.). Support email, address, and governing law are filled in
+// operates in (GDPR if serving EU residents, other local data-protection
+// laws depending on the client institution's country, etc.). Support email, address, and governing law are filled in
 // (Cameroon for governing law -- a starting choice given the operational
 // base, expected to be revisited once confirmed with counsel). The whole
 // document should still be validated by counsel before being relied on
