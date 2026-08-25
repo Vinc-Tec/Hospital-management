@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
-import heroPhoto from '../assets/photos/waiting-room-tv.jpg';
+import heroPhoto from '../assets/photos/dental-office.jpg';
 
 function useScrollReveal() {
   useEffect(() => {

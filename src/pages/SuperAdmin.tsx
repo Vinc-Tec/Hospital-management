@@ -3,9 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, CreditCard, Globe, ScrollText, ShieldCheck,
   Check, X, AlertCircle, Eye, Ban, MessageSquarePlus, Users, TrendingUp,
-  DollarSign, Ticket, UserPlus, Activity, Server, Bell, Settings as SettingsIcon,
+  DollarSign, Ticket, UserPlus, Activity, Bell, Settings as SettingsIcon,
   FileBarChart, Wallet, HeadphonesIcon, Key, MapPin, Map,
-  Trash2, Search, Menu,
+  Menu,
 } from 'lucide-react';
 import { useAuth, isProtectedSuperAdminEmail } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -164,15 +164,15 @@ export function SuperAdmin() {
           {section === 'performance' && <SaPerformance tenants={tenants} />}
           {section === 'geography' && <SaGeography countries={countries} regions={regions} setRegions={setRegions} districts={districts} setDistricts={setDistricts} onAction={loadAll} />}
           {section === 'cities' && <SaCities regions={regions} districts={districts} cities={cities} onAction={loadAll} />}
-          {section === 'localities' && <SaLocalities countries={countries} regions={regions} cities={cities} localities={localities} onAction={loadAll} />}
+          {section === 'localities' && <SaLocalities cities={cities} localities={localities} onAction={loadAll} />}
           {section === 'marketplace' && <SaMarketplace codes={commercialCodes} onAction={loadAll} />}
           {section === 'payments' && <SaPayments billingInvoices={billingInvoices} tenants={tenants} />}
           {section === 'support' && <SaSupport tickets={supportTickets} onAction={loadAll} />}
           {section === 'api' && <SaApi apiKeys={apiKeys} onAction={loadAll} />}
           {section === 'audit' && <SaAudit logs={logs} />}
-          {section === 'users' && <SaUsers profiles={profiles} tenants={tenants} onAction={loadAll} />}
+          {section === 'users' && <SaUsers profiles={profiles} onAction={loadAll} />}
           {section === 'roles' && <SaRoles profiles={profiles} />}
-          {section === 'billing' && <SaBilling tenants={tenants} plans={plans} billingInvoices={billingInvoices} />}
+          {section === 'billing' && <SaBilling tenants={tenants} billingInvoices={billingInvoices} />}
           {section === 'reports' && <SaReports tenants={tenants} plans={plans} logs={logs} />}
           {section === 'analytics' && <SaAnalytics tenants={tenants} loginActivity={loginActivity} />}
           {section === 'notifications' && <SaNotifications notifications={notifications} onAction={loadAll} />}
@@ -520,7 +520,7 @@ function SaCities({ regions, districts, cities, onAction }: { regions: { id: str
   );
 }
 
-function SaLocalities({ countries, regions, cities, localities, onAction }: { countries: { id: string; name: string }[]; regions: { id: string; name: string }[]; cities: any[]; localities: any[]; onAction: () => void }) {
+function SaLocalities({ cities, localities, onAction }: { cities: any[]; localities: any[]; onAction: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({ city_id: '', name: '' });
   const [err, setErr] = useState<string | null>(null);
@@ -790,7 +790,7 @@ function SaAudit({ logs }: { logs: AuditLog[] }) {
   );
 }
 
-function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Tenant[]; onAction: () => void }) {
+function SaUsers({ profiles, onAction }: { profiles: any[]; onAction: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: '', email: '', password: '', is_super_admin: false });
@@ -861,7 +861,6 @@ function SaUsers({ profiles, tenants, onAction }: { profiles: any[]; tenants: Te
 }
 
 function SaRoles({ profiles }: { profiles: any[] }) {
-  const { t } = useI18n();
   const roles = ['super_admin', 'tenant_admin', 'doctor', 'nurse', 'receptionist', 'pharmacist', 'lab_tech', 'accountant'];
   const counts: Record<string, number> = {};
   profiles.forEach((p) => { const r = p.is_super_admin ? 'super_admin' : 'tenant_admin'; counts[r] = (counts[r] ?? 0) + 1; });
@@ -878,7 +877,7 @@ function SaRoles({ profiles }: { profiles: any[] }) {
   );
 }
 
-function SaBilling({ tenants, plans, billingInvoices }: { tenants: Tenant[]; plans: SubscriptionPlan[]; billingInvoices: any[] }) {
+function SaBilling({ tenants, billingInvoices }: { tenants: Tenant[]; billingInvoices: any[] }) {
   const { t } = useI18n();
   const totalCollected = billingInvoices.filter((bi) => bi.status === 'paid').reduce((s, bi) => s + Number(bi.amount_paid ?? 0), 0);
   const totalOutstanding = billingInvoices.filter((bi) => bi.status !== 'paid' && bi.status !== 'void').reduce((s, bi) => s + Number(bi.amount_due ?? 0), 0);
