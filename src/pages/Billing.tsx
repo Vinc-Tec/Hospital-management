@@ -119,7 +119,7 @@ function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
         <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <AlertCircle size={32} className="text-red-500" />
         </div>
-        <h1 className="text-2xl font-black text-gray-900 mb-2">{t('billing.grace_title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('billing.grace_title')}</h1>
         <p className="text-gray-500 mb-6">{t('billing.grace_desc').replace('{n}', String(daysLeft))}</p>
         <div className="flex flex-col gap-3">
           <Link to="/app/settings" className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors text-center">
@@ -191,7 +191,7 @@ function SubscriptionScreen() {
       <div className="max-w-4xl w-full">
         <div className="text-center mb-10">
           <Logo variant="dark" />
-          <h1 className="text-3xl font-black text-white mt-6 mb-2">{t('billing.expired_title')}</h1>
+          <h1 className="text-3xl font-bold text-white mt-6 mb-2">{t('billing.expired_title')}</h1>
           <p className="text-white/50">{t('billing.expired_desc')}</p>
         </div>
 
@@ -214,7 +214,7 @@ function SubscriptionScreen() {
               <button key={p.id} onClick={() => setSelectedPlan(p.id)}
                 className={`text-left p-5 rounded-2xl border-2 transition-all ${selectedPlan === p.id ? 'border-blue-400 bg-blue-500/20' : 'border-white/10 hover:border-white/30 bg-white/5'}`}>
                 <p className="text-white font-bold text-lg">{p.name}</p>
-                <p className="text-blue-300 text-2xl font-black mt-1">
+                <p className="text-blue-300 text-2xl font-bold mt-1">
                   ${billing === 'yearly' ? Math.round((p.price_yearly ?? p.price_monthly * 10) / 12) : p.price_monthly}
                   <span className="text-white/40 text-xs font-normal">/{t('plan.month')}</span>
                 </p>

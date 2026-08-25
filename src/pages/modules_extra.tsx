@@ -4,8 +4,7 @@ import {
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
-import { supabase, type Patient, type Doctor, type Staff } from '../lib/supabase';
-import { useState, useEffect } from 'react';
+import { type Patient, type Doctor, type Staff } from '../lib/supabase';
 
 const statusOpts = (keys: string[], t: (k: string) => string) =>
   keys.map((k) => ({ value: k, label: t(`opt.${k}`) }));

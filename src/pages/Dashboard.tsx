@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
-  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send,
+  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send, Plug,
 } from 'lucide-react';
 import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
@@ -306,7 +306,7 @@ export function Dashboard() {
           {isOverview ? (
             <>
               <div className="mb-6">
-                <h1 className="text-2xl font-black text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
                 <p className="text-sm text-gray-500 mt-1">{isSuperAdmin ? 'Super Admin — LiAfrik' : activeTenant?.healthcare_type}</p>
               </div>
 
@@ -338,7 +338,7 @@ export function Dashboard() {
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-${k.color}-50`}>
                       <k.icon size={20} className={`text-${k.color}-600`} />
                     </div>
-                    <p className="text-2xl font-black text-gray-900">{k.value}</p>
+                    <p className="text-2xl font-bold text-gray-900">{k.value}</p>
                     <p className="text-sm text-gray-500 mt-0.5">{k.label}</p>
                   </Card>
                 ))}

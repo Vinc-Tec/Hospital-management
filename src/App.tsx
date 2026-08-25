@@ -56,7 +56,7 @@ const ContactPage = lazy(() => import('./pages/StaticPages').then((m) => ({ defa
 // BillingGate/TrialBanner stay eagerly loaded: they wrap every authenticated
 // route and are needed immediately, so splitting them out would just move
 // the same code into a different chunk fetched at the same time.
-import { BillingGate, TrialBanner } from './pages/Billing';
+import { BillingGate } from './pages/Billing';
 
 const PatientsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.PatientsModule })));
 const DoctorsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.DoctorsModule })));
@@ -158,7 +158,7 @@ function TenantRoute({ children }: { children: ReactNode }) {
 }
 
 function ModuleGate({ moduleKey, children }: { moduleKey: string; children: ReactNode }) {
-  const { activePlan, activeMembership, profile, user } = useAuth();
+  const { activePlan, activeMembership, profile } = useAuth();
   const { t } = useI18n();
   // Super admins always have full access, regardless of any tenant's plan.
   // is_super_admin is enforced server-side by RLS; the email check is cosmetic.
