@@ -19,6 +19,25 @@ import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/bran
 // authoritative check is profiles.is_super_admin (enforced server-side),
 // and the email gate below is cosmetic only.
 
+type ProfileRow = { id: string; full_name: string | null; email: string; is_super_admin: boolean };
+type BillingInvoiceRow = {
+  id: string; invoice_number: string; tenant_id: string; amount_due: number; amount_paid: number;
+  due_date: string; paid_at: string | null; status: 'draft' | 'sent' | 'paid' | 'overdue' | 'void'; created_at: string;
+};
+type SupportTicketRow = {
+  id: string; tenant_id: string | null; user_id: string | null; subject: string; description: string | null;
+  priority: string; status: string; resolution: string | null; created_at: string; updated_at: string;
+};
+type ApiKeyRow = { id: string; name: string; key_hash: string; scopes: string[]; is_active: boolean; created_by: string | null; created_at: string; tenant_id?: string };
+type PlatformNotificationRow = { id: string; title: string; message: string | null; target: string; created_by: string | null; created_at: string };
+type CityRow = { id: string; name: string; district_id: string };
+type LocalityRow = { id: string; name: string; city_id: string };
+type CommercialCodeRow = {
+  id: string; code: string; description: string | null; discount_percent: number;
+  max_uses: number | null; uses_count: number; valid_until: string | null; is_active: boolean; created_by: string | null;
+};
+type LoginActivityRow = { id: string; user_id: string; tenant_id: string | null; login_at: string; device: string | null; browser: string | null; ip_address: string | null; success: boolean };
+
 const NAV = [
   { key: 'overview', icon: LayoutDashboard },
   { key: 'tenants', icon: Building2 },
@@ -54,15 +73,15 @@ export function SuperAdmin() {
   const [countries, setCountries] = useState<{ id: string; name: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string; name: string }[]>([]);
   const [districts, setDistricts] = useState<{ id: string; name: string; region_id: string }[]>([]);
-  const [cities, setCities] = useState<any[]>([]);
-  const [localities, setLocalities] = useState<any[]>([]);
-  const [commercialCodes, setCommercialCodes] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [loginActivity, setLoginActivity] = useState<any[]>([]);
-  const [billingInvoices, setBillingInvoices] = useState<any[]>([]);
-  const [supportTickets, setSupportTickets] = useState<any[]>([]);
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [cities, setCities] = useState<CityRow[]>([]);
+  const [localities, setLocalities] = useState<LocalityRow[]>([]);
+  const [commercialCodes, setCommercialCodes] = useState<CommercialCodeRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [loginActivity, setLoginActivity] = useState<LoginActivityRow[]>([]);
+  const [billingInvoices, setBillingInvoices] = useState<BillingInvoiceRow[]>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicketRow[]>([]);
+  const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([]);
+  const [notifications, setNotifications] = useState<PlatformNotificationRow[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, mrr: 0, totalRevenue: 0 });
 
   const loadAll = async () => {
