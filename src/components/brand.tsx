@@ -1,19 +1,11 @@
-import { Heart } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
+import logoMark from '../assets/logo-mark.png';
 
 export function Logo({ size = 36, variant = 'light' }: { size?: number; variant?: 'light' | 'dark' }) {
   const s = size;
   return (
     <div className="flex items-center gap-2.5 select-none">
-      <div
-        className="rounded-xl flex items-center justify-center flex-shrink-0 shadow-md"
-        style={{
-          width: s, height: s,
-          background: 'linear-gradient(135deg, #0ea5e9 0%, #10b981 100%)',
-        }}
-      >
-        <Heart size={s * 0.48} className="text-white" fill="white" />
-      </div>
+      <img src={logoMark} alt="Health Cloud" width={s} height={s} className="flex-shrink-0 object-contain" style={{ width: s, height: s }} />
       <div className="leading-none">
         <span className={`font-bold tracking-tight ${variant === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontSize: s * 0.42 }}>
           Health Cloud

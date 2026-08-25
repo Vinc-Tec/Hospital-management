@@ -123,7 +123,16 @@ export function LandingPage() {
       </header>
 
       {/* HERO — plain light background, two columns, framed photo instead of full-bleed overlay */}
-      <section className="relative bg-gradient-to-b from-slate-50 to-white pt-32 pb-20 overflow-hidden">
+      <section className="relative bg-white pt-32 pb-20 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-[0.4]"
+          style={{
+            backgroundImage: 'linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%)',
+          }}
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
           <div className="reveal">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-6">
@@ -133,7 +142,7 @@ export function LandingPage() {
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight leading-[1.08] mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.08] mb-6">
               {t('hero.line1')}<br />
               <span className="text-blue-600">{t('hero.line2')}</span>
             </h1>
@@ -172,12 +181,11 @@ export function LandingPage() {
 
           {/* Framed product photo, PayUnit-style */}
           <div className="relative reveal" style={{ transitionDelay: '150ms' }}>
-            <div className="absolute -inset-4 bg-blue-50 rounded-3xl -z-10 hidden sm:block" />
-            <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-xl">
+            <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg">
               <img src={heroPhoto} alt="" className="w-full h-[380px] object-cover" />
             </div>
             {/* Stats card overlapping the photo */}
-            <div className="hidden sm:grid grid-cols-2 gap-3 bg-white rounded-2xl border border-gray-200 shadow-lg p-4 mt-[-3rem] mx-6 relative">
+            <div className="hidden sm:grid grid-cols-2 gap-3 bg-white rounded-2xl border border-gray-200 shadow-md p-4 mt-[-3rem] mx-6 relative">
               {stats.map((s, i) => (
                 <div key={i} className="text-center py-2">
                   <p className="text-xl font-bold text-gray-900">{s.value}</p>
