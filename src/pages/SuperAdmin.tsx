@@ -207,7 +207,7 @@ export function SuperAdmin() {
   );
 }
 
-function SaOverview({ stats, tenants, loginActivity }: { stats: { total: number; active: number; pending: number; suspended: number; mrr: number; totalRevenue: number }; tenants: Tenant[]; loginActivity: any[] }) {
+function SaOverview({ stats, tenants, loginActivity }: { stats: { total: number; active: number; pending: number; suspended: number; mrr: number; totalRevenue: number }; tenants: Tenant[]; loginActivity: LoginActivityRow[] }) {
   const { t } = useI18n();
   const kpis = [
     { label: t('sa.active_tenants'), value: stats.active, color: 'emerald' },
@@ -346,7 +346,7 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
   );
 }
 
-function SaRevenue({ tenants, plans, billingInvoices }: { tenants: Tenant[]; plans: SubscriptionPlan[]; billingInvoices: any[] }) {
+function SaRevenue({ tenants, plans, billingInvoices }: { tenants: Tenant[]; plans: SubscriptionPlan[]; billingInvoices: BillingInvoiceRow[] }) {
   const { t } = useI18n();
   const active = tenants.filter((tn) => tn.status === 'approved');
   const totalMrr = active.reduce((s, tn) => {
@@ -389,15 +389,18 @@ function SaRevenue({ tenants, plans, billingInvoices }: { tenants: Tenant[]; pla
   );
 }
 
+type TenantPerformanceRow = { doctor_name: string | null; appointment_count: number | null; revenue: number | null; avg_rating?: number | null };
+type TenantPerformanceGroup = { tenant: string; rows: TenantPerformanceRow[] };
+
 function SaPerformance({ tenants }: { tenants: Tenant[] }) {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<TenantPerformanceGroup[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     (async () => {
-      const results: any[] = [];
+      const results: TenantPerformanceGroup[] = [];
       for (const tn of tenants.filter((t) => t.status === 'approved')) {
         const { data } = await supabase.rpc('staff_performance', { p_tenant: tn.id });
-        if (data) results.push({ tenant: tn.commercial_name || tn.legal_name, rows: data });
+        if (data) results.push({ tenant: tn.commercial_name || tn.legal_name, rows: data as TenantPerformanceRow[] });
       }
       setData(results); setLoading(false);
     })();
@@ -413,7 +416,7 @@ function SaPerformance({ tenants }: { tenants: Tenant[] }) {
             <table className="w-full">
               <thead><tr className="bg-gray-50">{['Doctor', 'Appointments', 'Revenue', 'Rating'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {d.rows.map((r: any, i: number) => (
+                {d.rows.map((r, i: number) => (
                   <tr key={i} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{r.doctor_name ?? '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{r.appointment_count ?? 0}</td>
