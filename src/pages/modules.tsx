@@ -573,18 +573,24 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
   );
 }
 
+type PerformanceRow = {
+  doctor_id: string; first_name: string; last_name: string; specialty: string | null; status?: string;
+  appointments_count: number; consultations_count: number; prescriptions_count: number;
+  lab_orders_count: number; radiology_orders_count: number;
+};
+
 export function PerformanceModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<PerformanceRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.rpc('get_staff_performance', { p_tenant_id: tenantId });
-      if (data) { setRows(data); setLoading(false); return; }
+      if (data) { setRows(data as PerformanceRow[]); setLoading(false); return; }
       const { data: doctors } = await supabase.from('doctors').select('*').eq('tenant_id', tenantId);
-      const docList = (doctors as any[]) ?? [];
-      const results: any[] = [];
+      const docList = (doctors as Doctor[]) ?? [];
+      const results: PerformanceRow[] = [];
       for (const d of docList) {
         const [apt, con, pre, lab, rad] = await Promise.all([
           supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('doctor_id', d.id),
@@ -606,7 +612,7 @@ export function PerformanceModule({ tenantId }: { tenantId: string }) {
     { label: t('dash.nav.lab'), key: 'lab_orders_count', icon: FlaskConical, color: 'red' },
   ];
 
-  const totals = kpis.reduce((acc, k) => ({ ...acc, [k.key]: rows.reduce((s, r) => s + (r[k.key] ?? 0), 0) }), {} as Record<string, number>);
+  const totals = kpis.reduce((acc, k) => ({ ...acc, [k.key]: rows.reduce((s, r) => s + ((r as unknown as Record<string, number>)[k.key] ?? 0), 0) }), {} as Record<string, number>);
 
   return (
     <div>
@@ -623,7 +629,7 @@ export function PerformanceModule({ tenantId }: { tenantId: string }) {
         {loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : rows.length === 0 ? <div className="p-8"><EmptyState icon={TrendingUp} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('col.doctor')}</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('col.specialty')}</th>{kpis.map((k) => <th key={k.key} className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{k.label}</th>)}<th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{t('col.total')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{rows.map((r) => { const total = (r.appointments_count ?? 0) + (r.consultations_count ?? 0) + (r.prescriptions_count ?? 0) + (r.lab_orders_count ?? 0) + (r.radiology_orders_count ?? 0); return (
-              <tr key={r.doctor_id} className="hover:bg-gray-50/50"><td className="px-4 py-3 text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</td><td className="px-4 py-3 text-sm text-gray-600">{r.specialty ?? '—'}</td>{kpis.map((k) => <td key={k.key} className="px-4 py-3 text-center text-sm text-gray-700">{r[k.key] ?? 0}</td>)}<td className="px-4 py-3 text-center"><Badge color={total > 10 ? 'green' : total > 0 ? 'amber' : 'gray'}>{total}</Badge></td></tr>
+              <tr key={r.doctor_id} className="hover:bg-gray-50/50"><td className="px-4 py-3 text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</td><td className="px-4 py-3 text-sm text-gray-600">{r.specialty ?? '—'}</td>{kpis.map((k) => <td key={k.key} className="px-4 py-3 text-center text-sm text-gray-700">{(r as unknown as Record<string, number>)[k.key] ?? 0}</td>)}<td className="px-4 py-3 text-center"><Badge color={total > 10 ? 'green' : total > 0 ? 'amber' : 'gray'}>{total}</Badge></td></tr>
             ); })}</tbody>
           </table></div>
         )}

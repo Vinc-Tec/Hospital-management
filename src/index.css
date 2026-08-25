@@ -1,4 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/fontalternative/glacial-indifference/font.css');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@ html {
 
 body {
   height: 100%;
-  font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+  font-family: 'Glacial Indifference', 'Satoshi', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -67,6 +67,30 @@ body {
 .animate-slide-up { animation: slide-up 0.6s ease forwards; }
 .animate-fade-in { animation: fade-in 0.4s ease forwards; }
 .animate-gradient-pan { animation: gradient-pan 18s linear infinite; }
+
+/* Hero "vital signs" animations: a scrolling ECG line + a heartbeat pulse
+   ring, used to give the healthcare hero a real, purposeful animation
+   instead of decorative-only motion. */
+@keyframes ecg-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-400px); }
+}
+.animate-ecg-scroll { animation: ecg-scroll 3.5s linear infinite; }
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.75); opacity: 0.7; }
+  80%, 100% { transform: scale(1.9); opacity: 0; }
+}
+.animate-pulse-ring { animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+@keyframes heartbeat-pop {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+  60% { transform: scale(1); }
+}
+.animate-heartbeat { animation: heartbeat-pop 1.8s ease-in-out infinite; }
 
 /* Scroll-reveal: element starts hidden/offset, gains .is-visible once it
    enters the viewport (see useScrollReveal in Landing.tsx). Kept as a

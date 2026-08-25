@@ -179,10 +179,34 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Framed product photo, PayUnit-style */}
+          {/* Framed product photo, PayUnit-style, with real health-themed animation */}
           <div className="relative reveal" style={{ transitionDelay: '150ms' }}>
-            <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg">
+            <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg relative">
               <img src={heroPhoto} alt="" className="w-full h-[380px] object-cover" />
+
+              {/* Live vitals monitor strip: scrolling ECG line, like a bedside monitor */}
+              <div className="absolute bottom-0 left-0 right-0 h-14 bg-gray-900/75 backdrop-blur-sm flex items-center overflow-hidden">
+                <span className="flex items-center gap-1.5 pl-4 pr-3 flex-shrink-0 z-10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-glow" />
+                  <span className="text-[10px] font-semibold text-emerald-300 uppercase tracking-widest">Live</span>
+                </span>
+                <svg viewBox="0 0 800 48" className="h-8 w-[800px] flex-shrink-0 animate-ecg-scroll" preserveAspectRatio="none" aria-hidden="true">
+                  <path
+                    d="M0,24 L60,24 L75,24 L85,6 L95,42 L105,14 L115,24 L360,24 L375,24 L385,6 L395,42 L405,14 L415,24 L460,24 L475,24 L485,6 L495,42 L505,14 L515,24 L760,24 L775,24 L785,6 L795,42 L805,14 L815,24"
+                    fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+
+              {/* Floating heartbeat badge */}
+              <div className="absolute -top-4 -right-4 sm:-right-5">
+                <div className="relative w-14 h-14 flex items-center justify-center">
+                  <span className="absolute inset-0 rounded-full bg-red-400 animate-pulse-ring" aria-hidden="true" />
+                  <span className="relative w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center animate-heartbeat">
+                    <Heart size={20} className="text-red-500" fill="currentColor" />
+                  </span>
+                </div>
+              </div>
             </div>
             {/* Stats card overlapping the photo */}
             <div className="hidden sm:grid grid-cols-2 gap-3 bg-white rounded-2xl border border-gray-200 shadow-md p-4 mt-[-3rem] mx-6 relative">
