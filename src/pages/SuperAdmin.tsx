@@ -22,7 +22,7 @@ import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/bran
 type ProfileRow = { id: string; full_name: string | null; email: string; is_super_admin: boolean };
 type BillingInvoiceRow = {
   id: string; invoice_number: string; tenant_id: string; amount_due: number; amount_paid: number;
-  due_date: string; paid_at: string | null; status: 'draft' | 'sent' | 'paid' | 'overdue' | 'void'; created_at: string;
+  due_date: string; paid_at: string | null; status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'; created_at: string;
 };
 type SupportTicketRow = {
   id: string; tenant_id: string | null; user_id: string | null; subject: string; description: string | null;
@@ -501,7 +501,7 @@ function SaGeography({ countries, regions, setRegions, districts, setDistricts, 
   );
 }
 
-function SaCities({ regions, districts, cities, onAction }: { regions: { id: string; name: string }[]; districts: { id: string; name: string; region_id: string }[]; cities: any[]; onAction: () => void }) {
+function SaCities({ regions, districts, cities, onAction }: { regions: { id: string; name: string }[]; districts: { id: string; name: string; region_id: string }[]; cities: CityRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({ region_id: '', district_id: '', name: '' });
   const filteredDistricts = districts.filter((d) => d.region_id === form.region_id);
@@ -542,7 +542,7 @@ function SaCities({ regions, districts, cities, onAction }: { regions: { id: str
   );
 }
 
-function SaLocalities({ cities, localities, onAction }: { cities: any[]; localities: any[]; onAction: () => void }) {
+function SaLocalities({ cities, localities, onAction }: { cities: CityRow[]; localities: LocalityRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const [form, setForm] = useState({ city_id: '', name: '' });
   const [err, setErr] = useState<string | null>(null);
@@ -576,7 +576,7 @@ function SaLocalities({ cities, localities, onAction }: { cities: any[]; localit
   );
 }
 
-function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void }) {
+function SaMarketplace({ codes, onAction }: { codes: CommercialCodeRow[]; onAction: () => void }) {
   const { t } = useI18n();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -602,7 +602,7 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
     setForm({ country_iso: '', description: '', discount_percent: '10', max_uses: '', valid_until: '' }); setOpen(false); onAction();
   };
 
-  const toggle = async (c: any) => {
+  const toggle = async (c: CommercialCodeRow) => {
     const { error } = await supabase.from('commercial_codes').update({ is_active: !c.is_active }).eq('id', c.id);
     if (error) { setErr(error.message); return; }
     onAction();
@@ -645,7 +645,7 @@ function SaMarketplace({ codes, onAction }: { codes: any[]; onAction: () => void
   );
 }
 
-function SaPayments({ billingInvoices, tenants }: { billingInvoices: any[]; tenants: Tenant[] }) {
+function SaPayments({ billingInvoices, tenants }: { billingInvoices: BillingInvoiceRow[]; tenants: Tenant[] }) {
   const { t } = useI18n();
   const tenantName = (id: string) => tenants.find((tn) => tn.id === id)?.commercial_name ?? '—';
   if (billingInvoices.length === 0) return <Card className="p-8"><EmptyState icon={CreditCard} title={t('common.none')} /></Card>;
@@ -672,9 +672,9 @@ function SaPayments({ billingInvoices, tenants }: { billingInvoices: any[]; tena
   );
 }
 
-function SaSupport({ tickets, onAction }: { tickets: any[]; onAction: () => void }) {
+function SaSupport({ tickets, onAction }: { tickets: SupportTicketRow[]; onAction: () => void }) {
   const { t } = useI18n();
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<SupportTicketRow | null>(null);
   const [reply, setReply] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
