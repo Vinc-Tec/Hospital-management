@@ -9,10 +9,34 @@ import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import heroPhoto from '../assets/photos/waiting-room-tv.jpg';
 
+function useScrollReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+}
+
 export function LandingPage() {
   const { t } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(false);
+  useScrollReveal();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -101,7 +125,7 @@ export function LandingPage() {
       {/* HERO — plain light background, two columns, framed photo instead of full-bleed overlay */}
       <section className="relative bg-gradient-to-b from-slate-50 to-white pt-32 pb-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
-          <div>
+          <div className="reveal">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-6">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
               <span className="text-xs font-semibold text-blue-700">
@@ -147,7 +171,7 @@ export function LandingPage() {
           </div>
 
           {/* Framed product photo, PayUnit-style */}
-          <div className="relative">
+          <div className="relative reveal" style={{ transitionDelay: '150ms' }}>
             <div className="absolute -inset-4 bg-blue-50 rounded-3xl -z-10 hidden sm:block" />
             <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-xl">
               <img src={heroPhoto} alt="" className="w-full h-[380px] object-cover" />
@@ -171,7 +195,7 @@ export function LandingPage() {
           <p className="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-8">{t('landing.trusted_by')}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {institutionTypes.map((it, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+              <div key={i} className="reveal flex items-center gap-3 px-5 py-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors" style={{ transitionDelay: `${i * 80}ms` }}>
                 <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
                   <it.icon size={17} className="text-blue-600" />
                 </div>
@@ -188,14 +212,14 @@ export function LandingPage() {
       {/* FEATURES — flat cards, single accent color, no per-card rainbow */}
       <section id="features" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="max-w-2xl mx-auto text-center mb-16">
+          <div className="max-w-2xl mx-auto text-center mb-16 reveal">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('landing.why')}</span>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-3 mb-4">{t('landing.features_title')}</h2>
             <p className="text-lg text-gray-500">{t('landing.features_sub')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f, i) => (
-              <div key={i} className="p-7 rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all duration-200">
+              <div key={i} className="reveal p-7 rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-colors duration-200" style={{ transitionDelay: `${(i % 3) * 100}ms` }}>
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 bg-blue-50">
                   <f.icon size={20} className="text-blue-600" />
                 </div>
@@ -210,13 +234,13 @@ export function LandingPage() {
       {/* SOCIAL PROOF — light section instead of dark gradient */}
       <section className="py-20 bg-slate-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="max-w-xl mx-auto text-center mb-12">
+          <div className="max-w-xl mx-auto text-center mb-12 reveal">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">{t('landing.testimonials_title')}</h2>
             <p className="text-gray-500">{t('landing.testimonials_sub')}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t2, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-7">
+              <div key={i} className="reveal bg-white rounded-2xl border border-gray-100 p-7" style={{ transitionDelay: `${i * 100}ms` }}>
                 <div className="flex gap-0.5 mb-4">
                   {Array.from({ length: t2.stars }).map((_, j) => <Star key={j} size={14} className="text-amber-400 fill-amber-400" />)}
                 </div>
@@ -234,7 +258,7 @@ export function LandingPage() {
       {/* PRICING */}
       <section id="plans" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="max-w-xl mx-auto text-center mb-12">
+          <div className="max-w-xl mx-auto text-center mb-12 reveal">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('landing.pricing_label')}</span>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-3 mb-4">{t('landing.pricing_title')}</h2>
             <p className="text-gray-500 mb-8">{t('landing.pricing_sub')}</p>
@@ -251,7 +275,7 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((plan, i) => (
-              <div key={i} className={`relative rounded-2xl p-7 flex flex-col ${plan.highlight ? 'bg-blue-600 shadow-xl' : 'bg-white border border-gray-200'}`}>
+              <div key={i} className={`reveal relative rounded-2xl p-7 flex flex-col ${plan.highlight ? 'bg-blue-600 shadow-xl' : 'bg-white border border-gray-200'}`} style={{ transitionDelay: `${i * 80}ms` }}>
                 {plan.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full whitespace-nowrap">
                     {t('plan.popular')}
@@ -298,7 +322,7 @@ export function LandingPage() {
 
       {/* CTA — single flat color block, no floating orbs */}
       <section className="py-24 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center reveal">
           <div className="bg-blue-600 rounded-3xl p-12">
             <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Heart size={26} className="text-white" fill="white" />

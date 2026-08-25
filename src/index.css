@@ -68,6 +68,26 @@ body {
 .animate-fade-in { animation: fade-in 0.4s ease forwards; }
 .animate-gradient-pan { animation: gradient-pan 18s linear infinite; }
 
+/* Scroll-reveal: element starts hidden/offset, gains .is-visible once it
+   enters the viewport (see useScrollReveal in Landing.tsx). Kept as a
+   plain CSS transition (not a keyframe animation) so it plays nicely with
+   the prefers-reduced-motion override below. */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+/* WCAG 2.3.3 (Animation from Interactions): respect the OS-level request
+   for reduced motion by collapsing every animation/transition to
+   near-instant, instead of leaving motion-sensitive visitors with
+   spinning/sliding content they asked their system to suppress. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
