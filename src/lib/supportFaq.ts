@@ -97,6 +97,7 @@ export const faqEntries: FaqEntry[] = [
   },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- lang kept in the public signature for future locale-specific matching
 export function matchFaq(query: string, lang: 'fr' | 'en'): FaqEntry | null {
   const q = query.toLowerCase();
   let best: { entry: FaqEntry; score: number } | null = null;

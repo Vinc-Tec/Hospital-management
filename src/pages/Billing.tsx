@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { Shield, Check, CreditCard, AlertCircle, Clock, Download } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { supabase } from '../lib/supabase';
+import { supabase, type SubscriptionPlan } from '../lib/supabase';
 import { Logo, CopyrightLine } from '../components/brand';
-import { Card, Button } from '../components/ui';
 
 type AccessState = 'loading' | 'ok' | 'grace' | 'expired';
 
@@ -60,7 +59,7 @@ function useAccessState(): { state: AccessState; daysLeft: number; graceDaysLeft
 export function TrialBanner() {
   const { daysLeft } = useAccessState();
   const { t } = useI18n();
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   if (profile?.is_super_admin) return null;
   if (daysLeft <= 0 || daysLeft > 7) return null;
   const urgent = daysLeft <= 3;
@@ -77,8 +76,7 @@ export function TrialBanner() {
 
 export function BillingGate({ children }: { children: React.ReactNode }) {
   const { state, graceDaysLeft } = useAccessState();
-  const { t } = useI18n();
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
 
   // Super admins bypass all subscription requirements
   if (profile?.is_super_admin) return <>{children}</>;
@@ -139,7 +137,7 @@ function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
 function SubscriptionScreen() {
   const { t } = useI18n();
   const { activeTenant, signOut } = useAuth();
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
 
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { supabase, type Patient, type Appointment } from '../lib/supabase';
+import { supabase, type Patient, type Appointment, type Tenant } from '../lib/supabase';
 import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 import { TrialBanner } from './Billing';
@@ -47,7 +47,7 @@ const NAV = [
   { to: '/app/settings', icon: Settings, key: 'dash.nav.settings', moduleKey: 'settings' },
 ];
 
-function TrialDaysWidget({ tenant }: { tenant: any }) {
+function TrialDaysWidget({ tenant }: { tenant: Tenant }) {
   const { t } = useI18n();
   const now = new Date();
   const trialEnd = new Date(tenant.trial_ends_at);

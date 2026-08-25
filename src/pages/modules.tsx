@@ -11,7 +11,7 @@ import { Badge, Card, Button, Input, Modal, EmptyState } from '../components/ui'
 import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
-import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord } from '../lib/supabase';
+import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role } from '../lib/supabase';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
 function usePatientDoctorMaps(tenantId: string) {
@@ -148,6 +148,7 @@ export function ConsultationsModule({ tenantId }: { tenantId: string }) {
 
 type DrugInteraction = { drug_a: string; drug_b: string; severity: 'minor' | 'moderate' | 'major'; description_en: string; description_fr: string };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- lang kept in the signature; description_fr/description_en selected but not yet branched on
 function useDrugInteractionWarnings(tenantId: string, lang: 'fr' | 'en') {
   const { rows: prescriptions } = useCrud<Prescription>('prescriptions', tenantId);
   const [interactions, setInteractions] = useState<DrugInteraction[]>([]);
@@ -397,9 +398,9 @@ export function StaffModule({ tenantId }: { tenantId: string }) {
 
 export function RolesModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
-  const crud = useCrud<any>('roles', tenantId);
+  const crud = useCrud<Role>('roles', tenantId);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Role | null>(null);
   const [form, setForm] = useState<{ name: string; description: string; permissions: Record<string, boolean> }>({ name: '', description: '', permissions: {} });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -421,7 +422,7 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
   ];
 
   const openAdd = () => { setEditing(null); setForm({ name: '', description: '', permissions: {} }); setErr(null); setModalOpen(true); };
-  const openEdit = (row: any) => { setEditing(row); setForm({ name: row.name, description: row.description ?? '', permissions: row.permissions ?? {} }); setErr(null); setModalOpen(true); };
+  const openEdit = (row: Role) => { setEditing(row); setForm({ name: row.name, description: row.description ?? '', permissions: (row.permissions ?? {}) as Record<string, boolean> }); setErr(null); setModalOpen(true); };
 
   const togglePerm = (mod: string, action: string) => {
     const key = `${mod}.${action}`;
@@ -437,7 +438,7 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
     setSaving(false);
   };
 
-  const crudPage = useCrud<any>('roles', tenantId);
+  const crudPage = useCrud<Role>('roles', tenantId);
   const filtered = crudPage.rows;
 
   return (
@@ -452,7 +453,7 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
       <Card className="overflow-hidden">
         {crudPage.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : filtered.length === 0 ? <div className="p-8"><EmptyState icon={ShieldCheck} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">{filtered.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render ? c.render(row) : <span className="text-sm text-gray-700">{row[c.key] ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">{!row.is_system && <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>}</div></td></tr>))}</tbody>
+            <tbody className="divide-y divide-gray-50">{filtered.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render ? c.render(row) : <span className="text-sm text-gray-700">{(row as unknown as Record<string, unknown>)[c.key] as React.ReactNode ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">{!row.is_system && <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>}</div></td></tr>))}</tbody>
           </table></div>
         )}
       </Card>
@@ -484,13 +485,19 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
   );
 }
 
+type Report = {
+  id: string; tenant_id: string; user_id: string | null;
+  title: string; report_type: string; content: string | null;
+  status: 'draft' | 'published' | 'archived'; created_at: string;
+};
+
 export function ReportsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { user, activeTenant } = useAuth();
-  const crud = useCrud<any>('reports', tenantId);
+  const crud = useCrud<Report>('reports', tenantId);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [form, setForm] = useState({ title: '', report_type: 'custom', content: '', status: 'draft' });
+  const [editing, setEditing] = useState<Report | null>(null);
+  const [form, setForm] = useState<{ title: string; report_type: string; content: string; status: Report['status'] }>({ title: '', report_type: 'custom', content: '', status: 'draft' });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [delId, setDelId] = useState<string | null>(null);
@@ -506,7 +513,7 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
   ];
 
   const openAdd = () => { setEditing(null); setForm({ title: '', report_type: 'custom', content: '', status: 'draft' }); setErr(null); setModalOpen(true); };
-  const openEdit = (row: any) => { setEditing(row); setForm({ title: row.title, report_type: row.report_type, content: row.content ?? '', status: row.status }); setErr(null); setModalOpen(true); };
+  const openEdit = (row: Report) => { setEditing(row); setForm({ title: row.title, report_type: row.report_type, content: row.content ?? '', status: row.status }); setErr(null); setModalOpen(true); };
 
   const submit = async () => {
     if (!form.title) { setErr(t('onb.err.required')); return; }
@@ -517,7 +524,7 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
     setSaving(false);
   };
 
-  const sendWhatsApp = (row: any) => {
+  const sendWhatsApp = (row: Report) => {
     const text = `*${row.title}*\nType: ${row.report_type}\n\n${row.content ?? ''}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -541,8 +548,8 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
       <Card className="overflow-hidden">
         {crud.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : crud.rows.length === 0 ? <div className="p-8"><EmptyState icon={FileBarChart} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">{crud.rows.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render?.(row) ?? <span className="text-sm text-gray-700">{row[c.key] ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">
-              <button onClick={() => generateGenericReportPDF(activeTenant!, row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="PDF"><FileDown size={16} /></button>
+            <tbody className="divide-y divide-gray-50">{crud.rows.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render?.(row) ?? <span className="text-sm text-gray-700">{(row as unknown as Record<string, unknown>)[c.key] as React.ReactNode ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">
+              <button onClick={() => generateGenericReportPDF(activeTenant!, { ...row, content: row.content ?? '' })} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="PDF"><FileDown size={16} /></button>
               <button onClick={() => sendWhatsApp(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50" title="WhatsApp"><MessageCircle size={16} /></button>
               <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>
               <button onClick={() => setDelId(row.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={16} /></button>
@@ -555,7 +562,7 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
           <Input label={t('fld.name')} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('common.type')}</span><select value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">{REPORT_TYPES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
           <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('fld.notes')}</span><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={6} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></label>
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('col.status')}</span><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="draft">{t('opt.draft')}</option><option value="published">{t('opt.published')}</option><option value="archived">{t('opt.archived')}</option></select></label>
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('col.status')}</span><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Report['status'] })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="draft">{t('opt.draft')}</option><option value="published">{t('opt.published')}</option><option value="archived">{t('opt.archived')}</option></select></label>
           {err && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
