@@ -4,7 +4,7 @@ import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
 import { Button, Card, Input, Badge, Select, Modal } from '../components/ui';
-import { Settings as SettingsIcon, Building2, User, CreditCard, AlertTriangle, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 
 export function SettingsPage() {
@@ -448,12 +448,11 @@ function SupportTab() {
   );
 }
 
-function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => void }) {
+function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   const { t } = useI18n();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -526,7 +525,6 @@ function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => vo
             })}
           </div>
         )}
-        {saved && <p className="mt-3 text-sm text-emerald-600 flex items-center gap-1"><Check size={16} /> {t('settings.saved')}</p>}
         {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
       </div>
     </div>
@@ -535,7 +533,6 @@ function BillingTab({ tenant, onUpdated }: { tenant: Tenant; onUpdated: () => vo
 
 function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: () => Promise<void> }) {
   const { t } = useI18n();
-  const { user } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [maxBranches, setMaxBranches] = useState(1);

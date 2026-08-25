@@ -11,7 +11,7 @@ import { Badge, Card, Button, Input, Modal, EmptyState } from '../components/ui'
 import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
-import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Tenant } from '../lib/supabase';
+import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord } from '../lib/supabase';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
 function usePatientDoctorMaps(tenantId: string) {
@@ -397,7 +397,6 @@ export function StaffModule({ tenantId }: { tenantId: string }) {
 
 export function RolesModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
-  const { user } = useAuth();
   const crud = useCrud<any>('roles', tenantId);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);

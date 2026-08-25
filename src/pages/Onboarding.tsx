@@ -7,7 +7,6 @@ import { useGeography } from '../lib/geography';
 import { supabase } from '../lib/supabase';
 import { Button, Input, Select, Card } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
-import hospitalBg from '../assets/hospital-bg-light.svg';
 import onbPhoto from '../assets/photos/reception-desk.jpg';
 
 const STEPS = [
