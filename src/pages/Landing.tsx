@@ -47,23 +47,23 @@ export function LandingPage() {
   const plans = [
     {
       name: 'Starter', price_monthly: 49, price_yearly: 470,
-      features: ['Up to 3 doctors', '500 patients/mo', 'Basic modules', 'Email support', '1 location'],
+      features: ['Up to 3 doctors', 'Up to 500 patients', 'Patients, appointments, doctors, invoices & reports', 'Email support', '1 location'],
       highlight: false,
     },
     {
       name: 'Professional', price_monthly: 149, price_yearly: 1430,
-      features: ['Up to 15 doctors', '5,000 patients/mo', 'All clinical modules', 'Priority support', '3 locations', 'Reports & Analytics'],
+      features: ['Up to 15 doctors', 'Up to 5,000 patients', 'Core clinical modules (records, consultations, prescriptions, lab, pharmacy)', 'Priority support', '3 locations'],
       highlight: true,
     },
     {
-      name: 'Business', price_monthly: 399, price_yearly: 3830,
-      features: ['Up to 50 doctors', 'Unlimited patients', 'Full module suite', 'Dedicated support', '10 locations', 'Advanced Analytics', 'API Access'],
+      name: 'Business', price_monthly: 299, price_yearly: 2870,
+      features: ['Up to 50 doctors', 'Up to 100,000 patients', 'Extended modules (radiology, beds, admissions, surgeries, inventory, HR, payroll, roles)', 'Dedicated support', '10 locations', 'API access', 'Integrations (WhatsApp, SMS, calendar, webhooks)'],
       highlight: false,
     },
     {
-      name: 'Enterprise', price_monthly: 0, price_yearly: 0,
-      features: ['Unlimited doctors', 'Unlimited patients', 'Custom modules', 'SLA support', 'Unlimited locations', 'White-label option', 'Custom integrations'],
-      highlight: false, custom: true,
+      name: 'Enterprise', price_monthly: 429, price_yearly: 4118,
+      features: ['Unlimited doctors', 'Unlimited patients', 'Every module, including analytics, telemedicine, insurance, emergency & marketplace', 'SLA support', 'Unlimited locations', 'White-label option', 'Custom integrations'],
+      highlight: false,
     },
   ];
 
@@ -315,17 +315,13 @@ export function LandingPage() {
                 )}
                 <div className="mb-6">
                   <p className={`text-sm font-semibold mb-1 ${plan.highlight ? 'text-blue-200' : 'text-gray-500'}`}>{plan.name}</p>
-                  {plan.custom ? (
-                    <p className={`text-3xl font-bold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{t('plan.contact')}</p>
-                  ) : (
-                    <div className="flex items-end gap-1">
-                      <p className={`text-4xl font-bold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                        ${annualBilling ? Math.round(plan.price_yearly / 12) : plan.price_monthly}
-                      </p>
-                      <p className={`text-sm pb-1.5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>/{t('plan.month')}</p>
-                    </div>
-                  )}
-                  {annualBilling && !plan.custom && plan.price_yearly > 0 && (
+                  <div className="flex items-end gap-1">
+                    <p className={`text-4xl font-bold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                      ${annualBilling ? Math.round(plan.price_yearly / 12) : plan.price_monthly}
+                    </p>
+                    <p className={`text-sm pb-1.5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>/{t('plan.month')}</p>
+                  </div>
+                  {annualBilling && plan.price_yearly > 0 && (
                     <p className={`text-xs mt-1 font-medium ${plan.highlight ? 'text-blue-200' : 'text-emerald-600'}`}>
                       ${plan.price_yearly}/{t('plan.year')} — {t('plan.save')} ${(plan.price_monthly * 12 - plan.price_yearly)}
                     </p>
@@ -344,7 +340,7 @@ export function LandingPage() {
                 </ul>
                 <Link to="/signup"
                   className={`w-full text-center py-3.5 rounded-xl text-sm font-semibold transition-colors ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
-                  {plan.custom ? t('plan.contact_us') : t('plan.start_trial')}
+                  {t('plan.start_trial')}
                 </Link>
               </div>
             ))}

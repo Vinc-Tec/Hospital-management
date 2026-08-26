@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, type Profile, type Tenant, type Membership, type SubscriptionPlan } from './supabase';
+import { supabase, REMEMBER_FLAG_KEY, type Profile, type Tenant, type Membership, type SubscriptionPlan } from './supabase';
 
 // Protected super-admin emails are no longer hardcoded in the bundle.
 // They live in the `protected_admin_emails` table (admin-managed) and are
@@ -194,7 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsVerification: true };
   };
 
-  const signIn = async (email: string, password: string, _remember?: boolean) => {
+  const signIn = async (email: string, password: string, remember?: boolean) => {
+    // Default to "remembered" (matches the app's pre-existing always-persistent
+    // behavior) unless the caller explicitly unchecks "remember me".
+    localStorage.setItem(REMEMBER_FLAG_KEY, remember === false ? '0' : '1');
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       // Record failed login — but we don't have a user_id for failed attempts,

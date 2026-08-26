@@ -1,9 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Custom storage adapter for the "remember me" checkbox on sign-in: when
+// remember=false we keep the session in sessionStorage (cleared when the
+// tab closes) instead of localStorage (persists indefinitely). The flag
+// itself lives in localStorage so it survives the getItem/setItem calls
+// Supabase makes before our sign-in code runs. Falls back to whichever
+// storage already holds a value on read, so existing persisted sessions
+// keep working after this change ships.
+export const REMEMBER_FLAG_KEY = 'hc-remember-session';
+const rememberAwareStorage = {
+  getItem: (key: string) => localStorage.getItem(key) ?? sessionStorage.getItem(key),
+  setItem: (key: string, value: string) => {
+    const remember = localStorage.getItem(REMEMBER_FLAG_KEY) !== '0';
+    (remember ? localStorage : sessionStorage).setItem(key, value);
+    if (!remember) localStorage.removeItem(key);
+  },
+  removeItem: (key: string) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+};
+
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
-  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: rememberAwareStorage } }
 );
 
 export type Tenant = {

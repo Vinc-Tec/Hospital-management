@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
 import { usePaginatedCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
@@ -122,6 +122,15 @@ export function ModulePage({
         </div>
         {crud.loading ? (
           <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div>
+        ) : crud.error ? (
+          <div className="p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center"><AlertTriangle size={22} className="text-red-500" /></div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{t('common.load_failed')}</p>
+              <p className="text-xs text-gray-500 mt-1 max-w-md">{crud.error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => crud.load()}><RefreshCw size={14} /> {t('common.retry')}</Button>
+          </div>
         ) : filtered.length === 0 ? (
           <EmptyState icon={Inbox} title={t('common.none')} />
         ) : (
@@ -152,8 +161,7 @@ export function ModulePage({
             </table>
           </div>
         )}
-        {crud.error && <div className="p-4 text-sm text-red-600 bg-red-50">{crud.error}</div>}
-        {!crud.loading && crud.totalCount > crud.pageSize && (
+        {!crud.loading && !crud.error && crud.totalCount > crud.pageSize && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
             <span>{crud.page * crud.pageSize + 1}–{Math.min((crud.page + 1) * crud.pageSize, crud.totalCount)} / {crud.totalCount}</span>
             <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill, FlaskConical, ScanLine,
-  BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2,
+  BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
@@ -451,7 +451,13 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
         <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
       </div>
       <Card className="overflow-hidden">
-        {crudPage.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : filtered.length === 0 ? <div className="p-8"><EmptyState icon={ShieldCheck} title={t('common.none')} /></div> : (
+        {crudPage.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : crudPage.error ? (
+          <div className="p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center"><AlertTriangle size={22} className="text-red-500" /></div>
+            <div><p className="text-sm font-semibold text-gray-900">{t('common.load_failed')}</p><p className="text-xs text-gray-500 mt-1 max-w-md">{crudPage.error}</p></div>
+            <Button variant="outline" size="sm" onClick={() => crudPage.load()}><RefreshCw size={14} /> {t('common.retry')}</Button>
+          </div>
+        ) : filtered.length === 0 ? <div className="p-8"><EmptyState icon={ShieldCheck} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{filtered.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render ? c.render(row) : <span className="text-sm text-gray-700">{(row as unknown as Record<string, unknown>)[c.key] as React.ReactNode ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">{!row.is_system && <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"><Pencil size={16} /></button>}</div></td></tr>))}</tbody>
           </table></div>
@@ -546,7 +552,13 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
         <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
       </div>
       <Card className="overflow-hidden">
-        {crud.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : crud.rows.length === 0 ? <div className="p-8"><EmptyState icon={FileBarChart} title={t('common.none')} /></div> : (
+        {crud.loading ? <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div> : crud.error ? (
+          <div className="p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center"><AlertTriangle size={22} className="text-red-500" /></div>
+            <div><p className="text-sm font-semibold text-gray-900">{t('common.load_failed')}</p><p className="text-xs text-gray-500 mt-1 max-w-md">{crud.error}</p></div>
+            <Button variant="outline" size="sm" onClick={() => crud.load()}><RefreshCw size={14} /> {t('common.retry')}</Button>
+          </div>
+        ) : crud.rows.length === 0 ? <div className="p-8"><EmptyState icon={FileBarChart} title={t('common.none')} /></div> : (
           <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b border-gray-100">{cols.map((c) => <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{c.label}</th>)}<th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('common.actions')}</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{crud.rows.map((row) => (<tr key={row.id} className="hover:bg-gray-50/50">{cols.map((c) => <td key={c.key} className="px-4 py-3">{c.render?.(row) ?? <span className="text-sm text-gray-700">{(row as unknown as Record<string, unknown>)[c.key] as React.ReactNode ?? '—'}</span>}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-1">
               <button onClick={() => generateGenericReportPDF(activeTenant!, { ...row, content: row.content ?? '' })} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="PDF"><FileDown size={16} /></button>

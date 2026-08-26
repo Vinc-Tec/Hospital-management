@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   MessageCircle, Smartphone, CalendarDays, Slack, Webhook as WebhookIcon,
   Wallet, Plug, Key, Plus, Trash2, ExternalLink, CheckCircle2, Loader2,
+  AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { useCrud } from '../lib/useCrud';
@@ -108,6 +109,13 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
       <Card className="p-6 mb-6">
         <h2 className="text-base font-semibold text-gray-900">{t('integrations.catalog')}</h2>
         <p className="text-sm text-gray-500 mt-1 mb-5">{t('integrations.catalog.desc')}</p>
+        {integrations.error && (
+          <div className="mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">
+            <AlertTriangle size={15} className="flex-shrink-0" />
+            <span className="flex-1">{t('common.load_failed')}: {integrations.error}</span>
+            <button onClick={() => integrations.load()} className="font-medium underline flex-shrink-0">{t('common.retry')}</button>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {CATALOG.map((c) => {
             const meta = PROVIDER_META[c.provider];
@@ -149,6 +157,12 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
         </div>
         {webhooks.loading ? (
           <div className="flex justify-center py-8"><Loader2 className="animate-spin text-gray-300" size={24} /></div>
+        ) : webhooks.error ? (
+          <div className="p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center"><AlertTriangle size={22} className="text-red-500" /></div>
+            <div><p className="text-sm font-semibold text-gray-900">{t('common.load_failed')}</p><p className="text-xs text-gray-500 mt-1 max-w-md">{webhooks.error}</p></div>
+            <Button variant="outline" size="sm" onClick={() => webhooks.load()}><RefreshCw size={14} /> {t('common.retry')}</Button>
+          </div>
         ) : webhooks.rows.length === 0 ? (
           <EmptyState icon={WebhookIcon} title={t('integrations.webhooks.empty')} />
         ) : (
