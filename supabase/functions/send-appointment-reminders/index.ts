@@ -40,6 +40,13 @@
 //     free-tier scheduler like cron-job.org) hitting the function URL
 //     with the appropriate auth header.
 //
+// SECURITY: this function sends real messages (once Twilio is
+// configured) and must not be triggerable by arbitrary callers -- an
+// open endpoint here would let anyone spam every tenant's patients on
+// demand. It requires CRON_SECRET to be set as a function secret AND the
+// caller to prove they know it via the X-Cron-Secret header, exactly
+// like billing-housekeeping. If CRON_SECRET is unset, it refuses to run.
+//
 // Each run: finds appointments in the next ~24h that haven't had a
 // reminder sent yet, sends one SMS (or WhatsApp template message, if
 // properly configured) per appointment to the patient's phone number,
@@ -48,7 +55,16 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  if (!cronSecret) {
+    return new Response(JSON.stringify({ status: 'not_configured', message: 'CRON_SECRET is not set. Set it as a function secret before scheduling reminders.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  const provided = req.headers.get('x-cron-secret');
+  if (!provided || provided !== cronSecret) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const smsFrom = Deno.env.get('TWILIO_FROM');
