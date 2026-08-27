@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
-import { Button, Card, Input, Badge, Select, Modal } from '../components/ui';
+import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint } from '../components/ui';
 import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
+import { initiatePayment } from '../lib/payments';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -463,28 +464,27 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   }, []);
 
   const [err, setErr] = useState<string | null>(null);
-  const selectPlan = async (planId: string, gateway: 'flutterwave' | 'payunit' = 'flutterwave') => {
+  const selectPlan = async (planId: string) => {
     setSaving(true); setErr(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) { setErr(t('billing.error_no_session')); setSaving(false); return; }
 
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${gateway}-initiate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plan_id: planId, billing_cycle: 'monthly' }),
-    });
-    const data = await res.json();
+    const result = await initiatePayment(import.meta.env.VITE_SUPABASE_URL, token, planId, 'monthly');
     setSaving(false);
 
-    if (data.status === 'not_configured') { setErr(t('billing.error_not_configured')); return; }
-    if (!res.ok || !data.payment_link) { setErr(data.message || t('billing.error_generic')); return; }
+    if (!result.ok) {
+      if (result.reason === 'no_gateway_configured') { setErr(t('billing.error_not_configured')); return; }
+      if (result.reason === 'no_session') { setErr(t('billing.error_no_session')); return; }
+      setErr(result.message || t('billing.error_generic'));
+      return;
+    }
 
     // Real access change happens server-side in the matching webhook
     // (flutterwave-webhook / payunit-webhook) once the gateway confirms
     // payment -- this redirect just takes the admin to actually pay, it
     // does not grant anything itself.
-    window.location.href = data.payment_link;
+    window.location.href = result.payment_link;
   };
 
   const currentPlan = plans.find((p) => p.id === tenant.plan_id);
@@ -517,20 +517,16 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
                 <Card key={p.id} className={`p-5 ${isCurrent ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
                   <p className="font-semibold text-gray-900">{p.name}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
+                  <ConvertedPriceHint usd={p.price_monthly} />
                   {p.features && p.features.length > 0 && <ul className="mt-3 space-y-1">{p.features.slice(0, 4).map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}</ul>}
                   {isCurrent ? (
                     <Button variant="outline" size="sm" className="w-full mt-4" disabled>
                       {t('settings.current_plan')}
                     </Button>
                   ) : (
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" className="flex-1" disabled={saving} onClick={() => selectPlan(p.id, 'flutterwave')}>
-                        {t('plan.choose')} (Flutterwave)
-                      </Button>
-                      <Button size="sm" className="flex-1" disabled={saving} onClick={() => selectPlan(p.id, 'payunit')}>
-                        {t('plan.choose')} (PayUnit)
-                      </Button>
-                    </div>
+                    <Button size="sm" className="w-full mt-4" disabled={saving} onClick={() => selectPlan(p.id)}>
+                      {t('plan.choose')}
+                    </Button>
                   )}
                 </Card>
               );

@@ -4,6 +4,7 @@ import { Shield, Check, CreditCard, AlertCircle, Clock, Download } from 'lucide-
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type SubscriptionPlan } from '../lib/supabase';
+import { initiatePayment } from '../lib/payments';
 import { Logo, CopyrightLine } from '../components/brand';
 
 type AccessState = 'loading' | 'ok' | 'grace' | 'expired';
@@ -151,38 +152,29 @@ function SubscriptionScreen() {
   }, []);
 
   const [err, setErr] = useState<string | null>(null);
-  const [gateway, setGateway] = useState<'flutterwave' | 'payunit'>('flutterwave');
-  const handleSubscribe = async (selectedGateway: 'flutterwave' | 'payunit') => {
+  const handleSubscribe = async () => {
     if (!selectedPlan || !activeTenant) return;
-    setLoading(true); setErr(null); setGateway(selectedGateway);
+    setLoading(true); setErr(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) { setErr(t('billing.error_no_session')); setLoading(false); return; }
 
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${selectedGateway}-initiate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plan_id: selectedPlan, billing_cycle: billing }),
-    });
-    const data = await res.json();
+    const result = await initiatePayment(import.meta.env.VITE_SUPABASE_URL, token, selectedPlan, billing);
 
-    if (data.status === 'not_configured') {
-      setErr(t('billing.error_not_configured'));
+    if (!result.ok) {
       setLoading(false);
-      return;
-    }
-    if (!res.ok || !data.payment_link) {
-      setErr(data.message || t('billing.error_generic'));
-      setLoading(false);
+      if (result.reason === 'no_gateway_configured') { setErr(t('billing.error_not_configured')); return; }
+      if (result.reason === 'no_session') { setErr(t('billing.error_no_session')); return; }
+      setErr(result.message || t('billing.error_generic'));
       return;
     }
 
-    // Redirect to Flutterwave's hosted checkout. Access is only actually
-    // granted once flutterwave-webhook confirms the payment server-side
-    // and sets tenants.status/plan_id itself -- refreshing here (after
-    // the user returns via redirect_url) just reflects whatever the
-    // webhook has already done by then.
-    window.location.href = data.payment_link;
+    // Redirect to the chosen gateway's hosted checkout. Access is only
+    // actually granted once that gateway's webhook confirms the payment
+    // server-side and sets tenants.status/plan_id itself -- refreshing
+    // here (after the user returns via redirect_url) just reflects
+    // whatever the webhook has already done by then.
+    window.location.href = result.payment_link;
   };
 
   return (
@@ -228,7 +220,7 @@ function SubscriptionScreen() {
             <div className="flex items-center gap-3 p-4 rounded-2xl border-2 border-blue-400 bg-blue-500/20">
               <CreditCard size={20} style={{ color: '#f5a623' }} />
               <div>
-                <span className="text-sm text-white font-medium block">Flutterwave</span>
+                <span className="text-sm text-white font-medium block">{t('billing.secure_payment')}</span>
                 <span className="text-xs text-white/50">{t('billing.gateway_note')}</span>
               </div>
             </div>
@@ -236,19 +228,12 @@ function SubscriptionScreen() {
 
           {err && <p className="text-red-300 text-sm mb-4">{err}</p>}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={() => handleSubscribe('flutterwave')} disabled={!selectedPlan || loading}
+            <button onClick={handleSubscribe} disabled={!selectedPlan || loading}
               className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-              {loading && gateway === 'flutterwave' ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
-              {t('billing.subscribe_cta')} — Flutterwave
+              {loading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
+              {t('billing.subscribe_cta')}
             </button>
-            <button onClick={() => handleSubscribe('payunit')} disabled={!selectedPlan || loading}
-              className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-              {loading && gateway === 'payunit' ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
-              {t('billing.subscribe_cta')} — PayUnit
-            </button>
-          </div>
-          <div className="flex justify-center mt-3">
-            <button onClick={signOut} className="px-6 py-2 text-white/50 hover:text-white/80 transition-colors text-sm">
+            <button onClick={signOut} className="px-6 py-4 border border-white/20 text-white/60 rounded-2xl hover:bg-white/5 transition-colors text-sm">
               {t('nav.signout')}
             </button>
           </div>

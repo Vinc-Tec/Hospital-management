@@ -1,5 +1,6 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
+import { detectLocalCurrency, convertFromUsd, formatCurrency } from '../lib/currency';
 
 export function Button({
   children, variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', onClick,
@@ -111,4 +112,25 @@ export function PageHeader({ title, desc, action }: { title: string; desc?: stri
       {action}
     </div>
   );
+}
+
+// Shows an indicative local-currency conversion under a USD price.
+// Purely informational: the amount actually charged is always the
+// stored USD price, converted by the payment gateway at checkout --
+// this component never affects billing.
+export function ConvertedPriceHint({ usd, className }: { usd: number; className?: string }) {
+  const [display, setDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const currency = detectLocalCurrency();
+    if (currency === 'USD') return;
+    convertFromUsd(usd, currency).then((result) => {
+      if (!cancelled && result) setDisplay(formatCurrency(result.amount, result.currency));
+    });
+    return () => { cancelled = true; };
+  }, [usd]);
+
+  if (!display) return null;
+  return <p className={className ?? 'text-xs text-gray-400 mt-0.5'}>≈ {display}</p>;
 }

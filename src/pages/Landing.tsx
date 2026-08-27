@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
+import { ConvertedPriceHint } from '../components/ui';
 import heroPhoto from '../assets/photos/dental-office.jpg';
 
 function useScrollReveal() {
@@ -321,6 +322,7 @@ export function LandingPage() {
                     </p>
                     <p className={`text-sm pb-1.5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>/{t('plan.month')}</p>
                   </div>
+                  <ConvertedPriceHint usd={annualBilling ? Math.round(plan.price_yearly / 12) : plan.price_monthly} className={plan.highlight ? 'text-xs text-blue-200 mt-0.5' : 'text-xs text-gray-400 mt-0.5'} />
                   {annualBilling && plan.price_yearly > 0 && (
                     <p className={`text-xs mt-1 font-medium ${plan.highlight ? 'text-blue-200' : 'text-emerald-600'}`}>
                       ${plan.price_yearly}/{t('plan.year')} — {t('plan.save')} ${(plan.price_monthly * 12 - plan.price_yearly)}
