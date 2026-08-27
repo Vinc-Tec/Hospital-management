@@ -151,14 +151,15 @@ function SubscriptionScreen() {
   }, []);
 
   const [err, setErr] = useState<string | null>(null);
-  const handleSubscribe = async () => {
+  const [gateway, setGateway] = useState<'flutterwave' | 'payunit'>('flutterwave');
+  const handleSubscribe = async (selectedGateway: 'flutterwave' | 'payunit') => {
     if (!selectedPlan || !activeTenant) return;
-    setLoading(true); setErr(null);
+    setLoading(true); setErr(null); setGateway(selectedGateway);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) { setErr(t('billing.error_no_session')); setLoading(false); return; }
 
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flutterwave-initiate`, {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${selectedGateway}-initiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ plan_id: selectedPlan, billing_cycle: billing }),
@@ -235,12 +236,19 @@ function SubscriptionScreen() {
 
           {err && <p className="text-red-300 text-sm mb-4">{err}</p>}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={handleSubscribe} disabled={!selectedPlan || loading}
+            <button onClick={() => handleSubscribe('flutterwave')} disabled={!selectedPlan || loading}
               className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-              {loading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
-              {t('billing.subscribe_cta')}
+              {loading && gateway === 'flutterwave' ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
+              {t('billing.subscribe_cta')} — Flutterwave
             </button>
-            <button onClick={signOut} className="px-6 py-4 border border-white/20 text-white/60 rounded-2xl hover:bg-white/5 transition-colors text-sm">
+            <button onClick={() => handleSubscribe('payunit')} disabled={!selectedPlan || loading}
+              className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+              {loading && gateway === 'payunit' ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
+              {t('billing.subscribe_cta')} — PayUnit
+            </button>
+          </div>
+          <div className="flex justify-center mt-3">
+            <button onClick={signOut} className="px-6 py-2 text-white/50 hover:text-white/80 transition-colors text-sm">
               {t('nav.signout')}
             </button>
           </div>

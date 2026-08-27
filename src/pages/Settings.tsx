@@ -463,13 +463,13 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   }, []);
 
   const [err, setErr] = useState<string | null>(null);
-  const selectPlan = async (planId: string) => {
+  const selectPlan = async (planId: string, gateway: 'flutterwave' | 'payunit' = 'flutterwave') => {
     setSaving(true); setErr(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) { setErr(t('billing.error_no_session')); setSaving(false); return; }
 
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flutterwave-initiate`, {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${gateway}-initiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ plan_id: planId, billing_cycle: 'monthly' }),
@@ -480,9 +480,10 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
     if (data.status === 'not_configured') { setErr(t('billing.error_not_configured')); return; }
     if (!res.ok || !data.payment_link) { setErr(data.message || t('billing.error_generic')); return; }
 
-    // Real access change happens server-side in flutterwave-webhook once
-    // Flutterwave confirms payment -- this redirect just takes the admin
-    // to actually pay, it does not grant anything itself.
+    // Real access change happens server-side in the matching webhook
+    // (flutterwave-webhook / payunit-webhook) once the gateway confirms
+    // payment -- this redirect just takes the admin to actually pay, it
+    // does not grant anything itself.
     window.location.href = data.payment_link;
   };
 
@@ -517,9 +518,20 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
                   <p className="font-semibold text-gray-900">{p.name}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
                   {p.features && p.features.length > 0 && <ul className="mt-3 space-y-1">{p.features.slice(0, 4).map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}</ul>}
-                  <Button variant={isCurrent ? 'outline' : 'primary'} size="sm" className="w-full mt-4" disabled={isCurrent || saving} onClick={() => selectPlan(p.id)}>
-                    {isCurrent ? t('settings.current_plan') : t('plan.choose')}
-                  </Button>
+                  {isCurrent ? (
+                    <Button variant="outline" size="sm" className="w-full mt-4" disabled>
+                      {t('settings.current_plan')}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2 mt-4">
+                      <Button size="sm" className="flex-1" disabled={saving} onClick={() => selectPlan(p.id, 'flutterwave')}>
+                        {t('plan.choose')} (Flutterwave)
+                      </Button>
+                      <Button size="sm" className="flex-1" disabled={saving} onClick={() => selectPlan(p.id, 'payunit')}>
+                        {t('plan.choose')} (PayUnit)
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               );
             })}
