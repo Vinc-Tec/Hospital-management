@@ -77,8 +77,23 @@ Deno.serve(async (req) => {
   if (!tenant) return json({ error: 'tenant_not_found' }, 404);
 
   // Server-side price lookup -- the amount charged is never taken from
-  // the client request.
-  const amount = billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  // the client request. Plan prices are stored in USD; if
+  // PAYSTACK_CURRENCY is ever set to something other than USD, convert
+  // using a live rate rather than sending the raw USD number under a
+  // different currency label (which would silently mis-charge by the
+  // full exchange rate multiple).
+  const usdAmount = billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  let amount = usdAmount;
+  if (currency !== 'USD') {
+    const rateResp = await fetch('https://open.er-api.com/v6/latest/USD');
+    const rateData = await rateResp.json();
+    const rate = rateData?.result === 'success' ? rateData.rates?.[currency] : null;
+    if (!rate) {
+      return json({ error: 'fx_rate_unavailable', message: `Could not fetch a live USD -> ${currency} exchange rate. Try again shortly.` }, 502);
+    }
+    const converted = usdAmount * rate;
+    amount = ['XAF', 'XOF'].includes(currency) ? Math.round(converted) : Math.round(converted * 100) / 100;
+  }
   const txRef = `ps_${tenant.id}_${Date.now()}`;
 
   const { data: paymentRow, error: payErr } = await db.from('payments').insert({
@@ -88,7 +103,7 @@ Deno.serve(async (req) => {
     gateway: 'paystack',
     gateway_tx_id: txRef,
     status: 'pending',
-    metadata: { plan_id: plan.id, billing_cycle },
+    metadata: { plan_id: plan.id, billing_cycle, usd_amount: usdAmount },
   }).select().single();
   if (payErr) return json({ error: 'payment_row_failed', message: payErr.message }, 500);
 

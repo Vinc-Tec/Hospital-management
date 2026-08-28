@@ -88,12 +88,27 @@ Deno.serve(async (req) => {
   if (!tenant) return json({ error: 'tenant_not_found' }, 404);
 
   // Server-side price lookup -- the amount charged is never taken from
-  // the client request. NOTE: plan prices are stored in USD; PayUnit's
-  // documented currency is XAF. No currency conversion is performed here
-  // -- the numeric plan price is sent as-is in whatever PAYUNIT_CURRENCY
-  // is configured. Confirm with PayUnit which currencies your merchant
-  // account actually supports before going live.
-  const amount = billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  // the client request. Plan prices are stored in USD; PayUnit's
+  // documented currency is XAF, so this converts USD -> the configured
+  // PAYUNIT_CURRENCY using a live exchange rate before charging, rather
+  // than sending the raw USD number under a different currency label
+  // (which would have silently under/over-charged by the exchange
+  // rate's full multiple -- e.g. a $429 plan billed as 429 XAF, worth
+  // about $0.70).
+  const usdAmount = billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  let amount = usdAmount;
+  if (currency !== 'USD') {
+    const rateResp = await fetch('https://open.er-api.com/v6/latest/USD');
+    const rateData = await rateResp.json();
+    const rate = rateData?.result === 'success' ? rateData.rates?.[currency] : null;
+    if (!rate) {
+      return json({ error: 'fx_rate_unavailable', message: `Could not fetch a live USD -> ${currency} exchange rate. Try again shortly.` }, 502);
+    }
+    // XAF/XOF (and most CFA-zone currencies) have no minor unit -- round
+    // to a whole number. Other currencies keep 2 decimal places.
+    const converted = usdAmount * rate;
+    amount = ['XAF', 'XOF'].includes(currency) ? Math.round(converted) : Math.round(converted * 100) / 100;
+  }
   const txRef = `pu_${tenant.id}_${Date.now()}`;
 
   const { data: paymentRow, error: payErr } = await db.from('payments').insert({
@@ -103,7 +118,7 @@ Deno.serve(async (req) => {
     gateway: 'payunit',
     gateway_tx_id: txRef,
     status: 'pending',
-    metadata: { plan_id: plan.id, billing_cycle },
+    metadata: { plan_id: plan.id, billing_cycle, usd_amount: usdAmount },
   }).select().single();
   if (payErr) return json({ error: 'payment_row_failed', message: payErr.message }, 500);
 
