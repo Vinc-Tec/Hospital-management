@@ -1,0 +1,49 @@
+# Per-function settings. Without this file, any deploy tool that uses
+# the Supabase CLI's defaults (verify_jwt = true) will silently override
+# the verify_jwt=false setting that webhook and cron-triggered functions
+# require -- this happened at least once already (send-appointment-
+# reminders got reset to verify_jwt=true after being correctly deployed
+# with verify_jwt=false, most likely by an automatic redeploy triggered
+# on push to this repo).
+#
+# The rule: verify_jwt = true for functions called by our own
+# authenticated frontend (they need a real Supabase user session).
+# verify_jwt = false for functions called by external services (payment
+# gateway webhooks, which carry no Supabase session at all) or by a
+# scheduler/cron (which also has no Supabase session, and instead
+# authenticates itself via its own header-based secret inside the
+# function code -- see billing-housekeeping and
+# send-appointment-reminders for that pattern).
+
+[functions.payunit-initiate]
+verify_jwt = true
+
+[functions.payunit-webhook]
+verify_jwt = false
+
+[functions.flutterwave-initiate]
+verify_jwt = true
+
+[functions.flutterwave-webhook]
+verify_jwt = false
+
+[functions.paystack-initiate]
+verify_jwt = true
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.payment-gateway-status]
+verify_jwt = false
+
+[functions.api-v1]
+verify_jwt = false
+
+[functions.invite-team-member]
+verify_jwt = true
+
+[functions.billing-housekeeping]
+verify_jwt = false
+
+[functions.send-appointment-reminders]
+verify_jwt = false
