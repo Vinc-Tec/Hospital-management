@@ -1,32 +1,29 @@
-// Flutterwave checkout initiation
+// Paystack checkout initiation
 //
 // STATUS: real, complete logic -- INACTIVE until you configure a
-// Flutterwave secret key. Without it, returns a clear 'not_configured'
+// Paystack secret key. Without it, returns a clear 'not_configured'
 // response rather than failing confusingly or faking a payment link.
 //
-// SETUP (once you have a Flutterwave account):
-//   supabase secrets set FLUTTERWAVE_SECRET_KEY=FLWSECK-xxxxxxxx
-//   supabase functions deploy flutterwave-initiate
-//   supabase functions deploy flutterwave-webhook
-// Then in the Flutterwave dashboard, set the webhook URL to:
-//   https://<project-ref>.supabase.co/functions/v1/flutterwave-webhook
-// and set a "Secret Hash" there -- also store that exact value as:
-//   supabase secrets set FLUTTERWAVE_WEBHOOK_SECRET=<the same secret hash>
+// SETUP (once you have a Paystack account):
+//   supabase secrets set PAYSTACK_SECRET_KEY=sk_live_xxxxxxxx
+//   supabase secrets set PAYSTACK_CURRENCY=USD   (Paystack also supports NGN, GHS, ZAR, KES -- confirm which your account is enabled for)
+// Then in the Paystack dashboard (Settings > API Keys & Webhooks), set
+// the webhook URL to:
+//   https://<project-ref>.supabase.co/functions/v1/paystack-webhook
+// Paystack does not use a separate webhook secret -- it signs every
+// webhook with your PAYSTACK_SECRET_KEY itself (see paystack-webhook).
 //
-// FLOW:
+// FLOW (same shape as flutterwave-initiate / payunit-initiate):
 //   1. The authenticated tenant owner/admin calls this function with
-//      { plan_id, billing_cycle: 'monthly' | 'yearly' } (see the matching
-//      frontend change in Billing.tsx).
+//      { plan_id, billing_cycle: 'monthly' | 'yearly' }.
 //   2. This function verifies the caller really belongs to the tenant it
-//      claims (via their JWT, not just a client-supplied tenant_id),
-//      looks up the plan's real price server-side (never trusts a
-//      client-supplied amount), creates a 'pending' row in `payments`,
-//      and asks Flutterwave for a hosted payment link.
+//      claims (via their JWT), looks up the plan's real price
+//      server-side, creates a 'pending' row in `payments`, and asks
+//      Paystack for a hosted checkout link.
 //   3. The browser redirects the user to that link to actually pay.
-//   4. Flutterwave calls flutterwave-webhook when the payment completes;
-//      THAT function is what actually grants access, after re-verifying
-//      the transaction server-side -- this function only ever creates a
-//      'pending' payment, never an approved one.
+//   4. Paystack calls paystack-webhook when the payment completes; THAT
+//      function re-verifies the transaction via Paystack's own Verify
+//      Transaction API before granting any access.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
@@ -46,9 +43,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders() });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
-  const secretKey = Deno.env.get('FLUTTERWAVE_SECRET_KEY');
+  const secretKey = Deno.env.get('PAYSTACK_SECRET_KEY');
+  const currency = (Deno.env.get('PAYSTACK_CURRENCY') ?? 'USD').trim();
   if (!secretKey) {
-    return json({ status: 'not_configured', message: 'FLUTTERWAVE_SECRET_KEY is not set. Payment cannot be initiated until it is configured.' });
+    return json({ status: 'not_configured', message: 'PAYSTACK_SECRET_KEY is not set. Payment cannot be initiated until it is configured.' });
   }
 
   const authHeader = req.headers.get('Authorization');
@@ -58,8 +56,6 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  // Use the caller's own JWT to identify them -- never trust a
-  // client-supplied tenant_id without checking real membership.
   const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user) return json({ error: 'invalid_session' }, 401);
@@ -83,32 +79,26 @@ Deno.serve(async (req) => {
   // Server-side price lookup -- the amount charged is never taken from
   // the client request.
   const amount = billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
-  const txRef = `hc_${tenant.id}_${Date.now()}`;
+  const txRef = `ps_${tenant.id}_${Date.now()}`;
 
   const { data: paymentRow, error: payErr } = await db.from('payments').insert({
     tenant_id: tenant.id,
     amount,
-    currency: 'USD',
-    gateway: 'flutterwave',
+    currency,
+    gateway: 'paystack',
     gateway_tx_id: txRef,
     status: 'pending',
     metadata: { plan_id: plan.id, billing_cycle },
   }).select().single();
   if (payErr) return json({ error: 'payment_row_failed', message: payErr.message }, 500);
 
-  // redirect_url must be a trusted, configured origin -- never derived
-  // from the request's Origin header, which a caller can spoof to send a
-  // paying user to an arbitrary site after checkout. Prefer APP_PUBLIC_URL
-  // (function secret) and fall back to the request Origin only if it is on
-  // the allow-list; otherwise reject rather than trust an unknown origin.
+  // redirect_url must be a trusted, configured origin -- same guard as
+  // the other gateways.
   const allowedOriginsRaw = (Deno.env.get('ALLOWED_REDIRECT_ORIGINS') ?? '').trim();
   const publicUrl = (Deno.env.get('APP_PUBLIC_URL') ?? '').trim().replace(/\/+$/, '');
   const requestOrigin = (req.headers.get('origin') ?? '').trim().replace(/\/+$/, '');
   const allowed = new Set(
-    allowedOriginsRaw
-      .split(',')
-      .map((s) => s.trim().replace(/\/+$/, ''))
-      .filter(Boolean)
+    allowedOriginsRaw.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean)
   );
   if (publicUrl) allowed.add(publicUrl);
 
@@ -119,35 +109,31 @@ Deno.serve(async (req) => {
     return json({ error: 'no_allowed_redirect_origin', message: 'APP_PUBLIC_URL / ALLOWED_REDIRECT_ORIGINS is not configured.' }, 500);
   }
 
-  const redirectUrl = `${redirectBase}/app/settings?billing=complete`;
-  const flwResp = await fetch('https://api.flutterwave.com/v3/payments', {
+  const callbackUrl = `${redirectBase}/app/settings?billing=complete`;
+
+  // Paystack amounts are in the currency's smallest unit (cents for USD,
+  // kobo for NGN, etc.) -- multiply by 100 for a two-decimal currency.
+  const paystackResp = await fetch('https://api.paystack.co/transaction/initialize', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${secretKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      tx_ref: txRef,
-      amount,
-      currency: 'USD',
-      redirect_url: redirectUrl,
-      customer: {
-        email: tenant.email,
-        name: tenant.commercial_name || tenant.legal_name,
-      },
-      customizations: {
-        title: 'Health Cloud',
-        description: `${plan.name} plan — ${billing_cycle}`,
-      },
-      meta: { payment_id: paymentRow.id, tenant_id: tenant.id, plan_id: plan.id, billing_cycle },
+      email: tenant.email,
+      amount: Math.round(amount * 100),
+      currency,
+      reference: txRef,
+      callback_url: callbackUrl,
+      metadata: { payment_id: paymentRow.id, tenant_id: tenant.id, plan_id: plan.id, billing_cycle },
     }),
   });
 
-  const flwData = await flwResp.json();
-  if (flwData.status !== 'success') {
-    await db.from('payments').update({ status: 'failed', metadata: { ...(paymentRow.metadata as object), flutterwave_error: flwData } }).eq('id', paymentRow.id);
-    return json({ error: 'flutterwave_error', message: flwData.message ?? 'Failed to create payment link' }, 502);
+  const psData = await paystackResp.json();
+  if (!psData.status || !psData.data?.authorization_url) {
+    await db.from('payments').update({ status: 'failed', metadata: { ...(paymentRow.metadata as object), paystack_error: psData } }).eq('id', paymentRow.id);
+    return json({ error: 'paystack_error', message: psData.message ?? 'Failed to create payment link' }, 502);
   }
 
-  return json({ payment_link: flwData.data.link, tx_ref: txRef });
+  return json({ payment_link: psData.data.authorization_url, tx_ref: txRef });
 });

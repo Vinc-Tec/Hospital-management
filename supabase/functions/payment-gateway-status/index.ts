@@ -1,0 +1,26 @@
+// Reports which payment gateways currently have credentials configured
+// -- used by the frontend to decide whether to initiate payment
+// automatically (exactly one available) or show the user a picker
+// (more than one available). This never touches tenant data and
+// requires no auth: it only reveals which secrets exist, not their
+// values, so there's nothing tenant-specific or sensitive to protect.
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  };
+}
+
+Deno.serve((req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders() });
+
+  const available = {
+    payunit: !!(Deno.env.get('PAYUNIT_API_USER') && Deno.env.get('PAYUNIT_API_PASSWORD') && Deno.env.get('PAYUNIT_APP_TOKEN')),
+    flutterwave: !!Deno.env.get('FLUTTERWAVE_SECRET_KEY'),
+    paystack: !!Deno.env.get('PAYSTACK_SECRET_KEY'),
+  };
+
+  return new Response(JSON.stringify(available), { headers: { 'Content-Type': 'application/json', ...corsHeaders() } });
+});

@@ -4,7 +4,7 @@ import { Shield, Check, CreditCard, AlertCircle, Clock, Download } from 'lucide-
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type SubscriptionPlan } from '../lib/supabase';
-import { initiatePayment } from '../lib/payments';
+import { usePaymentCheckout } from '../components/PaymentCheckout';
 import { Logo, CopyrightLine } from '../components/brand';
 
 type AccessState = 'loading' | 'ok' | 'grace' | 'expired';
@@ -142,7 +142,6 @@ function SubscriptionScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string>('');
 
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.from('subscription_plans').select('*').eq('is_active', true).order('sort_order').then(({ data }) => {
@@ -151,30 +150,10 @@ function SubscriptionScreen() {
     });
   }, []);
 
-  const [err, setErr] = useState<string | null>(null);
-  const handleSubscribe = async () => {
+  const checkout = usePaymentCheckout();
+  const handleSubscribe = () => {
     if (!selectedPlan || !activeTenant) return;
-    setLoading(true); setErr(null);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) { setErr(t('billing.error_no_session')); setLoading(false); return; }
-
-    const result = await initiatePayment(import.meta.env.VITE_SUPABASE_URL, token, selectedPlan, billing);
-
-    if (!result.ok) {
-      setLoading(false);
-      if (result.reason === 'no_gateway_configured') { setErr(t('billing.error_not_configured')); return; }
-      if (result.reason === 'no_session') { setErr(t('billing.error_no_session')); return; }
-      setErr(result.message || t('billing.error_generic'));
-      return;
-    }
-
-    // Redirect to the chosen gateway's hosted checkout. Access is only
-    // actually granted once that gateway's webhook confirms the payment
-    // server-side and sets tenants.status/plan_id itself -- refreshing
-    // here (after the user returns via redirect_url) just reflects
-    // whatever the webhook has already done by then.
-    window.location.href = result.payment_link;
+    checkout.start(selectedPlan, billing);
   };
 
   return (
@@ -226,11 +205,11 @@ function SubscriptionScreen() {
             </div>
           </div>
 
-          {err && <p className="text-red-300 text-sm mb-4">{err}</p>}
+          {checkout.error && <p className="text-red-300 text-sm mb-4">{checkout.error}</p>}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={handleSubscribe} disabled={!selectedPlan || loading}
+            <button onClick={handleSubscribe} disabled={!selectedPlan || checkout.loading}
               className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-              {loading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
+              {checkout.loading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : <Shield size={18} />}
               {t('billing.subscribe_cta')}
             </button>
             <button onClick={signOut} className="px-6 py-4 border border-white/20 text-white/60 rounded-2xl hover:bg-white/5 transition-colors text-sm">
@@ -238,6 +217,7 @@ function SubscriptionScreen() {
             </button>
           </div>
           <CopyrightLine className="text-center text-white/30 text-xs mt-4" />
+          {checkout.modal}
         </div>
       </div>
     </div>

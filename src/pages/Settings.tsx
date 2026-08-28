@@ -6,7 +6,7 @@ import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../li
 import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint } from '../components/ui';
 import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
-import { initiatePayment } from '../lib/payments';
+import { usePaymentCheckout } from '../components/PaymentCheckout';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -453,7 +453,6 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   const { t } = useI18n();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -463,29 +462,8 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
     })();
   }, []);
 
-  const [err, setErr] = useState<string | null>(null);
-  const selectPlan = async (planId: string) => {
-    setSaving(true); setErr(null);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) { setErr(t('billing.error_no_session')); setSaving(false); return; }
-
-    const result = await initiatePayment(import.meta.env.VITE_SUPABASE_URL, token, planId, 'monthly');
-    setSaving(false);
-
-    if (!result.ok) {
-      if (result.reason === 'no_gateway_configured') { setErr(t('billing.error_not_configured')); return; }
-      if (result.reason === 'no_session') { setErr(t('billing.error_no_session')); return; }
-      setErr(result.message || t('billing.error_generic'));
-      return;
-    }
-
-    // Real access change happens server-side in the matching webhook
-    // (flutterwave-webhook / payunit-webhook) once the gateway confirms
-    // payment -- this redirect just takes the admin to actually pay, it
-    // does not grant anything itself.
-    window.location.href = result.payment_link;
-  };
+  const checkout = usePaymentCheckout();
+  const selectPlan = (planId: string) => checkout.start(planId, 'monthly');
 
   const currentPlan = plans.find((p) => p.id === tenant.plan_id);
 
@@ -515,25 +493,23 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
               const isCurrent = p.id === tenant.plan_id;
               return (
                 <Card key={p.id} className={`p-5 ${isCurrent ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
-                  <p className="font-semibold text-gray-900">{p.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-gray-900">{p.name}</p>
+                    {isCurrent && <Badge color="blue">{t('settings.current_plan')}</Badge>}
+                  </div>
                   <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
                   <ConvertedPriceHint usd={p.price_monthly} />
                   {p.features && p.features.length > 0 && <ul className="mt-3 space-y-1">{p.features.slice(0, 4).map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}</ul>}
-                  {isCurrent ? (
-                    <Button variant="outline" size="sm" className="w-full mt-4" disabled>
-                      {t('settings.current_plan')}
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="w-full mt-4" disabled={saving} onClick={() => selectPlan(p.id)}>
-                      {t('plan.choose')}
-                    </Button>
-                  )}
+                  <Button variant={isCurrent ? 'outline' : 'primary'} size="sm" className="w-full mt-4" disabled={checkout.loading} onClick={() => selectPlan(p.id)}>
+                    {isCurrent ? t('plan.renew') : t('plan.choose')}
+                  </Button>
                 </Card>
               );
             })}
           </div>
         )}
-        {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
+        {checkout.error && <p className="mt-3 text-sm text-red-600">{checkout.error}</p>}
+        {checkout.modal}
       </div>
     </div>
   );
