@@ -81,15 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndTenants = async (currentUser: User) => {
-    // Ensure the cosmetic super-admin email gate reflects the DB-managed
-    // list (kept out of the static bundle). Best-effort: a failure here
-    // just leaves the gate conservative (no extra UI shown).
-    loadProtectedAdminEmails().catch(() => {});
-
     const { data: prof } = await supabase.from('profiles')
       .select('id, full_name, is_super_admin, email')
       .eq('id', currentUser.id).maybeSingle();
     setProfile(prof as Profile | null);
+
+    // Only super admins can read protected_admin_emails (RLS-enforced) and
+    // only the Super Admin panel actually uses this list -- fetching it
+    // for every user regardless of role would hand every tenant staff
+    // member's browser the platform's admin email addresses for no
+    // functional benefit. Best-effort: a failure here just leaves the
+    // cosmetic gate conservative (no extra UI shown).
+    if ((prof as Profile | null)?.is_super_admin) {
+      loadProtectedAdminEmails().catch(() => {});
+    }
 
     const { data: mems } = await supabase.from('tenant_memberships')
       .select('id, tenant_id, user_id, role, permissions').eq('user_id', currentUser.id);
