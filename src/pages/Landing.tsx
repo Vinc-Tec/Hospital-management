@@ -4,6 +4,7 @@ import {
   Shield, Globe, CreditCard, Zap, ArrowRight, Check,
   Activity, BarChart3, Heart, Star,
   Building2, Stethoscope, FlaskConical, Pill,
+  Sparkles, X,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
@@ -37,6 +38,19 @@ export function LandingPage() {
   const { t } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(false);
+  const [showPromoBar, setShowPromoBar] = useState(() => {
+    try {
+      const dismissedAt = localStorage.getItem('hc-promo-bar-dismissed');
+      if (!dismissedAt) return true;
+      return Date.now() - Number(dismissedAt) > 7 * 24 * 60 * 60 * 1000;
+    } catch {
+      return true;
+    }
+  });
+  const dismissPromoBar = () => {
+    setShowPromoBar(false);
+    try { localStorage.setItem('hc-promo-bar-dismissed', String(Date.now())); } catch { /* storage unavailable */ }
+  };
   useScrollReveal();
 
   useEffect(() => {
@@ -67,6 +81,9 @@ export function LandingPage() {
       highlight: false,
     },
   ];
+
+  const highlightPlan = plans.find((p) => p.highlight) ?? plans[1];
+  const yearlySavings = highlightPlan.price_monthly * 12 - highlightPlan.price_yearly;
 
   const stats = [
     { value: '2,400+', label: t('landing.stats.institutions') },
@@ -99,8 +116,27 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* PROMO BAR — annual plan savings, dismissible */}
+      {showPromoBar && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-gray-900 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-10 flex items-center justify-center gap-2 relative text-xs sm:text-sm">
+            <Sparkles size={14} className="text-amber-300 flex-shrink-0" />
+            <span className="font-medium truncate">{t('promo.annual_bar')}</span>
+            <a href="#plans" onClick={() => setAnnualBilling(true)} className="font-semibold underline underline-offset-2 hover:text-amber-300 transition-colors flex-shrink-0 ml-1">
+              {t('promo.annual_bar_cta')}
+            </a>
+            <button onClick={dismissPromoBar} aria-label={t('common.close')} className="absolute right-4 sm:right-6 text-white/50 hover:text-white transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* NAVBAR — flat, always readable, no glass/blur tricks */}
-      <header className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-200 ${scrolled ? 'border-b border-gray-100 shadow-sm' : 'border-b border-transparent'}`}>
+      <header
+        className={`fixed left-0 right-0 z-50 bg-white transition-[top,box-shadow] duration-200 ${scrolled ? 'border-b border-gray-100 shadow-sm' : 'border-b border-transparent'}`}
+        style={{ top: showPromoBar ? '2.5rem' : '0' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Logo variant="light" />
           <nav className="hidden md:flex items-center gap-8">
@@ -124,7 +160,7 @@ export function LandingPage() {
       </header>
 
       {/* HERO — plain light background, two columns, framed photo instead of full-bleed overlay */}
-      <section className="relative bg-white pt-32 pb-20 overflow-hidden">
+      <section className={`relative bg-white pb-20 overflow-hidden ${showPromoBar ? 'pt-40' : 'pt-32'}`}>
         <div
           className="absolute inset-0 -z-10 opacity-[0.4]"
           style={{
@@ -289,6 +325,33 @@ export function LandingPage() {
       </section>
 
       {/* PRICING */}
+      {/* ANNUAL PLAN PROMO — dedicated, well-designed banner ahead of pricing */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 reveal">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 px-8 py-12 sm:px-14 sm:py-14">
+            <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/10" aria-hidden="true" />
+            <div className="absolute -bottom-16 -left-10 w-64 h-64 rounded-full bg-white/5" aria-hidden="true" />
+            <div className="relative flex flex-col lg:flex-row items-center lg:items-center justify-between gap-8">
+              <div className="text-center lg:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-amber-200 text-xs font-bold uppercase tracking-wide mb-4">
+                  <Sparkles size={13} />
+                  {t('promo.annual_badge')}
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('promo.annual_title')}</h2>
+                <p className="text-blue-100 max-w-md">
+                  {t('promo.annual_sub').replace('{amount}', String(yearlySavings))}
+                </p>
+              </div>
+              <a href="#plans" onClick={() => setAnnualBilling(true)}
+                className="flex-shrink-0 inline-flex items-center gap-2 px-7 py-3.5 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-base whitespace-nowrap">
+                {t('promo.annual_cta')}
+                <ArrowRight size={18} />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="plans" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-xl mx-auto text-center mb-12 reveal">
