@@ -118,14 +118,14 @@ export function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* PROMO BAR — annual plan savings, dismissible */}
       {showPromoBar && (
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-gray-900 text-white">
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white border-b border-white/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-10 flex items-center justify-center gap-2 relative text-xs sm:text-sm">
             <Sparkles size={14} className="text-amber-300 flex-shrink-0" />
-            <span className="font-medium truncate">{t('promo.annual_bar')}</span>
-            <a href="#plans" onClick={() => setAnnualBilling(true)} className="font-semibold underline underline-offset-2 hover:text-amber-300 transition-colors flex-shrink-0 ml-1">
+            <span className="font-medium text-slate-100 truncate">{t('promo.annual_bar')}</span>
+            <a href="#plans" onClick={() => setAnnualBilling(true)} className="font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors flex-shrink-0 ml-1">
               {t('promo.annual_bar_cta')}
             </a>
-            <button onClick={dismissPromoBar} aria-label={t('common.close')} className="absolute right-4 sm:right-6 text-white/50 hover:text-white transition-colors">
+            <button onClick={dismissPromoBar} aria-label={t('common.close')} className="absolute right-4 sm:right-6 text-white/40 hover:text-white transition-colors">
               <X size={14} />
             </button>
           </div>
@@ -325,28 +325,57 @@ export function LandingPage() {
       </section>
 
       {/* PRICING */}
-      {/* ANNUAL PLAN PROMO — dedicated, well-designed banner ahead of pricing */}
+      {/* ANNUAL PLAN PROMO — premium, dedicated banner ahead of pricing */}
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 reveal">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 px-8 py-12 sm:px-14 sm:py-14">
-            <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/10" aria-hidden="true" />
-            <div className="absolute -bottom-16 -left-10 w-64 h-64 rounded-full bg-white/5" aria-hidden="true" />
-            <div className="relative flex flex-col lg:flex-row items-center lg:items-center justify-between gap-8">
-              <div className="text-center lg:text-left">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-amber-200 text-xs font-bold uppercase tracking-wide mb-4">
-                  <Sparkles size={13} />
-                  {t('promo.annual_badge')}
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-8 py-14 sm:px-16 sm:py-16 shadow-2xl shadow-blue-900/20">
+            {/* Subtle dot-grid texture, matches the hero's premium feel */}
+            <div
+              className="absolute inset-0 opacity-[0.07]"
+              style={{
+                backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)',
+                backgroundSize: '22px 22px',
+              }}
+              aria-hidden="true"
+            />
+            {/* Soft glow accents */}
+            <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl" aria-hidden="true" />
+            <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-indigo-400/10 blur-3xl" aria-hidden="true" />
+            {/* Fine top border sheen */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" aria-hidden="true" />
+
+            <div className="relative">
+              <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-10">
+                <div className="text-center lg:text-left max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-300/30 text-amber-300 text-xs font-bold uppercase tracking-widest mb-5">
+                    <Sparkles size={13} />
+                    {t('promo.annual_badge')}
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight tracking-tight">{t('promo.annual_title')}</h2>
+                  <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
+                    {t('promo.annual_sub').replace('{amount}', String(yearlySavings))}
+                  </p>
+
+                  {/* Benefit chips */}
+                  <div className="flex flex-wrap justify-center lg:justify-start gap-2.5 mt-6">
+                    {[t('promo.benefit_1'), t('promo.benefit_2'), t('promo.benefit_3')].map((b, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-slate-200 text-xs font-medium">
+                        <Check size={12} className="text-emerald-400" />
+                        {b}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('promo.annual_title')}</h2>
-                <p className="text-blue-100 max-w-md">
-                  {t('promo.annual_sub').replace('{amount}', String(yearlySavings))}
-                </p>
+
+                <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                  <a href="#plans" onClick={() => setAnnualBilling(true)}
+                    className="group relative inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-50 transition-all text-base whitespace-nowrap shadow-lg shadow-black/20 hover:shadow-xl hover:-translate-y-0.5">
+                    {t('promo.annual_cta')}
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </a>
+                  <p className="text-slate-400 text-xs">{t('promo.no_card')}</p>
+                </div>
               </div>
-              <a href="#plans" onClick={() => setAnnualBilling(true)}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-7 py-3.5 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-base whitespace-nowrap">
-                {t('promo.annual_cta')}
-                <ArrowRight size={18} />
-              </a>
             </div>
           </div>
         </div>
