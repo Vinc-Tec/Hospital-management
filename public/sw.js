@@ -1,5 +1,5 @@
-const CACHE = 'healthcloud-v2';
-const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/favicon.png'];
+const CACHE = 'healthcloud-v1';
+const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 
 // API responses are intentionally NOT cached. A previous version cached
 // /rest/v1/* reads so they could be viewed offline, but that let a tenant
