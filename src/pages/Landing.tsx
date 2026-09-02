@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Shield, Globe, CreditCard, Zap, ArrowRight, Check,
-  Activity, BarChart3, Heart, Star,
+  Activity, BarChart3, Star,
   Building2, Stethoscope, FlaskConical, Pill,
   Sparkles, X,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { ConvertedPriceHint } from '../components/ui';
+import { IntegrationsShowcase } from '../components/IntegrationsShowcase';
+import { ResourceSection } from '../components/ResourceSection';
 import heroPhoto from '../assets/photos/dental-office.jpg';
+import logoMark from '../assets/logo-mark.png';
 
 function useScrollReveal() {
   useEffect(() => {
@@ -202,17 +205,22 @@ export function LandingPage() {
 
             {/* Trust strip */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {[
-                { icon: Shield, label: t('hero.trust.rls') },
-                { icon: Heart, label: t('hero.trust.hipaa') },
-                { icon: Globe, label: t('hero.trust.gdpr') },
-                { icon: Activity, label: t('hero.trust.uptime') },
-              ].map((item, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                  <item.icon size={14} className="text-emerald-600" />
-                  {item.label}
-                </span>
-              ))}
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                <Shield size={14} className="text-emerald-600" />
+                {t('hero.trust.rls')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                <img src={logoMark} alt="" className="w-3.5 h-3.5 object-contain" />
+                {t('hero.trust.hipaa')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                <Globe size={14} className="text-emerald-600" />
+                {t('hero.trust.gdpr')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                <Activity size={14} className="text-emerald-600" />
+                {t('hero.trust.uptime')}
+              </span>
             </div>
           </div>
 
@@ -235,12 +243,12 @@ export function LandingPage() {
                 </svg>
               </div>
 
-              {/* Floating heartbeat badge */}
+              {/* Floating brand badge */}
               <div className="absolute -top-4 -right-4 sm:-right-5">
                 <div className="relative w-14 h-14 flex items-center justify-center">
-                  <span className="absolute inset-0 rounded-full bg-red-400 animate-pulse-ring" aria-hidden="true" />
-                  <span className="relative w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center animate-heartbeat">
-                    <Heart size={20} className="text-red-500" fill="currentColor" />
+                  <span className="absolute inset-0 rounded-full bg-blue-400 animate-pulse-ring" aria-hidden="true" />
+                  <span className="relative w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center p-2.5 animate-heartbeat">
+                    <img src={logoMark} alt="" className="w-full h-full object-contain" />
                   </span>
                 </div>
               </div>
@@ -300,6 +308,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      <IntegrationsShowcase />
+
       {/* SOCIAL PROOF — light section instead of dark gradient */}
       <section className="py-20 bg-slate-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -324,11 +334,13 @@ export function LandingPage() {
         </div>
       </section>
 
+      <ResourceSection />
+
       {/* PRICING */}
-      {/* ANNUAL PLAN PROMO — premium, dedicated banner ahead of pricing */}
+      {/* ANNUAL PLAN PROMO — premium, full-bleed banner ahead of pricing */}
       <section className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 reveal">
-          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-8 py-14 sm:px-16 sm:py-16 shadow-2xl shadow-blue-900/20">
+        <div className="w-full px-0 reveal">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-6 py-14 sm:px-16 sm:py-16 shadow-2xl shadow-blue-900/20">
             {/* Subtle dot-grid texture, matches the hero's premium feel */}
             <div
               className="absolute inset-0 opacity-[0.07]"
@@ -344,7 +356,7 @@ export function LandingPage() {
             {/* Fine top border sheen */}
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" aria-hidden="true" />
 
-            <div className="relative">
+            <div className="relative max-w-6xl mx-auto">
               <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-10">
                 <div className="text-center lg:text-left max-w-xl">
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-300/30 text-amber-300 text-xs font-bold uppercase tracking-widest mb-5">
@@ -446,8 +458,8 @@ export function LandingPage() {
       <section className="py-24 bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center reveal">
           <div className="bg-blue-600 rounded-3xl p-12">
-            <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Heart size={26} className="text-white" fill="white" />
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 p-3 shadow-md">
+              <img src={logoMark} alt="" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.cta_title')}</h2>
             <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">{t('landing.cta_sub')}</p>
@@ -463,18 +475,20 @@ export function LandingPage() {
       {/* FOOTER */}
       <footer className="bg-slate-900 text-white pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-1">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+            <div className="col-span-2">
               <Logo variant="dark" />
-              <p className="text-white/40 text-sm mt-4 leading-relaxed">{t('footer.tagline')}</p>
+              <p className="text-white/40 text-sm mt-4 leading-relaxed max-w-xs">{t('footer.tagline')}</p>
               <p className="text-white/30 text-xs mt-4">{t('app.cameroon')}</p>
+              <a href="mailto:cs@liafrik.com" className="inline-block text-xs text-white/40 hover:text-white transition-colors mt-2">cs@liafrik.com</a>
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.product')}</p>
               <ul className="space-y-2.5">
-                {[[t('footer.features'), '#features'], [t('footer.pricing'), '#plans']].map(([item, href], i) => (
-                  <li key={i}><a href={href} className="text-sm text-white/50 hover:text-white transition-colors">{item}</a></li>
-                ))}
+                <li><a href="#features" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.features')}</a></li>
+                <li><a href="#plans" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.pricing')}</a></li>
+                <li><a href="#" className="text-sm text-white/50 hover:text-white transition-colors">{t('integrations.showcase.label')}</a></li>
+                <li><Link to="/docs/api" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.api_docs')}</Link></li>
               </ul>
             </div>
             <div>
@@ -488,7 +502,7 @@ export function LandingPage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.legal')}</p>
               <ul className="space-y-2.5">
-                {[[t('footer.privacy'), '/privacy'], [t('footer.terms'), '/terms']].map(([label, href], i) => (
+                {[[t('footer.privacy'), '/privacy'], [t('footer.terms'), '/terms'], [t('page.legal.title'), '/legal'], [t('page.cookies.title'), '/cookies']].map(([label, href], i) => (
                   <li key={i}><Link to={href} className="text-sm text-white/50 hover:text-white transition-colors">{label}</Link></li>
                 ))}
               </ul>

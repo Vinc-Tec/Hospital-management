@@ -326,3 +326,57 @@ export const termsOfService: Record<'fr' | 'en', LegalDoc> = {
     ],
   },
 };
+
+// Mentions légales / Legal Notice — publisher identification, hosting,
+// and IP ownership. Distinct from the Privacy Policy (data protection)
+// and Terms of Service (contractual terms): this is the statutory
+// "who runs this site" notice.
+export const legalNotice: Record<'fr' | 'en', LegalDoc> = {
+  fr: {
+    lastUpdated: 'Dernière mise à jour : à compléter avant publication',
+    intro: "Conformément aux usages en matière de transparence en ligne, cette page identifie l'éditeur, l'hébergeur et les conditions de propriété intellectuelle du site et de la plateforme Health Cloud.",
+    sections: [
+      { heading: 'Éditeur', body: ["Health Cloud est édité par LiAfrik, société opérant depuis Dubaï (Émirats Arabes Unis) et Yaoundé (Cameroun).", "Contact : cs@liafrik.com"] },
+      { heading: 'Directeur de publication', body: ["La direction de la publication est assurée par l'équipe dirigeante de LiAfrik. Coordonnées disponibles sur demande via cs@liafrik.com."] },
+      { heading: 'Hébergement', body: ["L'application et les données sont hébergées via Supabase (infrastructure Postgres) et déployées sur une infrastructure cloud tierce. La liste précise des sous-traitants d'hébergement est détaillée dans la Politique de confidentialité."] },
+      { heading: 'Propriété intellectuelle', body: ["L'ensemble des éléments du site et de la plateforme Health Cloud (code, design, marque, logo, contenus) sont la propriété exclusive de LiAfrik, sauf mention contraire. Toute reproduction non autorisée est interdite.", "Les logos des services tiers (intégrations) affichés sur ce site restent la propriété de leurs détenteurs respectifs et sont utilisés à titre d'identification des connecteurs disponibles, sans affiliation ni approbation implicite de leur part."] },
+      { heading: 'Signalement', body: ["Pour signaler un contenu ou un problème sur le site, contactez cs@liafrik.com."] },
+    ],
+  },
+  en: {
+    lastUpdated: 'Last updated: to be completed before publication',
+    intro: 'In line with standard online-transparency practice, this page identifies the publisher, host, and intellectual-property terms for the Health Cloud website and platform.',
+    sections: [
+      { heading: 'Publisher', body: ['Health Cloud is published by LiAfrik, operating from Dubai (United Arab Emirates) and Yaoundé (Cameroon).', 'Contact: cs@liafrik.com'] },
+      { heading: 'Publication director', body: ['Publication is overseen by the LiAfrik leadership team. Details available on request via cs@liafrik.com.'] },
+      { heading: 'Hosting', body: ['The application and its data are hosted via Supabase (Postgres infrastructure) and deployed on third-party cloud infrastructure. The precise list of hosting sub-processors is detailed in the Privacy Policy.'] },
+      { heading: 'Intellectual property', body: ['All elements of the Health Cloud website and platform (code, design, brand, logo, content) are the exclusive property of LiAfrik unless stated otherwise. Unauthorized reproduction is prohibited.', 'Third-party service logos (integrations) shown on this site remain the property of their respective owners and are used solely to identify available connectors, without implying affiliation or endorsement.'] },
+      { heading: 'Reporting', body: ['To report content or an issue on this site, contact cs@liafrik.com.'] },
+    ],
+  },
+};
+
+export const cookiePolicy: Record<'fr' | 'en', LegalDoc> = {
+  fr: {
+    lastUpdated: 'Dernière mise à jour : à compléter avant publication',
+    intro: "Cette page explique quels cookies et technologies similaires Health Cloud utilise, et comment les gérer. Health Cloud utilise volontairement un nombre restreint de cookies : aucun cookie publicitaire ni de traçage cross-site tiers.",
+    sections: [
+      { heading: '1. Cookies strictement nécessaires', body: ["Session d'authentification (Supabase Auth) : maintient votre connexion active. Sans lui, vous seriez déconnecté à chaque navigation.", "Préférence de langue (fr/en) et préférence de fermeture des bannières promotionnelles : stockées en local storage, pas de cookie tiers."] },
+      { heading: '2. Cookies de mesure d\'audience', body: ["Aucun outil d'analytics tiers (Google Analytics ou équivalent) n'est activé par défaut sur ce site à la date de rédaction. Si un tel outil venait à être ajouté, cette page serait mise à jour au préalable."] },
+      { heading: '3. Cookies tiers liés aux intégrations', body: ["Si votre établissement active une intégration (WhatsApp, paiement, calendrier), le fournisseur tiers concerné peut déposer ses propres cookies lors de l'utilisation de son service depuis votre tableau de bord. Reportez-vous à la politique de confidentialité de ce fournisseur."] },
+      { heading: '4. Gérer vos préférences', body: ["Vous pouvez supprimer ou bloquer les cookies via les réglages de votre navigateur. Le blocage du cookie de session empêchera la connexion à votre espace Health Cloud."] },
+      { heading: '5. Contact', body: ["Pour toute question sur cette politique : cs@liafrik.com."] },
+    ],
+  },
+  en: {
+    lastUpdated: 'Last updated: to be completed before publication',
+    intro: 'This page explains which cookies and similar technologies Health Cloud uses, and how to manage them. Health Cloud deliberately keeps this list short: no advertising cookies and no third-party cross-site tracking.',
+    sections: [
+      { heading: '1. Strictly necessary cookies', body: ['Authentication session (Supabase Auth): keeps you signed in. Without it you would be logged out on every navigation.', 'Language preference (fr/en) and promotional-banner dismissal: stored in local storage, no third-party cookie involved.'] },
+      { heading: '2. Analytics cookies', body: ['No third-party analytics tool (Google Analytics or equivalent) is enabled by default on this site as of this writing. Should one be added later, this page will be updated beforehand.'] },
+      { heading: '3. Third-party cookies from integrations', body: ["If your institution enables an integration (WhatsApp, payment, calendar), that third-party provider may set its own cookies when its service is used from your dashboard. Refer to that provider's own privacy policy."] },
+      { heading: '4. Managing your preferences', body: ['You can delete or block cookies via your browser settings. Blocking the session cookie will prevent signing in to your Health Cloud workspace.'] },
+      { heading: '5. Contact', body: ['For any question about this policy: cs@liafrik.com.'] },
+    ],
+  },
+};

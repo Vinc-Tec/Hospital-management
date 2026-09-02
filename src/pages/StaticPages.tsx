@@ -1,11 +1,13 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowLeft, Key, Lock, Zap, Copy, Check } from 'lucide-react';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
-import { privacyPolicy, termsOfService } from '../lib/legalContent';
+import { privacyPolicy, termsOfService, legalNotice, cookiePolicy } from '../lib/legalContent';
 import { useI18n } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
+import logoMark from '../assets/logo-mark.png';
+import resourcePhoto from '../assets/photos/reception-desk.jpg';
 
 // Coordonnées réelles de contact. CONTACT_PHONE volontairement vide tant qu'un
 // vrai numéro n'est pas fourni par LiAfrik — mieux vaut ne pas afficher de
@@ -31,8 +33,8 @@ function StaticPageLayout({ children }: { children: ReactNode }) {
       <footer className="bg-gray-900 text-gray-400 py-8">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center mb-3">
-            <div className="rounded-xl w-9 h-9 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2563EB, #10B981)' }}>
-              <Heart size={18} className="text-white" fill="white" />
+            <div className="rounded-xl w-9 h-9 flex items-center justify-center bg-white p-1.5">
+              <img src={logoMark} alt="Health Cloud" className="w-full h-full object-contain" />
             </div>
           </div>
           <CopyrightLine className="text-sm font-medium text-gray-300" />
@@ -130,6 +132,153 @@ export function TermsPage() {
           </div>
         ))}
       </Card>
+    </StaticPageLayout>
+  );
+}
+
+export function LegalNoticePage() {
+  const { t, lang } = useI18n();
+  const doc = legalNotice[lang];
+  return (
+    <StaticPageLayout>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.legal.title')}</h1>
+      <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
+      <Card className="p-6 space-y-6">
+        <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
+        {doc.sections.map((s, i) => (
+          <div key={i}>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">{s.heading}</h2>
+            <div className="space-y-2">
+              {s.body.map((p, j) => <p key={j} className="text-sm text-gray-600 leading-relaxed">{p}</p>)}
+            </div>
+          </div>
+        ))}
+      </Card>
+    </StaticPageLayout>
+  );
+}
+
+export function CookiesPage() {
+  const { t, lang } = useI18n();
+  const doc = cookiePolicy[lang];
+  return (
+    <StaticPageLayout>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.cookies.title')}</h1>
+      <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
+      <Card className="p-6 space-y-6">
+        <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
+        {doc.sections.map((s, i) => (
+          <div key={i}>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">{s.heading}</h2>
+            <div className="space-y-2">
+              {s.body.map((p, j) => <p key={j} className="text-sm text-gray-600 leading-relaxed">{p}</p>)}
+            </div>
+          </div>
+        ))}
+      </Card>
+    </StaticPageLayout>
+  );
+}
+
+function CodeBlock({ children }: { children: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="relative">
+      <pre className="bg-slate-900 text-slate-100 text-xs sm:text-[13px] leading-relaxed rounded-xl p-4 overflow-x-auto"><code>{children}</code></pre>
+      <button
+        onClick={() => { navigator.clipboard?.writeText(children); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+        aria-label="Copy"
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+    </div>
+  );
+}
+
+export function ApiDocsPage() {
+  const { t } = useI18n();
+  const endpoints = [
+    { method: 'GET', path: '/patients', desc: t('page.api.ep.patients_list'), scope: 'read' },
+    { method: 'GET', path: '/patients/:id', desc: t('page.api.ep.patients_get'), scope: 'read' },
+    { method: 'POST', path: '/patients', desc: t('page.api.ep.patients_create'), scope: 'write' },
+    { method: 'GET', path: '/appointments', desc: t('page.api.ep.appts_list'), scope: 'read' },
+    { method: 'POST', path: '/appointments', desc: t('page.api.ep.appts_create'), scope: 'write' },
+  ];
+  return (
+    <StaticPageLayout>
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-4">
+        <Zap size={12} /> {t('page.api.badge')}
+      </div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.api.title')}</h1>
+      <p className="text-gray-500 mb-8 max-w-2xl">{t('page.api.subtitle')}</p>
+
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-2 mb-3"><Key size={16} className="text-blue-600" /><h2 className="text-base font-semibold text-gray-900">{t('page.api.auth_title')}</h2></div>
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">{t('page.api.auth_body')}</p>
+        <CodeBlock>{`curl https://<project-ref>.supabase.co/functions/v1/api-v1/patients \\\n  -H "X-API-Key: hck_your_key_here"`}</CodeBlock>
+        <p className="text-xs text-gray-400 mt-3">{t('page.api.auth_note')}</p>
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4"><Lock size={16} className="text-blue-600" /><h2 className="text-base font-semibold text-gray-900">{t('page.api.scopes_title')}</h2></div>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li><span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">read</span> — {t('page.api.scope_read')}</li>
+          <li><span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">write</span> — {t('page.api.scope_write')}</li>
+        </ul>
+        <p className="text-sm text-gray-500 mt-4">{t('page.api.scopes_note')}</p>
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">{t('page.api.endpoints_title')}</h2>
+        <div className="divide-y divide-gray-100">
+          {endpoints.map((e, i) => (
+            <div key={i} className="py-3 flex items-start gap-3">
+              <span className={`flex-shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-md ${e.method === 'GET' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>{e.method}</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-sm text-gray-900">{e.path}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{e.desc}</p>
+              </div>
+              <span className="flex-shrink-0 text-[11px] text-gray-400 font-mono">{e.scope}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-3">{t('page.api.example_title')}</h2>
+        <CodeBlock>{`curl -X POST https://<project-ref>.supabase.co/functions/v1/api-v1/appointments \\\n  -H "X-API-Key: hck_your_key_here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "patient_id": "…",\n    "doctor_id": "…",\n    "scheduled_at": "2026-09-15T09:30:00Z"\n  }'`}</CodeBlock>
+      </Card>
+
+      <Card className="p-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{t('page.api.manage_title')}</p>
+          <p className="text-xs text-gray-500">{t('page.api.manage_body')}</p>
+        </div>
+        <a href="/app/settings#api" className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
+          {t('page.api.manage_cta')} →
+        </a>
+      </Card>
+    </StaticPageLayout>
+  );
+}
+
+export function InsightArticlePage() {
+  const { t } = useI18n();
+  return (
+    <StaticPageLayout>
+      <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('insight.label')}</span>
+      <h1 className="text-3xl font-bold text-gray-900 mt-3 mb-3 leading-tight">{t('insight.title')}</h1>
+      <p className="text-sm font-semibold text-gray-800 mb-6">{t('insight.byline')}</p>
+      <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-8">
+        <img src={resourcePhoto} alt="" className="w-full h-[280px] object-cover" />
+      </div>
+      <div className="prose prose-gray max-w-none space-y-4 text-gray-600 leading-relaxed">
+        {t('insight.body').split('\n\n').map((p, i) => <p key={i}>{p}</p>)}
+      </div>
+      <div className="mt-10">
+        <Link to="/signup"><Button>{t('hero.cta.start')}</Button></Link>
+      </div>
     </StaticPageLayout>
   );
 }

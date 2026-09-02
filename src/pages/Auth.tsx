@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, ArrowLeft, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { Button, Input } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { supabase } from '../lib/supabase';
-import hospitalBg from '../assets/hospital-bg-light.svg';
-import authPhoto from '../assets/photos/waiting-room-reception.jpg';
+import logoMark from '../assets/logo-mark.png';
+import doctorWoman from '../assets/doctors/doctor-woman.png';
+import doctorMan from '../assets/doctors/doctor-man.png';
+
+// Royalty-free footage (Pexels License — free for commercial & personal use,
+// no attribution required): aerial view of a modern glass-facade hospital.
+// https://www.pexels.com/video/hospital-20670148/
+const HOSPITAL_VIDEO_URL = 'https://videos.pexels.com/video-files/20670148/20670148-hd_1920_1080_30fps.mp4';
+const HOSPITAL_VIDEO_POSTER = 'https://images.pexels.com/videos/20670148/hospital-hospitalization-20670148.jpeg?auto=compress&cs=tinysrgb&h=1080';
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'reset' | 'verify' | 'mfa';
 
@@ -72,29 +79,53 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-blue-50 via-white to-emerald-50">
-      {/* Hospital interior background (subtle) */}
-      <div className="absolute inset-0 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${hospitalBg})` }} />
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/30 to-emerald-50/50 pointer-events-none" />
-      <div className="relative flex items-center justify-between p-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft size={16} /> {t('nav.back')}</Link>
-        <LangToggle />
+    <div className="min-h-screen flex flex-col relative bg-slate-950 overflow-hidden">
+      {/* Modern-hospital video background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <video
+          className="w-full h-full object-cover"
+          src={HOSPITAL_VIDEO_URL}
+          poster={HOSPITAL_VIDEO_POSTER}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+        />
+        {/* Dark gradient so the form + copy stay readable over any frame of the footage */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-blue-950/75 to-slate-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/40" />
       </div>
-      <div className="relative flex-1 flex items-center justify-center px-4 py-8">
-        {/* Real hospital photo panel */}
-        <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-1/2">
-          <img src={authPhoto} alt="Hospital waiting room" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-blue-900/50 to-emerald-900/60" />
-          <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
-            <h2 className="text-3xl font-bold mb-3 drop-shadow-lg">{t('auth.brand.title')}</h2>
-            <p className="text-white/80 max-w-md drop-shadow">{t('auth.brand.subtitle')}</p>
-          </div>
-        </div>
-        <div className="w-full max-w-md lg:ml-auto lg:mr-16">
+
+      <div className="relative flex items-center justify-between p-4 z-20">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"><ArrowLeft size={16} /> {t('nav.back')}</Link>
+        <LangToggle variant="dark" />
+      </div>
+
+      <div className="relative flex-1 flex items-center justify-center px-4 py-10 z-10">
+        {/* Floating transparent-cutout doctors flanking the card — decorative, hidden on small screens */}
+        <img
+          src={doctorWoman}
+          alt=""
+          aria-hidden="true"
+          className="hidden xl:block absolute left-[6%] bottom-0 w-[300px] 2xl:w-[340px] object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none animate-float-slow"
+        />
+        <img
+          src={doctorMan}
+          alt=""
+          aria-hidden="true"
+          className="hidden xl:block absolute right-[6%] bottom-0 w-[300px] 2xl:w-[340px] object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none animate-float-slow"
+          style={{ animationDelay: '1.4s' }}
+        />
+
+        {/* Centered auth card */}
+        <div className="w-full max-w-md relative z-10">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center mb-4"><Logo size={48} /></div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium mb-3"><Heart size={12} /> {t('app.developed')}</div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <div className="inline-flex items-center justify-center mb-4 p-2.5 rounded-2xl bg-white/95 shadow-xl"><Logo size={40} /></div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-blue-100 text-xs font-medium mb-3">
+              <img src={logoMark} alt="" className="w-3 h-3 object-contain" /> {t('app.developed')}
+            </div>
+            <h1 className="text-2xl font-bold text-white drop-shadow">
               {mode === 'signin' && t('auth.signin.title')}
               {mode === 'signup' && t('auth.signup.title')}
               {mode === 'forgot' && t('auth.forgot.title')}
@@ -102,14 +133,14 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               {mode === 'mfa' && t('auth.mfa.title')}
             </h1>
             {(mode === 'forgot' || mode === 'verify' || mode === 'mfa') && (
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-blue-100/80 mt-2">
                 {mode === 'forgot' ? t('auth.forgot.subtitle') : mode === 'mfa' ? t('auth.mfa.subtitle') : t('auth.verify.subtitle')}
               </p>
             )}
           </div>
 
           {mode === 'verify' ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+            <div className="bg-white/97 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                 <Mail size={28} className="text-emerald-600" />
               </div>
@@ -118,7 +149,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               <Button className="w-full" onClick={() => setMode('signin')}>{t('auth.verify.continue')}</Button>
             </div>
           ) : (
-            <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <form onSubmit={submit} className="bg-white/97 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-6 space-y-4">
               {mode === 'mfa' ? (
                 <Input label={t('auth.mfa.code_label')} required value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="000000" maxLength={6} autoFocus />
               ) : (
@@ -167,26 +198,26 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
 
           <div className="text-center mt-6 space-y-2">
             {mode === 'signin' && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-blue-100/80">
                 {t('auth.to.signup_pre')}{' '}
-                <button onClick={() => { setMode('signup'); setError(null); setInfo(null); }} className="text-blue-600 font-medium hover:underline">{t('auth.to.signup')}</button>
+                <button onClick={() => { setMode('signup'); setError(null); setInfo(null); }} className="text-white font-medium hover:underline">{t('auth.to.signup')}</button>
               </p>
             )}
             {mode === 'signup' && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-blue-100/80">
                 {t('auth.to.signin_pre')}{' '}
-                <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-blue-600 font-medium hover:underline">{t('auth.to.signin')}</button>
+                <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-white font-medium hover:underline">{t('auth.to.signin')}</button>
               </p>
             )}
             {mode === 'forgot' && (
-              <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-sm text-blue-600 font-medium hover:underline">
+              <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-sm text-white font-medium hover:underline">
                 {t('auth.back_to_signin')}
               </button>
             )}
           </div>
         </div>
       </div>
-      <footer className="bg-gray-900 text-gray-400 py-6">
+      <footer className="relative z-20 bg-slate-950/70 backdrop-blur-sm border-t border-white/10 text-gray-400 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <CopyrightLine className="text-sm font-medium text-gray-300" />
         </div>

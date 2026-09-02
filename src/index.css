@@ -112,6 +112,25 @@ body {
   }
 }
 
+/* Auth page: doctor cutouts drift gently so the video background doesn't
+   feel static without competing with the form for attention. */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+
+/* Integrations showcase: each tile flips on its Y axis to reveal the next
+   logo in its rotation, like a little card flipping over. */
+@keyframes logo-flip {
+  0%, 42% { transform: rotateY(0deg); }
+  50%, 92% { transform: rotateY(180deg); }
+  100% { transform: rotateY(360deg); }
+}
+.animate-logo-flip { animation: logo-flip 6s cubic-bezier(0.65, 0, 0.35, 1) infinite; transform-style: preserve-3d; }
+.logo-flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.logo-flip-face-back { transform: rotateY(180deg); }
+
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }

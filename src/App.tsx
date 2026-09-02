@@ -52,6 +52,10 @@ const FeaturesPage = lazy(() => import('./pages/StaticPages').then((m) => ({ def
 const PrivacyPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.TermsPage })));
 const ContactPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.ContactPage })));
+const LegalNoticePage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.LegalNoticePage })));
+const CookiesPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.CookiesPage })));
+const ApiDocsPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.ApiDocsPage })));
+const InsightArticlePage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.InsightArticlePage })));
 
 // BillingGate/TrialBanner stay eagerly loaded: they wrap every authenticated
 // route and are needed immediately, so splitting them out would just move
@@ -213,6 +217,10 @@ function AppRoutes() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/legal" element={<LegalNoticePage />} />
+      <Route path="/cookies" element={<CookiesPage />} />
+      <Route path="/docs/api" element={<ApiDocsPage />} />
+      <Route path="/insights/data-ready-healthcare" element={<InsightArticlePage />} />
       <Route path="/onboarding" element={<TenantRoute><Onboarding /></TenantRoute>} />
       <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
         <Route index element={null} />
