@@ -316,7 +316,7 @@ export function Dashboard() {
                     <ShieldCheck size={24} className="text-emerald-600 flex-shrink-0" />
                     <div>
                       <p className="font-semibold text-emerald-800">{t('dash.super_admin_access')}</p>
-                      <p className="text-sm text-emerald-600 mt-1">You have unrestricted platform access. No subscription or onboarding is required. Use the Super Admin link in the sidebar to manage institutions, plans, and platform settings.</p>
+                      <p className="text-sm text-emerald-600 mt-1">{t('dash.super_admin_body')}</p>
                     </div>
                   </div>
                 </div>

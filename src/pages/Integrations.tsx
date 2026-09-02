@@ -205,7 +205,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
         onClose={() => setConfiguring(null)}
         title={configuring ? CATALOG.find((c) => c.provider === configuring)!.name : ''}
         footer={<>
-          <Button variant="outline" onClick={() => setConfiguring(null)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setConfiguring(null)}>{t('common.cancel')}</Button>
           <Button loading={saving} onClick={saveIntegration}>{t('integrations.save')}</Button>
         </>}
       >
@@ -223,7 +223,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
         onClose={() => setWebhookModal(false)}
         title={t('integrations.webhooks.add')}
         footer={<>
-          <Button variant="outline" onClick={() => setWebhookModal(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setWebhookModal(false)}>{t('common.cancel')}</Button>
           <Button loading={whSaving} disabled={!whForm.name || !whForm.url} onClick={addWebhook}>{t('integrations.save')}</Button>
         </>}
       >

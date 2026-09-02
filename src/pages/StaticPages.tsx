@@ -181,6 +181,7 @@ export function CookiesPage() {
 }
 
 function CodeBlock({ children }: { children: string }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative">
@@ -188,7 +189,7 @@ function CodeBlock({ children }: { children: string }) {
       <button
         onClick={() => { navigator.clipboard?.writeText(children); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
         className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
-        aria-label="Copy"
+        aria-label={t('common.copy')}
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </button>
