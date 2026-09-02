@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
-import resourcePhoto from '../assets/photos/reception-desk.jpg';
+import resourcePhoto from '../assets/photos/doctor-patient-consult.jpg';
 
 export function ResourceSection() {
   const { t } = useI18n();

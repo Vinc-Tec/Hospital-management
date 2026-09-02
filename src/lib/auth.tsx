@@ -51,6 +51,7 @@ type AuthState = {
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   resendVerification: (email: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -263,6 +264,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null };
   };
 
+  // Google OAuth sign-in/sign-up (same flow either way — Supabase creates
+  // the account on first login). Requires the Google provider to be
+  // enabled in the Supabase project (Authentication -> Providers -> Google)
+  // with a Client ID/Secret from Google Cloud Console; this call is a no-op
+  // failure with a clear error message if that hasn't been configured yet.
+  const signInWithGoogle = async () => {
+    localStorage.setItem(REMEMBER_FLAG_KEY, '1');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/app` },
+    });
+    return { error: error ? error.message : null };
+  };
+
   const resendVerification = async (email: string) => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -304,7 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const activeMembership = useMemo(() => memberships.find((m) => m.tenant_id === activeTenant?.id) ?? null, [memberships, activeTenant]);
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification }), [session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading]);
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification, signInWithGoogle }), [session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

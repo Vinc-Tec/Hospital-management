@@ -7,7 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
 import logoMark from '../assets/logo-mark.png';
-import resourcePhoto from '../assets/photos/reception-desk.jpg';
+import resourcePhoto from '../assets/photos/doctor-patient-consult.jpg';
 
 // Coordonnées réelles de contact. CONTACT_PHONE volontairement vide tant qu'un
 // vrai numéro n'est pas fourni par LiAfrik — mieux vaut ne pas afficher de
