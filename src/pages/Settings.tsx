@@ -16,6 +16,14 @@ export function SettingsPage() {
   const [paymentReturn, setPaymentReturn] = useState(false);
 
   useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const validTabs = ['general', 'profile', 'billing', 'branches', 'support', 'api', 'team'] as const;
+    if (requestedTab && (validTabs as readonly string[]).includes(requestedTab)) {
+      setTab(requestedTab as typeof validTabs[number]);
+    }
+  }, []);
+
+  useEffect(() => {
     if (searchParams.get('billing') === 'complete') {
       setPaymentReturn(true);
       refresh();
@@ -136,7 +144,16 @@ export function SettingsPage() {
 
       {tab === 'support' && <SupportTab />}
       {tab === 'team' && <TeamTab tenantId={activeTenant.id} />}
-      {tab === 'api' && <ApiTab tenantId={activeTenant.id} />}
+      {tab === 'api' && (
+        hasModuleAccess(activePlan, 'api')
+          ? <ApiTab tenantId={activeTenant.id} />
+          : (
+            <Card className="p-6 text-center">
+              <p className="text-sm text-gray-600 mb-4">{t('settings.api_upgrade_required')}</p>
+              <a href="/#plans" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:underline">{t('landing.pricing_label')} →</a>
+            </Card>
+          )
+      )}
     </div>
   );
 }

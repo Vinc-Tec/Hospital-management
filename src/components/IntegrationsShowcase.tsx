@@ -66,7 +66,7 @@ function LogoTile({ front, back, delay }: { front: AppEntry; back: AppEntry; del
 export function IntegrationsShowcase() {
   const { t } = useI18n();
   return (
-    <section className="py-16 sm:py-20 bg-white border-y border-gray-100">
+    <section id="integrations" className="py-16 sm:py-20 bg-white border-y border-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="max-w-2xl mx-auto text-center mb-10 reveal">
           <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('integrations.showcase.label')}</span>

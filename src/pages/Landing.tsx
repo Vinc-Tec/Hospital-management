@@ -487,7 +487,7 @@ export function LandingPage() {
               <ul className="space-y-2.5">
                 <li><a href="#features" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.features')}</a></li>
                 <li><a href="#plans" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.pricing')}</a></li>
-                <li><a href="#" className="text-sm text-white/50 hover:text-white transition-colors">{t('integrations.showcase.label')}</a></li>
+                <li><a href="#integrations" className="text-sm text-white/50 hover:text-white transition-colors">{t('integrations.showcase.label')}</a></li>
                 <li><Link to="/docs/api" className="text-sm text-white/50 hover:text-white transition-colors">{t('footer.api_docs')}</Link></li>
               </ul>
             </div>

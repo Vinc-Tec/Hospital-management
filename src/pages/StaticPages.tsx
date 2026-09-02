@@ -255,7 +255,7 @@ export function ApiDocsPage() {
           <p className="text-sm font-semibold text-gray-900">{t('page.api.manage_title')}</p>
           <p className="text-xs text-gray-500">{t('page.api.manage_body')}</p>
         </div>
-        <a href="/app/settings#api" className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
+        <a href="/app/settings?tab=api" className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
           {t('page.api.manage_cta')} →
         </a>
       </Card>
