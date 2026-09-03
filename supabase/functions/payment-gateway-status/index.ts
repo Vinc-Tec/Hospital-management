@@ -20,6 +20,7 @@ Deno.serve((req) => {
     payunit: !!(Deno.env.get('PAYUNIT_API_USER') && Deno.env.get('PAYUNIT_API_PASSWORD') && Deno.env.get('PAYUNIT_APP_TOKEN')),
     flutterwave: !!Deno.env.get('FLUTTERWAVE_SECRET_KEY'),
     paystack: !!Deno.env.get('PAYSTACK_SECRET_KEY'),
+    paddle: !!(Deno.env.get('PADDLE_API_KEY') && Deno.env.get('PADDLE_PRICE_MAP')),
   };
 
   return new Response(JSON.stringify(available), { headers: { 'Content-Type': 'application/json', ...corsHeaders() } });

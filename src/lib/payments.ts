@@ -1,14 +1,15 @@
 // Shared payment initiation. The app supports multiple gateways
-// (PayUnit, Flutterwave, Paystack), all pricing plans in USD. Rather
-// than always asking the customer which to use: if exactly one gateway
-// is configured, it's used automatically; if more than one is
-// configured, the caller (see components/PaymentGatewayModal.tsx) shows
-// a small picker so the customer chooses which one suits them.
+// (PayUnit, Flutterwave, Paystack, Paddle), all pricing plans in USD.
+// Rather than always asking the customer which to use: if exactly one
+// gateway is configured, it's used automatically; if more than one is
+// configured, the caller (see components/PaymentCheckout.tsx) shows a
+// small picker so the customer chooses which one suits them.
 
 export const GATEWAY_LABELS: Record<string, string> = {
   payunit: 'PayUnit',
   flutterwave: 'Flutterwave',
   paystack: 'Paystack',
+  paddle: 'Paddle',
 };
 
 export type InitiatePaymentResult =

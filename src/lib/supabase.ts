@@ -72,7 +72,7 @@ export type TenantSubscription = {
 export type Payment = {
   id: string; tenant_id: string; subscription_id: string | null;
   amount: number; currency: string;
-  gateway: 'stripe' | 'flutterwave' | 'paystack' | 'orange_money' | 'mtn_momo' | 'visa' | 'mastercard' | 'bank_transfer' | null;
+  gateway: 'stripe' | 'flutterwave' | 'paystack' | 'payunit' | 'paddle' | 'orange_money' | 'mtn_momo' | 'visa' | 'mastercard' | 'bank_transfer' | null;
   gateway_tx_id: string | null;
   status: 'pending' | 'succeeded' | 'failed' | 'refunded';
   paid_at: string | null; invoice_url: string | null; metadata: Record<string, unknown> | null;
