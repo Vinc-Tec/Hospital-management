@@ -111,9 +111,11 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
           playsInline
           aria-hidden="true"
         />
-        {/* Dark gradient so the form + copy stay readable over any frame of the footage */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-blue-950/75 to-slate-950/90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/40" />
+        {/* Uniform dark overlay so white text stays readable against any
+            frame of the footage — no transparent band in the middle where
+            the title and card sit. */}
+        <div className="absolute inset-0 bg-slate-950/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-blue-950/55 to-slate-950/80" />
       </div>
 
       <div className="relative flex items-center justify-between p-4 z-20">
@@ -127,13 +129,13 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
           src={doctorMan}
           alt=""
           aria-hidden="true"
-          className="hidden xl:block absolute left-[6%] bottom-0 w-[300px] 2xl:w-[340px] object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none"
+          className="hidden xl:block absolute left-[4%] bottom-0 h-[92%] w-auto object-contain object-bottom drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none"
         />
         <img
           src={doctorWoman}
           alt=""
           aria-hidden="true"
-          className="hidden xl:block absolute right-[6%] bottom-0 w-[300px] 2xl:w-[340px] object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none"
+          className="hidden xl:block absolute right-[4%] bottom-0 h-[92%] w-auto object-contain object-bottom drop-shadow-[0_30px_40px_rgba(0,0,0,0.45)] pointer-events-none select-none"
         />
 
         {/* Centered auth card */}

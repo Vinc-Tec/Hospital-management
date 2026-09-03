@@ -11,6 +11,7 @@ import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { ConvertedPriceHint } from '../components/ui';
 import { IntegrationsShowcase } from '../components/IntegrationsShowcase';
 import { ResourceSection } from '../components/ResourceSection';
+import { PricingMatrix } from '../components/PricingMatrix';
 import heroPhoto from '../assets/photos/dental-office.jpg';
 import logoMark from '../assets/logo-mark.png';
 
@@ -65,22 +66,22 @@ export function LandingPage() {
   const plans = [
     {
       name: 'Starter', price_monthly: 49, price_yearly: 470,
-      features: ['Up to 3 doctors', 'Up to 500 patients', 'Patients, appointments, doctors, invoices & reports', 'Email support', '1 location'],
+      features: [t('plan.starter.f1'), t('plan.starter.f2'), t('plan.starter.f3'), t('plan.starter.f4'), t('plan.starter.f5')],
       highlight: false,
     },
     {
       name: 'Professional', price_monthly: 149, price_yearly: 1430,
-      features: ['Up to 15 doctors', 'Up to 5,000 patients', 'Core clinical modules (records, consultations, prescriptions, lab, pharmacy)', 'Priority support', '3 locations'],
+      features: [t('plan.pro.f1'), t('plan.pro.f2'), t('plan.pro.f3'), t('plan.pro.f4'), t('plan.pro.f5')],
       highlight: true,
     },
     {
       name: 'Business', price_monthly: 299, price_yearly: 2870,
-      features: ['Up to 50 doctors', 'Up to 100,000 patients', 'Extended modules (radiology, beds, admissions, surgeries, inventory, HR, payroll, roles)', 'Dedicated support', '10 locations', 'API access', 'Integrations (WhatsApp, SMS, calendar, webhooks)'],
+      features: [t('plan.biz.f1'), t('plan.biz.f2'), t('plan.biz.f3'), t('plan.biz.f4'), t('plan.biz.f5'), t('plan.biz.f6')],
       highlight: false,
     },
     {
       name: 'Enterprise', price_monthly: 429, price_yearly: 4118,
-      features: ['Unlimited doctors', 'Unlimited patients', 'Every module, including analytics, telemedicine, insurance, emergency & marketplace', 'SLA support', 'Unlimited locations', 'White-label option', 'Custom integrations'],
+      features: [t('plan.ent.f1'), t('plan.ent.f2'), t('plan.ent.f3'), t('plan.ent.f4'), t('plan.ent.f5'), t('plan.ent.f6')],
       highlight: false,
     },
   ];
@@ -451,23 +452,27 @@ export function LandingPage() {
               </div>
             ))}
           </div>
+
+          <PricingMatrix />
         </div>
       </section>
 
-      {/* CTA — single flat color block, no floating orbs */}
+      {/* CTA — full-bleed like the annual promo banner, no side margins */}
       <section className="py-24 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center reveal">
-          <div className="bg-blue-600 rounded-3xl p-12">
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 p-3 shadow-md">
-              <img src={logoMark} alt="" className="w-full h-full object-contain" />
+        <div className="w-full px-0 reveal">
+          <div className="bg-blue-600 px-6 py-14 sm:px-16 sm:py-16 text-center">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 p-3 shadow-md">
+                <img src={logoMark} alt="" className="w-full h-full object-contain" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.cta_title')}</h2>
+              <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">{t('landing.cta_sub')}</p>
+              <Link to="/signup"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-base">
+                {t('hero.cta.start')}
+                <ArrowRight size={18} />
+              </Link>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.cta_title')}</h2>
-            <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">{t('landing.cta_sub')}</p>
-            <Link to="/signup"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-base">
-              {t('hero.cta.start')}
-              <ArrowRight size={18} />
-            </Link>
           </div>
         </div>
       </section>
