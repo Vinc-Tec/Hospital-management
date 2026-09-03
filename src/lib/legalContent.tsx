@@ -356,6 +356,35 @@ export const legalNotice: Record<'fr' | 'en', LegalDoc> = {
   },
 };
 
+export const refundPolicy: Record<'fr' | 'en', LegalDoc> = {
+  fr: {
+    lastUpdated: 'Dernière mise à jour : à compléter avant publication',
+    intro: "Cette politique décrit les conditions de remboursement applicables aux abonnements Health Cloud, quel que soit le fournisseur de paiement utilisé (Flutterwave, PayUnit, Paystack, Paddle).",
+    sections: [
+      { heading: '1. Essai gratuit', body: ["Chaque nouvel établissement bénéficie d'un essai gratuit de 7 jours, sans carte bancaire requise. Aucun paiement n'est prélevé pendant cette période, donc aucun remboursement n'est nécessaire tant que l'essai n'a pas donné lieu à un abonnement payant."] },
+      { heading: '2. Droit de rétractation (14 jours)', body: ["Pour un premier abonnement payant, vous disposez de 14 jours calendaires à compter du paiement pour demander un remboursement intégral, sans justification, à condition que le service n'ait pas été utilisé de manière substantielle (au-delà d'une simple prise en main).", "Passé ce délai de 14 jours, l'abonnement en cours reste dû jusqu'à son terme (mensuel ou annuel) mais n'est pas renouvelé si vous annulez le renouvellement automatique."] },
+      { heading: '3. Renouvellements et annulation', body: ["Vous pouvez annuler le renouvellement automatique à tout moment depuis Paramètres → Facturation ; l'accès reste actif jusqu'à la fin de la période déjà payée.", "Les périodes déjà entamées (mois ou année en cours) ne sont pas remboursées au prorata en cas d'annulation en cours de cycle, sauf erreur de facturation de notre part ou obligation légale contraire dans votre juridiction."] },
+      { heading: '4. Erreurs de facturation', body: ["En cas de double prélèvement, de montant incorrect, ou de prélèvement après une annulation effective, contactez-nous : nous remboursons intégralement toute erreur de facturation de notre fait, généralement sous 5 à 10 jours ouvrés selon le fournisseur de paiement."] },
+      { heading: '5. Indisponibilité prolongée du service', body: ["En cas d'interruption majeure et prolongée du service imputable à Health Cloud (hors maintenance planifiée et annoncée), un avoir ou un remboursement proportionnel à la durée d'indisponibilité peut être accordé sur demande."] },
+      { heading: '6. Comment demander un remboursement', body: ["Écrivez à cs@liafrik.com en indiquant le nom de votre établissement, la date du paiement concerné et le motif de la demande. Nous répondons sous 5 jours ouvrés."] },
+      { heading: '7. Modalités selon le moyen de paiement', body: ["Le remboursement est effectué sur le même moyen de paiement que celui utilisé pour le paiement initial, via le fournisseur concerné (Flutterwave, PayUnit, Paystack ou Paddle). Les délais de crédit sur votre compte dépendent de votre banque ou opérateur Mobile Money."] },
+    ],
+  },
+  en: {
+    lastUpdated: 'Last updated: to be completed before publication',
+    intro: 'This policy describes the refund terms that apply to Health Cloud subscriptions, regardless of the payment provider used (Flutterwave, PayUnit, Paystack, Paddle).',
+    sections: [
+      { heading: '1. Free trial', body: ['Every new institution gets a 7-day free trial, no card required. No payment is collected during that period, so no refund is ever needed unless the trial has converted into a paid subscription.'] },
+      { heading: '2. Right of withdrawal (14 days)', body: ["For a first paid subscription, you have 14 calendar days from payment to request a full refund, no questions asked, provided the service has not been substantially used beyond initial setup.", 'After that 14-day window, the current subscription remains payable through its term (monthly or yearly) but will not renew if you cancel auto-renewal.'] },
+      { heading: '3. Renewals and cancellation', body: ['You can cancel auto-renewal at any time from Settings > Billing; access remains active through the end of the period already paid for.', "Periods already underway (the current month or year) are not refunded pro-rata on mid-cycle cancellation, except for a billing error on our part or where required by law in your jurisdiction."] },
+      { heading: '4. Billing errors', body: ['In case of a duplicate charge, an incorrect amount, or a charge after an effective cancellation, contact us: we fully refund any billing error on our part, typically within 5-10 business days depending on the payment provider.'] },
+      { heading: '5. Extended service outage', body: ['In the event of a major, extended outage attributable to Health Cloud (excluding planned, announced maintenance), a credit or a refund proportional to the outage duration may be granted on request.'] },
+      { heading: '6. How to request a refund', body: ['Email cs@liafrik.com with your institution name, the date of the payment in question, and the reason for the request. We respond within 5 business days.'] },
+      { heading: '7. Method of refund', body: ['Refunds are issued to the same payment method used for the original payment, through the relevant provider (Flutterwave, PayUnit, Paystack or Paddle). Crediting time to your account depends on your bank or Mobile Money operator.'] },
+    ],
+  },
+};
+
 export const cookiePolicy: Record<'fr' | 'en', LegalDoc> = {
   fr: {
     lastUpdated: 'Dernière mise à jour : à compléter avant publication',

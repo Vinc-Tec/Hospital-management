@@ -4,7 +4,7 @@ import {
   Shield, Globe, CreditCard, Zap, ArrowRight, Check,
   Activity, BarChart3, Star,
   Building2, Stethoscope, FlaskConical, Pill,
-  Sparkles, X,
+  Sparkles, X, Facebook, Instagram, Linkedin, Youtube,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
@@ -37,6 +37,26 @@ function useScrollReveal() {
     return () => observer.disconnect();
   }, []);
 }
+
+// lucide-react has no TikTok glyph -- this is TikTok's own public note
+// mark, redrawn as a minimal single-color outline to match the other
+// footer icons' 1.5-viewBox sizing convention.
+function TikTokIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16.5 3c.4 2.2 1.9 3.9 4 4.3v3.1c-1.5 0-2.9-.5-4-1.3v6.4a5.6 5.6 0 1 1-5.6-5.6c.3 0 .6 0 .9.1v3.2a2.5 2.5 0 1 0 1.7 2.4V3h3z" />
+    </svg>
+  );
+}
+
+// Real, official Health Cloud / LiAfrik social profiles.
+const SOCIAL_LINKS = [
+  { label: 'Facebook', href: 'https://www.facebook.com/share/1LMAGqsy3n/?mibextid=wwXIfr', Icon: Facebook },
+  { label: 'Instagram', href: 'https://www.instagram.com/liafrik_tech?igsi=eXBjdTc5NG42Zml4&utm_source=qr', Icon: Instagram },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/liafrik/', Icon: Linkedin },
+  { label: 'YouTube', href: 'https://youtube.com/@liyah-n?si=D-lXwovYubw3sdaf', Icon: Youtube },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@liyahgroup?_r=1&_t=ZS-9981XGgaxrE', Icon: TikTokIcon },
+];
 
 export function LandingPage() {
   const { t } = useI18n();
@@ -480,12 +500,20 @@ export function LandingPage() {
       {/* FOOTER */}
       <footer className="bg-slate-900 text-white pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
             <div className="col-span-2">
               <Logo variant="dark" />
               <p className="text-white/40 text-sm mt-4 leading-relaxed max-w-xs">{t('footer.tagline')}</p>
               <p className="text-white/30 text-xs mt-4">{t('app.cameroon')}</p>
               <a href="mailto:cs@liafrik.com" className="inline-block text-xs text-white/40 hover:text-white transition-colors mt-2">cs@liafrik.com</a>
+              <div className="flex items-center gap-3 mt-5">
+                {SOCIAL_LINKS.map(({ href, label, Icon }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-colors">
+                    <Icon size={15} />
+                  </a>
+                ))}
+              </div>
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.product')}</p>
@@ -504,15 +532,28 @@ export function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('footer.legal')}</p>
               <ul className="space-y-2.5">
-                {[[t('footer.privacy'), '/privacy'], [t('footer.terms'), '/terms'], [t('page.legal.title'), '/legal'], [t('page.cookies.title'), '/cookies']].map(([label, href], i) => (
+                {[[t('footer.privacy'), '/privacy'], [t('footer.terms'), '/terms'], [t('page.legal.title'), '/legal'], [t('page.cookies.title'), '/cookies'], [t('page.refund.title'), '/refund-policy']].map(([label, href], i) => (
                   <li key={i}><Link to={href} className="text-sm text-white/50 hover:text-white transition-colors">{label}</Link></li>
                 ))}
               </ul>
             </div>
           </div>
+
+          {/* Instagram callout -- honest link-out, not a faked feed: a
+              live post grid needs an Instagram Graph API access token
+              (Meta Business verification), which isn't configured yet. */}
+          <a href="https://www.instagram.com/liafrik_tech" target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-fuchsia-600/10 via-pink-500/10 to-amber-400/10 border border-white/10 px-5 py-4 mb-10 hover:border-white/20 transition-colors group">
+            <span className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-600 to-amber-400 flex items-center justify-center flex-shrink-0"><Instagram size={16} className="text-white" /></span>
+              <span className="text-sm text-white/70 group-hover:text-white transition-colors">{t('footer.instagram_cta')}</span>
+            </span>
+            <span className="text-xs font-semibold text-white/50 group-hover:text-white transition-colors flex-shrink-0">@liafrik_tech →</span>
+          </a>
+
           <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
             <CopyrightLine className="text-xs text-white/30" />
             <LangToggle variant="dark" />

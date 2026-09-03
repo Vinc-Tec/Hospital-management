@@ -19,7 +19,9 @@ export function CopyrightLine({ className = '' }: { className?: string }) {
   const year = new Date().getFullYear();
   return (
     <p className={className}>
-      Health Cloud&#8482; — Powered by LiAfrik — Dubaï &amp; Yaoundé — &copy; {year} All Rights Reserved.
+      Health Cloud&#8482; — Powered by{' '}
+      <a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-current">LiAfrik</a>
+      {' '}— Dubaï &amp; Yaoundé — &copy; {year} All Rights Reserved.
     </p>
   );
 }

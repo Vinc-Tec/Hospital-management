@@ -54,6 +54,7 @@ const TermsPage = lazy(() => import('./pages/StaticPages').then((m) => ({ defaul
 const ContactPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.ContactPage })));
 const LegalNoticePage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.LegalNoticePage })));
 const CookiesPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.CookiesPage })));
+const RefundPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.RefundPage })));
 const ApiDocsPage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.ApiDocsPage })));
 const InsightArticlePage = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.InsightArticlePage })));
 
@@ -219,6 +220,7 @@ function AppRoutes() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/legal" element={<LegalNoticePage />} />
       <Route path="/cookies" element={<CookiesPage />} />
+      <Route path="/refund-policy" element={<RefundPage />} />
       <Route path="/docs/api" element={<ApiDocsPage />} />
       <Route path="/insights/data-ready-healthcare" element={<InsightArticlePage />} />
       <Route path="/onboarding" element={<TenantRoute><Onboarding /></TenantRoute>} />

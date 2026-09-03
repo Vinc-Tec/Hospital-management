@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, ArrowLeft, Key, Lock, Zap, Copy, Check } from 'lucide-react';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
-import { privacyPolicy, termsOfService, legalNotice, cookiePolicy } from '../lib/legalContent';
+import { privacyPolicy, termsOfService, legalNotice, cookiePolicy, refundPolicy } from '../lib/legalContent';
 import { useI18n } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
@@ -142,6 +142,28 @@ export function LegalNoticePage() {
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.legal.title')}</h1>
+      <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
+      <Card className="p-6 space-y-6">
+        <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
+        {doc.sections.map((s, i) => (
+          <div key={i}>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">{s.heading}</h2>
+            <div className="space-y-2">
+              {s.body.map((p, j) => <p key={j} className="text-sm text-gray-600 leading-relaxed">{p}</p>)}
+            </div>
+          </div>
+        ))}
+      </Card>
+    </StaticPageLayout>
+  );
+}
+
+export function RefundPage() {
+  const { t, lang } = useI18n();
+  const doc = refundPolicy[lang];
+  return (
+    <StaticPageLayout>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.refund.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
