@@ -157,7 +157,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
           </div>
 
           {mode === 'verify' ? (
-            <div className="bg-white/97 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-8 text-center">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                 <Mail size={28} className="text-emerald-600" />
               </div>
@@ -166,7 +166,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               <Button className="w-full" onClick={() => setMode('signin')}>{t('auth.verify.continue')}</Button>
             </div>
           ) : (
-            <form onSubmit={submit} className="bg-white/97 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-6 space-y-4">
+            <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-6 space-y-4">
               {(mode === 'signin' || mode === 'signup') && (
                 <>
                   <button

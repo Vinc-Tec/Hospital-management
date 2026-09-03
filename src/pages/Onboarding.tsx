@@ -450,9 +450,21 @@ export function Onboarding() {
                       <span>{t('onb.plan.max_branches')}: <strong className="text-gray-700">{p.max_branches === 999 ? '∞' : p.max_branches}</strong></span>
                       <span>{t('onb.plan.max_storage')}: <strong className="text-gray-700">{p.max_storage_gb >= 1000 ? '∞' : p.max_storage_gb}</strong></span>
                     </div>
-                    {p.features && p.features.length > 0 && (
-                      <p className="text-xs text-gray-400 mt-2">{p.features.slice(0, 3).join(' · ')}</p>
-                    )}
+                    {(() => {
+                      // Same translated bullets as the public pricing page and
+                      // Settings > Billing (src/pages/Landing.tsx /
+                      // Settings.tsx) rather than the DB's English-only
+                      // p.features, so this stays correct in French too.
+                      const byCode: Record<string, string[]> = {
+                        starter: ['plan.starter.f1', 'plan.starter.f2', 'plan.starter.f3'],
+                        professional: ['plan.pro.f1', 'plan.pro.f2', 'plan.pro.f3'],
+                        business: ['plan.biz.f1', 'plan.biz.f2', 'plan.biz.f3'],
+                        enterprise: ['plan.ent.f1', 'plan.ent.f2', 'plan.ent.f3'],
+                      };
+                      const keys = byCode[p.code] ?? null;
+                      const items = keys ? keys.map((k) => t(k)) : (p.features ?? []).slice(0, 3);
+                      return items.length > 0 ? <p className="text-xs text-gray-400 mt-2">{items.join(' · ')}</p> : null;
+                    })()}
                   </label>
                 ))}
               </div>

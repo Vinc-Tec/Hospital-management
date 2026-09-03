@@ -516,7 +516,26 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
                   </div>
                   <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
                   <ConvertedPriceHint usd={p.price_monthly} />
-                  {p.features && p.features.length > 0 && <ul className="mt-3 space-y-1">{p.features.slice(0, 4).map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}</ul>}
+                  {(() => {
+                    // Reuse the same translated bullet keys as the public
+                    // pricing page (src/pages/Landing.tsx) instead of
+                    // rendering p.features raw -- that column is seeded in
+                    // English only in the database, so a French-speaking
+                    // tenant here would otherwise see English text.
+                    const byCode: Record<string, string[]> = {
+                      starter: ['plan.starter.f1', 'plan.starter.f2', 'plan.starter.f3', 'plan.starter.f4'],
+                      professional: ['plan.pro.f1', 'plan.pro.f2', 'plan.pro.f3', 'plan.pro.f4'],
+                      business: ['plan.biz.f1', 'plan.biz.f2', 'plan.biz.f3', 'plan.biz.f4'],
+                      enterprise: ['plan.ent.f1', 'plan.ent.f2', 'plan.ent.f3', 'plan.ent.f4'],
+                    };
+                    const keys = byCode[p.code] ?? null;
+                    const items = keys ? keys.map((k) => t(k)) : (p.features ?? []).slice(0, 4);
+                    return items.length > 0 ? (
+                      <ul className="mt-3 space-y-1">
+                        {items.map((f, i) => <li key={i} className="text-xs text-gray-500 flex items-start gap-1"><Check size={12} className="text-emerald-500 mt-0.5" /> {f}</li>)}
+                      </ul>
+                    ) : null;
+                  })()}
                   <Button variant={isCurrent ? 'outline' : 'primary'} size="sm" className="w-full mt-4" disabled={checkout.loading} onClick={() => selectPlan(p.id)}>
                     {isCurrent ? t('plan.renew') : t('plan.choose')}
                   </Button>
