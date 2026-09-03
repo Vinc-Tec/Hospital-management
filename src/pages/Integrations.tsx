@@ -1,32 +1,39 @@
 import { useState } from 'react';
 import {
-  MessageCircle, Smartphone, CalendarDays, Slack, Webhook as WebhookIcon,
-  Wallet, Plug, Key, Plus, Trash2, ExternalLink, CheckCircle2, Loader2,
-  AlertTriangle, RefreshCw,
+  Smartphone, Plug, Key, Plus, Trash2, ExternalLink,
+  CheckCircle2, Loader2, AlertTriangle, RefreshCw, Send,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { useCrud } from '../lib/useCrud';
+import { useAuth } from '../lib/auth';
 import { supabase, type Integration, type Webhook } from '../lib/supabase';
 import { Card, Button, Input, Select, Modal, Badge, EmptyState, PageHeader } from '../components/ui';
+import whatsappLogo from '../assets/integrations/whatsapp.png';
+import slackLogo from '../assets/integrations/slack.png';
+import googleCalendarLogo from '../assets/integrations/google-calendar.png';
+import flutterwaveLogo from '../assets/integrations/flutterwave.png';
+import telegramLogo from '../assets/integrations/telegram.jpg';
 
 type ProviderKey = Integration['provider'];
 
-const PROVIDER_META: Record<ProviderKey, { icon: typeof Plug; color: string; fields: { key: string; label: string; placeholder?: string }[] }> = {
-  whatsapp: { icon: MessageCircle, color: 'text-emerald-600 bg-emerald-50', fields: [{ key: 'phone_number', label: 'Phone number', placeholder: '+237 6XX XXX XXX' }, { key: 'api_token', label: 'API token' }] },
+const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; color: string; fields: { key: string; label: string; placeholder?: string }[]; testable?: boolean }> = {
+  whatsapp: { logo: whatsappLogo, color: 'bg-emerald-50', fields: [{ key: 'phone_number_id', label: 'Phone number ID (Meta)', placeholder: '109xxxxxxxxxxxx' }, { key: 'api_token', label: 'Access token (Meta)' }] },
   sms: { icon: Smartphone, color: 'text-blue-600 bg-blue-50', fields: [{ key: 'sender_id', label: 'Sender ID' }, { key: 'api_key', label: 'API key' }] },
-  google_calendar: { icon: CalendarDays, color: 'text-red-600 bg-red-50', fields: [{ key: 'calendar_id', label: 'Calendar ID', placeholder: 'you@company.com' }] },
-  slack: { icon: Slack, color: 'text-purple-600 bg-purple-50', fields: [{ key: 'webhook_url', label: 'Incoming webhook URL' }, { key: 'channel', label: 'Channel', placeholder: '#front-desk' }] },
-  flutterwave: { icon: Wallet, color: 'text-amber-600 bg-amber-50', fields: [{ key: 'public_key', label: 'Public key' }] },
-  webhook_generic: { icon: WebhookIcon, color: 'text-gray-600 bg-gray-100', fields: [{ key: 'target_url', label: 'Target URL' }] },
+  google_calendar: { logo: googleCalendarLogo, color: 'bg-red-50', fields: [{ key: 'calendar_id', label: 'Calendar ID', placeholder: 'you@company.com' }] },
+  slack: { logo: slackLogo, color: 'bg-purple-50', fields: [{ key: 'webhook_url', label: 'Incoming webhook URL', placeholder: 'https://hooks.slack.com/services/…' }], testable: true },
+  flutterwave: { logo: flutterwaveLogo, color: 'bg-amber-50', fields: [{ key: 'public_key', label: 'Public key' }] },
+  webhook_generic: { icon: Plug, color: 'text-gray-600 bg-gray-100', fields: [{ key: 'target_url', label: 'Target URL' }] },
+  telegram: { logo: telegramLogo, color: 'bg-sky-50', fields: [{ key: 'bot_token', label: 'Bot token', placeholder: '123456:ABC-DEF...' }, { key: 'chat_id', label: 'Chat ID', placeholder: '-100123456789' }], testable: true },
 };
 
-const CATALOG: { provider: ProviderKey; name: string; desc: string }[] = [
-  { provider: 'whatsapp', name: 'WhatsApp Business', desc: 'Send appointment reminders and confirmations over WhatsApp' },
-  { provider: 'sms', name: 'SMS Gateway', desc: 'Send SMS reminders and alerts to patients and staff' },
-  { provider: 'google_calendar', name: 'Google Calendar', desc: 'Sync doctor schedules and appointments two-way' },
-  { provider: 'slack', name: 'Slack', desc: 'Post new appointments, admissions and payments to a channel' },
-  { provider: 'flutterwave', name: 'Flutterwave', desc: 'Payment provider used for your subscription billing' },
-  { provider: 'webhook_generic', name: 'Custom webhook', desc: 'Forward events to any URL you control' },
+const CATALOG: { provider: ProviderKey; nameKey: string; descKey: string }[] = [
+  { provider: 'whatsapp', nameKey: 'integrations.name.whatsapp', descKey: 'integrations.use.whatsapp' },
+  { provider: 'telegram', nameKey: 'integrations.name.telegram', descKey: 'integrations.telegram.desc' },
+  { provider: 'slack', nameKey: 'integrations.name.slack', descKey: 'integrations.slack.desc' },
+  { provider: 'sms', nameKey: 'integrations.name.sms', descKey: 'integrations.sms.desc' },
+  { provider: 'google_calendar', nameKey: 'integrations.name.calendar', descKey: 'integrations.use.calendar' },
+  { provider: 'flutterwave', nameKey: 'integrations.name.flutterwave', descKey: 'integrations.flutterwave.desc' },
+  { provider: 'webhook_generic', nameKey: 'integrations.name.webhook', descKey: 'integrations.webhook.desc' },
 ];
 
 const EVENT_OPTIONS = (t: (k: string) => string) => [
@@ -44,12 +51,15 @@ function statusColor(status: string): 'green' | 'gray' | 'red' {
 
 export function IntegrationsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
+  const { session } = useAuth();
   const integrations = useCrud<Integration>('integrations', tenantId);
   const webhooks = useCrud<Webhook>('webhooks', tenantId);
 
   const [configuring, setConfiguring] = useState<ProviderKey | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState<ProviderKey | null>(null);
+  const [testResult, setTestResult] = useState<{ provider: ProviderKey; ok: boolean; message: string } | null>(null);
 
   const [webhookModal, setWebhookModal] = useState(false);
   const [whForm, setWhForm] = useState<{ name: string; url: string; event: string; secret: string }>({ name: '', url: '', event: 'all', secret: '' });
@@ -68,10 +78,11 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
     setSaving(true);
     const existing = byProvider.get(configuring);
     const meta = CATALOG.find((c) => c.provider === configuring)!;
+    const name = t(meta.nameKey);
     if (existing) {
       await supabase.from('integrations').update({ config: form, status: 'active', updated_at: new Date().toISOString() }).eq('id', existing.id).eq('tenant_id', tenantId);
     } else {
-      await supabase.from('integrations').insert({ tenant_id: tenantId, provider: configuring, name: meta.name, config: form, status: 'active' });
+      await supabase.from('integrations').insert({ tenant_id: tenantId, provider: configuring, name, config: form, status: 'active' });
     }
     await integrations.load();
     setSaving(false);
@@ -83,6 +94,35 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
     if (!existing) return;
     await supabase.from('integrations').update({ status: 'inactive' }).eq('id', existing.id).eq('tenant_id', tenantId);
     await integrations.load();
+  }
+
+  // Actually fires a real message through dispatch-integration-event, so a
+  // tenant can confirm right here that a connected provider works -- not
+  // just that a form saved. See supabase/functions/dispatch-integration-event.
+  async function sendTest(provider: ProviderKey) {
+    if (!session) return;
+    setTesting(provider);
+    setTestResult(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dispatch-integration-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          event: 'integration.test',
+          title: t('integrations.test.message_title'),
+          lines: [t('integrations.test.message_body')],
+        }),
+      });
+      const data = await res.json();
+      const key = provider === 'slack' ? 'slack' : provider === 'telegram' ? 'telegram' : null;
+      const outcome = key ? data.results?.[key] : undefined;
+      const ok = outcome === 'sent';
+      setTestResult({ provider, ok, message: ok ? t('integrations.test.success') : `${t('integrations.test.failed')}${outcome ? ` (${outcome})` : ''}` });
+    } catch (e) {
+      setTestResult({ provider, ok: false, message: e instanceof Error ? e.message : t('integrations.test.failed') });
+    }
+    setTesting(null);
   }
 
   async function addWebhook() {
@@ -122,20 +162,29 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
             const Icon = meta.icon;
             const row = byProvider.get(c.provider);
             const connected = row?.status === 'active';
+            const result = testResult?.provider === c.provider ? testResult : null;
             return (
               <div key={c.provider} className="rounded-2xl border border-gray-200 p-4 flex flex-col hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${meta.color}`}>
-                    <Icon size={18} />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden ${meta.color}`}>
+                    {meta.logo ? <img src={meta.logo} alt="" className="w-full h-full object-contain p-1.5" /> : Icon ? <Icon size={18} className="text-gray-600" /> : null}
                   </div>
                   {row && <Badge color={statusColor(row.status)}>{connected ? <span className="inline-flex items-center gap-1"><CheckCircle2 size={12} />{t('integrations.connected')}</span> : t('integrations.not_connected')}</Badge>}
                 </div>
-                <p className="text-sm font-semibold text-gray-900">{c.name}</p>
-                <p className="text-xs text-gray-500 mt-1 mb-4 flex-1">{c.desc}</p>
+                <p className="text-sm font-semibold text-gray-900">{t(c.nameKey)}</p>
+                <p className="text-xs text-gray-500 mt-1 mb-4 flex-1">{t(c.descKey)}</p>
+                {result && (
+                  <p className={`text-xs mb-2 ${result.ok ? 'text-emerald-600' : 'text-red-600'}`}>{result.message}</p>
+                )}
                 <div className="flex gap-2">
                   <Button size="sm" variant={connected ? 'outline' : 'primary'} className="flex-1" onClick={() => openConfigure(c.provider)}>
                     {t('integrations.configure')}
                   </Button>
+                  {connected && meta.testable && (
+                    <Button size="sm" variant="outline" loading={testing === c.provider} onClick={() => sendTest(c.provider)}>
+                      <Send size={13} />
+                    </Button>
+                  )}
                   {connected && (
                     <Button size="sm" variant="ghost" onClick={() => disconnect(c.provider)}>{t('integrations.disconnect')}</Button>
                   )}
@@ -164,7 +213,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
             <Button variant="outline" size="sm" onClick={() => webhooks.load()}><RefreshCw size={14} /> {t('common.retry')}</Button>
           </div>
         ) : webhooks.rows.length === 0 ? (
-          <EmptyState icon={WebhookIcon} title={t('integrations.webhooks.empty')} />
+          <EmptyState icon={Plug} title={t('integrations.webhooks.empty')} />
         ) : (
           <div className="divide-y divide-gray-100">
             {webhooks.rows.map((w) => (
@@ -203,7 +252,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
       <Modal
         open={!!configuring}
         onClose={() => setConfiguring(null)}
-        title={configuring ? CATALOG.find((c) => c.provider === configuring)!.name : ''}
+        title={configuring ? t(CATALOG.find((c) => c.provider === configuring)!.nameKey) : ''}
         footer={<>
           <Button variant="outline" onClick={() => setConfiguring(null)}>{t('common.cancel')}</Button>
           <Button loading={saving} onClick={saveIntegration}>{t('integrations.save')}</Button>

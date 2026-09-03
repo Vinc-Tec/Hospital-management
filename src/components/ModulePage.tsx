@@ -3,7 +3,23 @@ import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRigh
 import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
 import { usePaginatedCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
+import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+
+// Fire-and-forget: notify any connected Slack/Telegram/webhook integrations
+// for this tenant when something worth knowing about happens. Failure here
+// must never block the actual save the user is waiting on, so this is
+// deliberately not awaited by callers and swallows its own errors.
+// See supabase/functions/dispatch-integration-event for the real delivery
+// logic (only fires to providers the tenant has actually connected).
+function notifyIntegrations(accessToken: string | undefined, tenantId: string, event: string, title: string, lines: string[]) {
+  if (!accessToken) return;
+  fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dispatch-integration-event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ tenant_id: tenantId, event, title, lines }),
+  }).catch(() => { /* best-effort notification, never surfaced to the user */ });
+}
 
 export type FieldDef = {
   key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local' | 'datalist' | 'file';
@@ -33,6 +49,7 @@ export function ModulePage({
   pdfAction?: (row: any) => void;
 }) {
   const { t } = useI18n();
+  const { session } = useAuth();
   const searchableColumns = columns.flatMap((c) => c.searchKeys ?? [c.key]).filter(isSearchableColumn);
   const crud = usePaginatedCrud<Row>(table, tenantId, searchableColumns);
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,7 +100,21 @@ export function ModulePage({
     }
     const res = editing ? await crud.update(editing.id, payload) : await crud.insert(payload);
     if (res.error) setErr(res.error);
-    else setModalOpen(false);
+    else {
+      setModalOpen(false);
+      // Notify connected integrations for the events tenants can actually
+      // subscribe to from Settings > Integrations (see EVENT_OPTIONS there).
+      if (table === 'patients' && !editing) {
+        notifyIntegrations(session?.access_token, tenantId, 'patient.created', t('notify.patient_created'),
+          [String(payload.first_name ?? '')].concat(payload.last_name ? [String(payload.last_name)] : []));
+      } else if (table === 'appointments' && !editing) {
+        notifyIntegrations(session?.access_token, tenantId, 'appointment.created', t('notify.appointment_created'),
+          payload.scheduled_at ? [String(payload.scheduled_at)] : []);
+      } else if (table === 'invoices' && payload.status === 'paid') {
+        notifyIntegrations(session?.access_token, tenantId, 'invoice.paid', t('notify.invoice_paid'),
+          payload.total ? [`${payload.total}`] : []);
+      }
+    }
     setSaving(false);
   };
 

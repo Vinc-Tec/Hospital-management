@@ -1,11 +1,13 @@
 import { useI18n } from '../lib/i18n';
 
 import openai from '../assets/integrations/openai.svg';
-import flutterwave from '../assets/integrations/flutterwave.jpg';
+import flutterwave from '../assets/integrations/flutterwave.png';
 import notion from '../assets/integrations/notion.png';
 import twilio from '../assets/integrations/twilio.png';
 import mailchimp from '../assets/integrations/mailchimp.png';
 import googleCalendar from '../assets/integrations/google-calendar.png';
+import googleDrive from '../assets/integrations/google-drive.png';
+import googleMeet from '../assets/integrations/google-meet.png';
 import zoom from '../assets/integrations/zoom.png';
 import telegram from '../assets/integrations/telegram.jpg';
 import whatsapp from '../assets/integrations/whatsapp.png';
@@ -26,12 +28,14 @@ const APPS: AppEntry[] = [
   { name: 'WhatsApp Business', logo: whatsapp, bg: 'bg-[#E9FBF0]', useCaseKey: 'integrations.use.whatsapp' },
   { name: 'Slack', logo: slack, bg: 'bg-[#F1EEFC]', useCaseKey: 'integrations.use.slack' },
   { name: 'Google Calendar', logo: googleCalendar, bg: 'bg-[#FDECEA]', useCaseKey: 'integrations.use.calendar' },
+  { name: 'Google Meet', logo: googleMeet, bg: 'bg-[#E8F5EF]', useCaseKey: 'integrations.use.meet' },
   { name: 'Stripe', logo: stripe, bg: 'bg-[#EDEBFE]', useCaseKey: 'integrations.use.stripe' },
   { name: 'Flutterwave', logo: flutterwave, bg: 'bg-[#FFF6E5]', useCaseKey: 'integrations.use.flutterwave' },
   { name: 'PayUnit', logo: payunit, bg: 'bg-[#E7FAF7]', useCaseKey: 'integrations.use.payunit' },
   { name: 'Zoom', logo: zoom, bg: 'bg-[#EAF1FF]', useCaseKey: 'integrations.use.zoom' },
   { name: 'Telegram', logo: telegram, bg: 'bg-[#E7F6FE]', useCaseKey: 'integrations.use.telegram' },
   { name: 'Gmail', logo: gmail, bg: 'bg-[#FCECEA]', useCaseKey: 'integrations.use.gmail' },
+  { name: 'Google Drive', logo: googleDrive, bg: 'bg-[#EAF6ED]', useCaseKey: 'integrations.use.drive' },
   { name: 'Outlook', logo: outlook, bg: 'bg-[#EAF3FF]', useCaseKey: 'integrations.use.outlook' },
   { name: 'Mailchimp', logo: mailchimp, bg: 'bg-[#FFF9E0]', useCaseKey: 'integrations.use.mailchimp' },
   { name: 'Notion', logo: notion, bg: 'bg-[#F4F4F4]', useCaseKey: 'integrations.use.notion' },

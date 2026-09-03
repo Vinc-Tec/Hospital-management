@@ -254,7 +254,7 @@ export type AuditLog = {
 
 export type Integration = {
   id: string; tenant_id: string;
-  provider: 'whatsapp' | 'sms' | 'google_calendar' | 'slack' | 'flutterwave' | 'webhook_generic';
+  provider: 'whatsapp' | 'sms' | 'google_calendar' | 'slack' | 'flutterwave' | 'webhook_generic' | 'telegram';
   name: string; config: Record<string, unknown>;
   status: 'active' | 'inactive' | 'error';
   created_at: string; updated_at: string;
