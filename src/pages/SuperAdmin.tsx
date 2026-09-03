@@ -304,17 +304,84 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
   const { t } = useI18n();
   const [selected, setSelected] = useState<Tenant | null>(null);
   const [planId, setPlanId] = useState('');
+  const [mode, setMode] = useState<'duration' | 'custom_date'>('duration');
+  const [durationValue, setDurationValue] = useState(1);
+  const [durationUnit, setDurationUnit] = useState<'days' | 'months' | 'years'>('months');
+  const [customDate, setCustomDate] = useState('');
+  const [currentSub, setCurrentSub] = useState<{ end_date: string | null; status: string } | null>(null);
+  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const assignPlan = async () => {
-    if (!selected) return;
+  const planName = (id: string | null) => plans.find((p) => p.id === id)?.name ?? '—';
+
+  const openFor = async (tn: Tenant) => {
     setErr(null);
-    const { error } = await supabase.from('tenants').update({ plan_id: planId || null }).eq('id', selected.id);
-    if (error) { setErr(error.message); return; }
-    setSelected(null); onAction();
+    setSelected(tn);
+    setPlanId(tn.plan_id ?? '');
+    setMode('duration'); setDurationValue(1); setDurationUnit('months'); setCustomDate('');
+    const { data } = await supabase.from('tenant_subscriptions').select('end_date, status').eq('tenant_id', tn.id).eq('status', 'active').maybeSingle();
+    setCurrentSub(data ?? null);
   };
 
-  const planName = (id: string | null) => plans.find((p) => p.id === id)?.name ?? '—';
+  // Extends from the later of "today" and the current active
+  // subscription's end date -- so extending a still-active tenant adds
+  // on top of what they already have instead of shortening it, while
+  // extending a lapsed tenant starts the clock from today.
+  const computeTargetDate = (): string | null => {
+    if (mode === 'custom_date') return customDate || null;
+    const base = currentSub?.end_date && new Date(currentSub.end_date) > new Date() ? new Date(currentSub.end_date) : new Date();
+    if (durationUnit === 'days') base.setDate(base.getDate() + durationValue);
+    else if (durationUnit === 'months') base.setMonth(base.getMonth() + durationValue);
+    else base.setFullYear(base.getFullYear() + durationValue);
+    return base.toISOString().slice(0, 10);
+  };
+
+  const applyExtension = async () => {
+    if (!selected) return;
+    if (!planId) { setErr(t('sa.ext.plan_required')); return; }
+    const targetDate = computeTargetDate();
+    if (!targetDate) { setErr(t('sa.ext.date_required')); return; }
+    if (new Date(targetDate) <= new Date()) { setErr(t('sa.ext.date_future')); return; }
+
+    setSaving(true); setErr(null);
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Effective immediately: approve + assign the plan first, so access
+    // is granted the instant this completes even if a later step below
+    // were to fail.
+    const { error: tErr } = await supabase.from('tenants').update({ status: 'approved', plan_id: planId }).eq('id', selected.id);
+    if (tErr) { setErr(tErr.message); setSaving(false); return; }
+
+    // Replace any existing active subscription with the new one, exactly
+    // like a real payment webhook does -- a tenant should only ever have
+    // one active subscription row.
+    await supabase.from('tenant_subscriptions')
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'superseded by admin extension' })
+      .eq('tenant_id', selected.id).eq('status', 'active');
+
+    const billingCycle = mode === 'duration' && durationUnit === 'years' ? 'yearly' : 'monthly';
+    const { error: sErr } = await supabase.from('tenant_subscriptions').insert({
+      tenant_id: selected.id,
+      plan_id: planId,
+      billing_cycle: billingCycle,
+      start_date: today,
+      end_date: targetDate,
+      next_billing_date: targetDate,
+      status: 'active',
+      payment_gateway: null,
+    });
+    if (sErr) { setErr(sErr.message); setSaving(false); return; }
+
+    await supabase.from('subscription_events').insert({
+      tenant_id: selected.id,
+      event_type: 'admin_extension',
+      metadata: { plan_id: planId, new_end_date: targetDate, mode, duration_value: mode === 'duration' ? durationValue : null, duration_unit: mode === 'duration' ? durationUnit : null },
+    });
+
+    setSaving(false);
+    setSelected(null);
+    onAction();
+  };
 
   return (
     <div>
@@ -328,17 +395,51 @@ function SaSubscriptions({ tenants, plans, onAction }: { tenants: Tenant[]; plan
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{tn.commercial_name || tn.legal_name}</td>
                   <td className="px-4 py-3"><Badge color={tn.plan_id ? 'blue' : 'gray'}>{planName(tn.plan_id)}</Badge></td>
                   <td className="px-4 py-3"><StatusBadge status={tn.status} /></td>
-                  <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => { setSelected(tn); setPlanId(tn.plan_id ?? ''); }}>{t('sa.assign_plan')}</Button></td>
+                  <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => openFor(tn)}>{t('sa.ext.button')}</Button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
-      <Modal open={!!selected} onClose={() => setSelected(null)} title={t('sa.assign_plan')} footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={assignPlan}>{t('common.save')}</Button></>}>
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600">{selected?.commercial_name || selected?.legal_name}</p>
-          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.nav.plans')}</span><select value={planId} onChange={(e) => setPlanId(e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm"><option value="">—</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name} — ${p.price_monthly}/mo</option>)}</select></label>
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={t('sa.ext.title')} footer={<><Button variant="outline" onClick={() => setSelected(null)}>{t('common.cancel')}</Button><Button onClick={applyExtension} loading={saving}>{t('sa.ext.apply')}</Button></>}>
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{selected?.commercial_name || selected?.legal_name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {currentSub?.end_date
+                ? t('sa.ext.current_expiry').replace('{date}', currentSub.end_date)
+                : t('sa.ext.no_active_sub')}
+            </p>
+          </div>
+
+          <label className="block"><span className="block text-sm font-medium text-gray-700 mb-1.5">{t('sa.nav.plans')}</span>
+            <select value={planId} onChange={(e) => setPlanId(e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
+              <option value="">—</option>
+              {plans.map((p) => <option key={p.id} value={p.id}>{p.name} — ${p.price_monthly}/mo</option>)}
+            </select>
+          </label>
+
+          <div className="flex rounded-xl border border-gray-200 p-1 bg-gray-50">
+            <button type="button" onClick={() => setMode('duration')} className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${mode === 'duration' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>{t('sa.ext.mode_duration')}</button>
+            <button type="button" onClick={() => setMode('custom_date')} className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${mode === 'custom_date' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>{t('sa.ext.mode_custom')}</button>
+          </div>
+
+          {mode === 'duration' ? (
+            <div className="flex gap-2">
+              <Input type="number" min={1} value={durationValue} onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value)))} className="w-24" />
+              <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value as typeof durationUnit)} className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm">
+                <option value="days">{t('sa.ext.unit_days')}</option>
+                <option value="months">{t('sa.ext.unit_months')}</option>
+                <option value="years">{t('sa.ext.unit_years')}</option>
+              </select>
+            </div>
+          ) : (
+            <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+          )}
+
+          <p className="text-xs text-gray-500 bg-blue-50 rounded-lg px-3 py-2">{t('sa.ext.preview').replace('{date}', computeTargetDate() ?? '—')}</p>
+
           {err && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
