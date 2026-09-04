@@ -110,10 +110,12 @@ export function ModulePage({
       } else if (table === 'appointments' && !editing) {
         notifyIntegrations(session?.access_token, tenantId, 'appointment.created', t('notify.appointment_created'),
           payload.scheduled_at ? [String(payload.scheduled_at)] : []);
-      } else if (table === 'invoices' && payload.status === 'paid') {
-        notifyIntegrations(session?.access_token, tenantId, 'invoice.paid', t('notify.invoice_paid'),
-          payload.total ? [`${payload.total}`] : []);
       }
+      // Note: invoices are no longer marked 'paid' through this generic
+      // form -- see src/pages/CashDesk.tsx, which is the only place
+      // that can actually change an invoice to 'paid' (a database
+      // trigger enforces this), and fires the 'invoice.paid'
+      // notification itself once a payment is actually recorded.
     }
     setSaving(false);
   };

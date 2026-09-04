@@ -6,6 +6,7 @@ import {
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
   Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send, Plug,
 } from 'lucide-react';
+import { Banknote } from 'lucide-react';
 import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment, type Tenant } from '../lib/supabase';
@@ -35,6 +36,7 @@ const NAV = [
   { to: '/app/discharge', icon: FileOutput, key: 'dash.nav.discharge', moduleKey: 'discharge' },
   { to: '/app/insurance', icon: ShieldPlus, key: 'dash.nav.insurance', moduleKey: 'insurance' },
   { to: '/app/invoices', icon: Receipt, key: 'dash.nav.invoices', moduleKey: 'invoices' },
+  { to: '/app/cash-desk', icon: Banknote, key: 'dash.nav.cashdesk', moduleKey: 'invoices' },
   { to: '/app/inventory', icon: Boxes, key: 'dash.nav.inventory', moduleKey: 'inventory' },
   { to: '/app/reports', icon: FileBarChart, key: 'dash.nav.reports', moduleKey: 'reports' },
   { to: '/app/staff', icon: UserCog, key: 'dash.nav.staff', moduleKey: 'staff' },

@@ -497,6 +497,24 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* INSTAGRAM — full-bleed banner, not a small footer line: honest
+          link-out to the real profile, not a simulated live post feed
+          (that needs an Instagram Graph API token / Meta Business
+          verification we don't have configured). */}
+      <section className="py-20 bg-gradient-to-r from-blue-800 via-blue-700 to-teal-700 text-center">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/25 bg-white/10 text-white text-xs font-bold uppercase tracking-widest mb-6">
+            <Instagram size={13} /> {t('instagram.badge')}
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">{t('instagram.title')}</h2>
+          <p className="text-blue-100/80 text-base mb-8">{t('instagram.subtitle')}</p>
+          <a href="https://www.instagram.com/liafrik_tech?igsi=eXBjdTc5NG42Zml4&utm_source=qr" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-white text-blue-800 font-bold rounded-full hover:bg-blue-50 transition-colors text-sm shadow-lg">
+            <Instagram size={17} /> {t('instagram.cta')}
+          </a>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="bg-slate-900 text-white pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -541,18 +559,6 @@ export function LandingPage() {
               </ul>
             </div>
           </div>
-
-          {/* Instagram callout -- honest link-out, not a faked feed: a
-              live post grid needs an Instagram Graph API access token
-              (Meta Business verification), which isn't configured yet. */}
-          <a href="https://www.instagram.com/liafrik_tech" target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-fuchsia-600/10 via-pink-500/10 to-amber-400/10 border border-white/10 px-5 py-4 mb-10 hover:border-white/20 transition-colors group">
-            <span className="flex items-center gap-3">
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-600 to-amber-400 flex items-center justify-center flex-shrink-0"><Instagram size={16} className="text-white" /></span>
-              <span className="text-sm text-white/70 group-hover:text-white transition-colors">{t('footer.instagram_cta')}</span>
-            </span>
-            <span className="text-xs font-semibold text-white/50 group-hover:text-white transition-colors flex-shrink-0">@liafrik_tech →</span>
-          </a>
 
           <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
             <CopyrightLine className="text-xs text-white/30" />
