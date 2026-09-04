@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useI18n } from '../lib/i18n';
 import { getAvailableGateways, initiateWithGateway, GATEWAY_LABELS } from '../lib/payments';
+import { openPaddleCheckout } from '../lib/paddle';
 import { Modal, Button } from './ui';
 
 // One hook, used by both the expired-trial billing screen and the
@@ -18,17 +19,29 @@ export function usePaymentCheckout() {
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<{ gateways: string[]; planId: string; billingCycle: 'monthly' | 'yearly'; token: string } | null>(null);
 
-  const redirect = (result: Awaited<ReturnType<typeof initiateWithGateway>>) => {
-    if (result.ok) {
+  const handleResult = async (result: Awaited<ReturnType<typeof initiateWithGateway>>) => {
+    if (result.ok && result.kind === 'redirect') {
       // Real access change happens server-side in the matching webhook
       // once the gateway confirms payment -- this redirect just takes
       // the admin to actually pay, it does not grant anything itself.
       window.location.href = result.payment_link;
       return true;
     }
-    if (result.reason === 'no_gateway_configured') setError(t('billing.error_not_configured'));
-    else if (result.reason === 'no_session') setError(t('billing.error_no_session'));
-    else setError(result.message || t('billing.error_generic'));
+    if (result.ok && result.kind === 'overlay') {
+      // Same principle as the redirect case: opening the overlay never
+      // grants anything by itself -- paddle-webhook is still the only
+      // thing that does, once Paddle confirms the transaction.
+      try {
+        await openPaddleCheckout(result.paddlePriceId, result.customData);
+        return true;
+      } catch {
+        setError(t('billing.error_generic'));
+        return false;
+      }
+    }
+    if (!result.ok && result.reason === 'no_gateway_configured') setError(t('billing.error_not_configured'));
+    else if (!result.ok && result.reason === 'no_session') setError(t('billing.error_no_session'));
+    else if (!result.ok) setError(result.message || t('billing.error_generic'));
     return false;
   };
 
@@ -50,7 +63,7 @@ export function usePaymentCheckout() {
     if (gateways.length === 1) {
       const result = await initiateWithGateway(supabaseUrl, token, planId, billingCycle, gateways[0]);
       setLoading(false);
-      redirect(result);
+      await handleResult(result);
       return;
     }
 
@@ -66,7 +79,7 @@ export function usePaymentCheckout() {
     const result = await initiateWithGateway(supabaseUrl, picker.token, picker.planId, picker.billingCycle, gateway);
     setLoading(false);
     setPicker(null);
-    redirect(result);
+    await handleResult(result);
   };
 
   const modal = (

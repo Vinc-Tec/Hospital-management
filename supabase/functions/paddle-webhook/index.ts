@@ -68,7 +68,8 @@ Deno.serve(async (req) => {
 
   const txn = payload.data;
   const paddleTxnId = txn?.id as string | undefined;
-  if (!paddleTxnId) return json({ error: 'missing_transaction_id' }, 400);
+  const paymentId = txn?.custom_data?.payment_id as string | undefined;
+  if (!paddleTxnId || !paymentId) return json({ error: 'missing_ids' }, 400);
 
   // Amounts on Paddle transactions are strings in the currency's
   // smallest unit (e.g. cents for USD) -- our `payments.amount` is a
@@ -81,8 +82,14 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const db = createClient(supabaseUrl, serviceRoleKey);
 
-  const { data: paymentRow } = await db.from('payments').select('*').eq('gateway_tx_id', paddleTxnId).maybeSingle();
-  if (!paymentRow) return json({ error: 'payment_row_not_found', tx_ref: paddleTxnId }, 404);
+  // Matched on the payment_id we generated and handed to Paddle.js as
+  // custom_data when the checkout overlay was opened (see
+  // paddle-initiate and src/lib/paddle.ts) -- the client-side checkout
+  // flow never learns Paddle's own transaction id in advance, unlike a
+  // server-created transaction, so gateway_tx_id can't be the join key
+  // here.
+  const { data: paymentRow } = await db.from('payments').select('*').eq('id', paymentId).eq('gateway', 'paddle').maybeSingle();
+  if (!paymentRow) return json({ error: 'payment_row_not_found', payment_id: paymentId }, 404);
 
   if (paymentRow.status === 'succeeded') {
     return json({ status: 'already_processed' }); // idempotent -- Paddle may retry webhooks
@@ -98,7 +105,7 @@ Deno.serve(async (req) => {
   // Atomic guard against duplicate processing -- see flutterwave-webhook
   // for why this WHERE status='pending' matters under concurrent retries.
   const { data: updatedRows } = await db.from('payments')
-    .update({ status: 'succeeded', paid_at: new Date().toISOString() })
+    .update({ status: 'succeeded', paid_at: new Date().toISOString(), gateway_tx_id: paddleTxnId })
     .eq('id', paymentRow.id).eq('status', 'pending').select('id');
   if (!updatedRows || updatedRows.length === 0) {
     return json({ status: 'already_processed' });

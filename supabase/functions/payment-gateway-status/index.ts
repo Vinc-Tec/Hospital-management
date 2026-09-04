@@ -20,7 +20,12 @@ Deno.serve((req) => {
     payunit: !!(Deno.env.get('PAYUNIT_API_USER') && Deno.env.get('PAYUNIT_API_PASSWORD') && Deno.env.get('PAYUNIT_APP_TOKEN')),
     flutterwave: !!Deno.env.get('FLUTTERWAVE_SECRET_KEY'),
     paystack: !!Deno.env.get('PAYSTACK_SECRET_KEY'),
-    paddle: !!(Deno.env.get('PADDLE_API_KEY') && Deno.env.get('PADDLE_PRICE_MAP')),
+    // Paddle no longer needs a secret API key here -- see
+    // supabase/functions/paddle-initiate/index.ts: checkout runs
+    // client-side via the public client-side token (src/lib/paddle.ts),
+    // and PADDLE_PRICE_MAP is the only thing this server-side lookup
+    // still needs.
+    paddle: !!Deno.env.get('PADDLE_PRICE_MAP'),
   };
 
   return new Response(JSON.stringify(available), { headers: { 'Content-Type': 'application/json', ...corsHeaders() } });
