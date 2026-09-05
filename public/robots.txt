@@ -3,4 +3,4 @@ Allow: /
 Disallow: /app/
 Disallow: /admin
 
-Sitemap: https://healthcloud.liafrik.com/sitemap.xml
+Sitemap: https://health.liafrik.com/sitemap.xml

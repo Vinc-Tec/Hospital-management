@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Wallet, Banknote, CreditCard, Smartphone, Building2, ShieldCheck, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { Wallet, Banknote, CreditCard, Smartphone, Building2, ShieldCheck, MoreHorizontal, CheckCircle2, Printer, Search } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
 import { supabase, type Invoice } from '../lib/supabase';
 import { Card, Button, Input, Modal, Badge } from '../components/ui';
+import { formatTenantCurrency } from '../lib/currency';
+import { generateReceiptPDF } from '../lib/pdf';
 
 type PatientLite = { id: string; first_name: string; last_name: string };
 type PaymentMethod = 'cash' | 'card' | 'mobile_money' | 'bank_transfer' | 'insurance' | 'other';
@@ -25,13 +27,15 @@ function notifyIntegrations(accessToken: string | undefined, tenantId: string, e
 }
 
 export function CashDeskModule({ tenantId }: { tenantId: string }) {
-  const { t, lang } = useI18n();
-  const { session, profile } = useAuth();
+  const { t } = useI18n();
+  const { session, profile, activeTenant } = useAuth();
+  const currency = activeTenant?.currency_code ?? 'USD';
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [collected, setCollected] = useState<Record<string, number>>({});
   const [patients, setPatients] = useState<Record<string, PatientLite>>({});
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState<Invoice | null>(null);
+  const [patientSearch, setPatientSearch] = useState('');
   const [todayTotals, setTodayTotals] = useState<{ method: PaymentMethod; total: number }[]>([]);
   const [todayGrandTotal, setTodayGrandTotal] = useState(0);
 
@@ -50,13 +54,10 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
       setCollected({});
     }
 
-    const patientIds = Array.from(new Set((invs ?? []).map((i) => i.patient_id).filter(Boolean))) as string[];
-    if (patientIds.length > 0) {
-      const { data: pts } = await supabase.from('patients').select('id, first_name, last_name').in('id', patientIds);
-      const map: Record<string, PatientLite> = {};
-      for (const p of pts ?? []) map[p.id as string] = p as PatientLite;
-      setPatients(map);
-    }
+    const { data: allPatients } = await supabase.from('patients').select('id, first_name, last_name').eq('tenant_id', tenantId);
+    const map: Record<string, PatientLite> = {};
+    for (const p of allPatients ?? []) map[p.id as string] = p as PatientLite;
+    setPatients(map);
 
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
     const { data: todays } = await supabase.from('patient_payments').select('amount, method').eq('tenant_id', tenantId).gte('created_at', startOfDay.toISOString());
@@ -75,6 +76,13 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
 
   useEffect(() => { load(); }, [tenantId]);
 
+  const visibleInvoices = patientSearch.trim()
+    ? invoices.filter((inv) => {
+        const p = inv.patient_id ? patients[inv.patient_id] : null;
+        return p && `${p.first_name} ${p.last_name}`.toLowerCase().includes(patientSearch.trim().toLowerCase());
+      })
+    : invoices;
+
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto">
       <div className="mb-6">
@@ -82,11 +90,10 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
         <p className="text-sm text-gray-500 mt-1">{t('mod.cashdesk.desc')}</p>
       </div>
 
-      {/* Today's takings -- the real cashier summary, grouped by method */}
       <Card className="p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-semibold text-gray-900">{t('cashdesk.today_summary')}</p>
-          <p className="text-lg font-bold text-emerald-600">${todayGrandTotal.toFixed(2)}</p>
+          <p className="text-lg font-bold text-emerald-600">{formatTenantCurrency(todayGrandTotal, currency)}</p>
         </div>
         {todayTotals.length === 0 ? (
           <p className="text-sm text-gray-400">{t('cashdesk.no_payments_today')}</p>
@@ -98,7 +105,7 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
                 <div key={method} className="rounded-xl border border-gray-100 p-3 text-center">
                   <Icon size={16} className="mx-auto text-gray-400 mb-1" />
                   <p className="text-xs text-gray-500">{t(`cashdesk.method.${method}`)}</p>
-                  <p className="text-sm font-bold text-gray-900">${total.toFixed(2)}</p>
+                  <p className="text-sm font-bold text-gray-900">{formatTenantCurrency(total, currency)}</p>
                 </div>
               );
             })}
@@ -106,15 +113,18 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
         )}
       </Card>
 
-      {/* Outstanding invoices -- the actual "encaisser" queue */}
       <Card className="overflow-hidden">
-        <div className="p-5 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-sm font-semibold text-gray-900">{t('cashdesk.outstanding')}</p>
+          <div className="relative max-w-xs w-full">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} placeholder={t('invoices.search_patient')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
         </div>
         {loading ? (
           <div className="p-8 text-center text-sm text-gray-400">{t('common.loading')}</div>
-        ) : invoices.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-400">{t('cashdesk.all_settled')}</div>
+        ) : visibleInvoices.length === 0 ? (
+          <div className="p-8 text-center text-sm text-gray-400">{patientSearch.trim() ? t('common.no_results') : t('cashdesk.all_settled')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -128,7 +138,7 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {invoices.map((inv) => {
+                {visibleInvoices.map((inv) => {
                   const paid = collected[inv.id] ?? 0;
                   const balance = Number(inv.total) - paid;
                   const pt = inv.patient_id ? patients[inv.patient_id] : null;
@@ -136,8 +146,8 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
                     <tr key={inv.id} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{inv.invoice_number}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{pt ? `${pt.first_name} ${pt.last_name}` : '—'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 text-right">${Number(inv.total).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right"><Badge color={inv.status === 'partial' ? 'amber' : 'gray'}>${balance.toFixed(2)}</Badge></td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">{formatTenantCurrency(Number(inv.total), currency)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-right"><Badge color={inv.status === 'partial' ? 'amber' : 'gray'}>{formatTenantCurrency(balance, currency)}</Badge></td>
                       <td className="px-4 py-3 text-right"><Button size="sm" onClick={() => setCollecting(inv)}>{t('cashdesk.collect')}</Button></td>
                     </tr>
                   );
@@ -152,27 +162,29 @@ export function CashDeskModule({ tenantId }: { tenantId: string }) {
         <CollectPaymentModal
           invoice={collecting}
           balanceDue={Number(collecting.total) - (collected[collecting.id] ?? 0)}
-          patientName={collecting.patient_id && patients[collecting.patient_id] ? `${patients[collecting.patient_id].first_name} ${patients[collecting.patient_id].last_name}` : null}
+          patient={collecting.patient_id ? patients[collecting.patient_id] ?? null : null}
+          currency={currency}
           onClose={() => setCollecting(null)}
           onDone={async (newlyPaidInFull) => {
+            const invoiceNumber = collecting.invoice_number;
             setCollecting(null);
             await load();
             if (newlyPaidInFull) {
-              notifyIntegrations(session?.access_token, tenantId, 'invoice.paid', t('notify.invoice_paid'), [collecting.invoice_number]);
+              notifyIntegrations(session?.access_token, tenantId, 'invoice.paid', t('notify.invoice_paid'), [invoiceNumber]);
             }
           }}
           tenantId={tenantId}
           receivedByName={profile?.full_name ?? null}
-          lang={lang}
+          tenant={activeTenant!}
         />
       )}
     </div>
   );
 }
 
-function CollectPaymentModal({ invoice, balanceDue, patientName, onClose, onDone, tenantId, receivedByName }: {
-  invoice: Invoice; balanceDue: number; patientName: string | null; onClose: () => void;
-  onDone: (newlyPaidInFull: boolean) => void; tenantId: string; receivedByName: string | null; lang: 'fr' | 'en';
+function CollectPaymentModal({ invoice, balanceDue, patient, currency, onClose, onDone, tenantId, receivedByName, tenant }: {
+  invoice: Invoice; balanceDue: number; patient: PatientLite | null; currency: string; onClose: () => void;
+  onDone: (newlyPaidInFull: boolean) => void; tenantId: string; receivedByName: string | null; tenant: NonNullable<ReturnType<typeof useAuth>['activeTenant']>;
 }) {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -182,11 +194,12 @@ function CollectPaymentModal({ invoice, balanceDue, patientName, onClose, onDone
   const [reference, setReference] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<{ createdAt: string } | null>(null);
 
   const amountNum = Number(amount) || 0;
   const tenderedNum = Number(tendered) || 0;
   const change = method === 'cash' && tenderedNum > amountNum ? tenderedNum - amountNum : 0;
+  const balanceAfter = balanceDue - amountNum;
 
   const submit = async () => {
     setErr(null);
@@ -208,8 +221,21 @@ function CollectPaymentModal({ invoice, balanceDue, patientName, onClose, onDone
     });
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    setDone(true);
-    setTimeout(() => onDone(amountNum >= balanceDue - 0.01), 900);
+    const createdAt = new Date().toISOString();
+    setDone({ createdAt });
+    setTimeout(() => onDone(amountNum >= balanceDue - 0.01), 1400);
+  };
+
+  const printReceipt = (createdAt: string) => {
+    generateReceiptPDF(tenant, invoice, patient, {
+      amount: amountNum,
+      method,
+      amount_tendered: method === 'cash' && tenderedNum > 0 ? tenderedNum : null,
+      change_given: method === 'cash' && change > 0 ? change : null,
+      reference: reference || null,
+      received_by_name: receivedByName,
+      created_at: createdAt,
+    }, balanceAfter);
   };
 
   return (
@@ -218,13 +244,16 @@ function CollectPaymentModal({ invoice, balanceDue, patientName, onClose, onDone
         <div className="text-center py-6">
           <CheckCircle2 size={40} className="mx-auto text-emerald-500 mb-3" />
           <p className="text-sm font-semibold text-gray-900">{t('cashdesk.collected_success')}</p>
-          {change > 0 && <p className="text-sm text-gray-500 mt-1">{t('cashdesk.change_due')}: <span className="font-bold text-gray-900">${change.toFixed(2)}</span></p>}
+          {change > 0 && <p className="text-sm text-gray-500 mt-1">{t('cashdesk.change_due')}: <span className="font-bold text-gray-900">{formatTenantCurrency(change, currency)}</span></p>}
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => printReceipt(done.createdAt)}>
+            <Printer size={14} /> {t('cashdesk.print_receipt')}
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-semibold text-gray-900">{invoice.invoice_number}{patientName ? ` — ${patientName}` : ''}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{t('cashdesk.balance_due')}: <span className="font-semibold text-gray-700">${balanceDue.toFixed(2)}</span></p>
+            <p className="text-sm font-semibold text-gray-900">{invoice.invoice_number}{patient ? ` — ${patient.first_name} ${patient.last_name}` : ''}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t('cashdesk.balance_due')}: <span className="font-semibold text-gray-700">{formatTenantCurrency(balanceDue, currency)}</span></p>
           </div>
 
           <Input label={t('cashdesk.amount')} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -248,7 +277,7 @@ function CollectPaymentModal({ invoice, balanceDue, patientName, onClose, onDone
           {method === 'cash' ? (
             <div>
               <Input label={t('cashdesk.tendered')} type="number" value={tendered} onChange={(e) => setTendered(e.target.value)} placeholder={amount} />
-              {change > 0 && <p className="text-xs text-emerald-600 mt-1.5">{t('cashdesk.change_due')}: <span className="font-bold">${change.toFixed(2)}</span></p>}
+              {change > 0 && <p className="text-xs text-emerald-600 mt-1.5">{t('cashdesk.change_due')}: <span className="font-bold">{formatTenantCurrency(change, currency)}</span></p>}
             </div>
           ) : (
             <Input label={t('cashdesk.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t('cashdesk.reference_placeholder')} />

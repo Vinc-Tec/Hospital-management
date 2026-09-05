@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { Tenant, Invoice, Patient, Doctor, Prescription, LabOrder, RadiologyOrder, MedicalRecord } from './supabase';
+import { formatCurrencyForPdf } from './currency';
 
 const BLUE: [number, number, number] = [37, 99, 235];
 const GREEN: [number, number, number] = [16, 185, 129];
@@ -106,6 +107,56 @@ function field(doc: jsPDF, y: number, label: string, value: string, x = 14, w = 
   return y + 5 + lines.length * 4.5;
 }
 
+// A real cash-desk receipt for one payment transaction -- distinct from
+// generateInvoicePDF above, which documents the invoice itself.
+// Printed the moment a payment is collected (see src/pages/CashDesk.tsx),
+// carrying the institution's real letterhead plus exactly what changed
+// hands: method, amount, cash tendered/change, reference, and who
+// received it.
+export function generateReceiptPDF(
+  tenant: Tenant,
+  invoice: Invoice,
+  patient: Pick<Patient, 'first_name' | 'last_name'> | null,
+  payment: { amount: number; method: string; amount_tendered: number | null; change_given: number | null; reference: string | null; received_by_name: string | null; created_at: string },
+  balanceAfter: number,
+) {
+  const doc = new jsPDF();
+  let y = header(doc, tenant, 'PAYMENT RECEIPT', invoice.invoice_number);
+
+  y = sectionTitle(doc, y, 'Payment');
+  y = field(doc, y, 'Date', new Date(payment.created_at).toLocaleString());
+  y = field(doc, y, 'Method', payment.method.replace('_', ' ').toUpperCase());
+  y = field(doc, y, 'Amount received', formatCurrencyForPdf(payment.amount, tenant.currency_code));
+  if (payment.method === 'cash' && payment.amount_tendered) {
+    y = field(doc, y, 'Cash tendered', formatCurrencyForPdf(payment.amount_tendered, tenant.currency_code));
+    y = field(doc, y, 'Change given', formatCurrencyForPdf(payment.change_given ?? 0, tenant.currency_code));
+  }
+  if (payment.reference) y = field(doc, y, 'Reference', payment.reference);
+  if (payment.received_by_name) y = field(doc, y, 'Received by', payment.received_by_name);
+  y += 4;
+
+  if (patient) {
+    y = sectionTitle(doc, y, 'Patient');
+    y = field(doc, y, 'Name', `${patient.first_name} ${patient.last_name}`);
+    y += 4;
+  }
+
+  y = sectionTitle(doc, y, 'Invoice balance');
+  y = field(doc, y, 'Invoice total', formatCurrencyForPdf(invoice.total, tenant.currency_code));
+  y = field(doc, y, balanceAfter <= 0 ? 'Status' : 'Remaining balance', balanceAfter <= 0 ? 'PAID IN FULL' : formatCurrencyForPdf(balanceAfter, tenant.currency_code));
+
+  y = ensureSpace(doc, y, 24);
+  y += 16;
+  doc.setDrawColor(...GRAY);
+  doc.line(14, y, 80, y);
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  doc.text('Cashier signature', 14, y + 4);
+
+  footer(doc);
+  doc.save(`receipt-${invoice.invoice_number}-${new Date(payment.created_at).getTime()}.pdf`);
+}
+
 export function generateInvoicePDF(tenant: Tenant, invoice: Invoice, patient?: Patient | null) {
   const doc = new jsPDF();
   let y = header(doc, tenant, 'INVOICE', invoice.invoice_number);
@@ -122,9 +173,9 @@ export function generateInvoicePDF(tenant: Tenant, invoice: Invoice, patient?: P
   y += 4;
   }
   y = sectionTitle(doc, y, 'Amounts');
-  y = field(doc, y, 'Subtotal', `$${invoice.subtotal.toFixed(2)}`);
-  y = field(doc, y, 'Tax', `$${invoice.tax.toFixed(2)}`);
-  y = field(doc, y, 'Total', `$${invoice.total.toFixed(2)}`);
+  y = field(doc, y, 'Subtotal', formatCurrencyForPdf(invoice.subtotal, tenant.currency_code));
+  y = field(doc, y, 'Tax', formatCurrencyForPdf(invoice.tax, tenant.currency_code));
+  y = field(doc, y, 'Total', formatCurrencyForPdf(invoice.total, tenant.currency_code));
   if (invoice.notes) {
     y += 4;
     y = ensureSpace(doc, y, 20);

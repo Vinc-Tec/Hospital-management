@@ -50,6 +50,7 @@ type AuthState = {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
   resendVerification: (email: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
 };
@@ -264,6 +265,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null };
   };
 
+  // Completes the flow started by resetPassword() above -- called from
+  // the /reset-password route once Supabase has parsed the recovery
+  // token from the email link into a temporary session (handled
+  // automatically by detectSessionInUrl on the client, see
+  // src/lib/supabase.ts).
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error ? error.message : null };
+  };
+
   // Google OAuth sign-in/sign-up (same flow either way — Supabase creates
   // the account on first login). Requires the Google provider to be
   // enabled in the Supabase project (Authentication -> Providers -> Google)
@@ -319,7 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const activeMembership = useMemo(() => memberships.find((m) => m.tenant_id === activeTenant?.id) ?? null, [memberships, activeTenant]);
 
-  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, resendVerification, signInWithGoogle }), [session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading]);
+  const value = useMemo<AuthState>(() => ({ session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading, signIn, verifyMfaChallenge, signUp, signOut, refresh, setActiveTenantId, resetPassword, updatePassword, resendVerification, signInWithGoogle }), [session, user, profile, memberships, activeTenant, activeMembership, activePlan, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

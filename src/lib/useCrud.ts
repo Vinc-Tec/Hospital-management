@@ -18,7 +18,7 @@ type Row = { id: string; [k: string]: unknown };
  */
 const PAGE_SIZE = 50;
 
-export function usePaginatedCrud<T extends Row>(table: string, tenantId: string | null, searchableColumns: string[]) {
+export function usePaginatedCrud<T extends Row>(table: string, tenantId: string | null, searchableColumns: string[], extraFilter?: { column: string; in: string[] } | null) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,17 @@ export function usePaginatedCrud<T extends Row>(table: string, tenantId: string 
 
   const load = useCallback(async () => {
     if (!tenantId) return;
+    // An extraFilter with an empty `in` list means "no rows can match"
+    // (e.g. a patient-name search that matched nobody) -- short-circuit
+    // rather than sending an empty .in() to Postgres, which would
+    // otherwise just be dropped and silently return everything.
+    if (extraFilter && extraFilter.in.length === 0) {
+      setRows([]); setTotalCount(0); setLoading(false);
+      return;
+    }
     setLoading(true); setError(null);
     let query = supabase.from(table).select('*', { count: 'exact' }).eq('tenant_id', tenantId);
+    if (extraFilter) query = query.in(extraFilter.column, extraFilter.in);
     if (search.trim() && searchableColumns.length > 0) {
       const orFilter = searchableColumns.map((col) => `${col}.ilike.%${search.trim()}%`).join(',');
       query = query.or(orFilter);
@@ -40,10 +49,10 @@ export function usePaginatedCrud<T extends Row>(table: string, tenantId: string 
     setRows((data as T[]) ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
-  }, [table, tenantId, page, search, searchableColumns.join(',')]);
+  }, [table, tenantId, page, search, searchableColumns.join(','), extraFilter?.column, extraFilter?.in.join(',')]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(0); }, [search]);
+  useEffect(() => { setPage(0); }, [search, extraFilter?.in.join(',')]);
 
   const insert = async (payload: Partial<T>): Promise<{ error: string | null }> => {
     if (!tenantId) return { error: 'No active tenant' };

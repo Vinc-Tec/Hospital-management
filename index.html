@@ -15,15 +15,15 @@
     <title>Health Cloud — Cloud Hospital & Clinic Management Platform | LiAfrik</title>
     <meta name="description" content="Health Cloud is a cloud hospital and clinic management platform for institutions across Africa and worldwide: patients, appointments, records, billing, pharmacy, lab, and more — in French and English. Developed by LiAfrik." />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://healthcloud.liafrik.com/" />
+    <link rel="canonical" href="https://health.liafrik.com/" />
 
     <!-- OpenGraph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Health Cloud" />
     <meta property="og:title" content="Health Cloud — Cloud Hospital & Clinic Management Platform" />
     <meta property="og:description" content="Patients, appointments, records, billing, pharmacy, lab and more, in one cloud platform built for healthcare institutions across Africa and worldwide." />
-    <meta property="og:url" content="https://healthcloud.liafrik.com/" />
-    <meta property="og:image" content="https://healthcloud.liafrik.com/og-image.png" />
+    <meta property="og:url" content="https://health.liafrik.com/" />
+    <meta property="og:image" content="https://health.liafrik.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="fr_FR" />
@@ -33,7 +33,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Health Cloud — Cloud Hospital & Clinic Management Platform" />
     <meta name="twitter:description" content="Patients, appointments, records, billing, pharmacy, lab and more, in one cloud platform built for healthcare institutions across Africa and worldwide." />
-    <meta name="twitter:image" content="https://healthcloud.liafrik.com/og-image.png" />
+    <meta name="twitter:image" content="https://health.liafrik.com/og-image.png" />
 
     <!-- Structured data: real, factual org info only -- no invented review
          counts, ratings, or pricing claims that aren't already shown on
@@ -45,7 +45,7 @@
       "name": "Health Cloud",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
-      "url": "https://healthcloud.liafrik.com/",
+      "url": "https://health.liafrik.com/",
       "publisher": {
         "@type": "Organization",
         "name": "LiAfrik",
@@ -74,13 +74,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    </script>
+    <script src="/register-sw.js"></script>
   </body>
 </html>
 

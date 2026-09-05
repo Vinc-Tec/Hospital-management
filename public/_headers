@@ -1,0 +1,7 @@
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self "https://cdn.paddle.com")
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://cdn.paddle.com 'sha256-ch5JAfPoNqmXIaRLMHIVzhla/MXo55TjYqPF1k72Jig='; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob: https://images.pexels.com https://flagcdn.com https://*.supabase.co; media-src 'self' https://videos.pexels.com; connect-src 'self' https://*.supabase.co https://open.er-api.com https://cdn.paddle.com https://*.paddle.com https://*.paddle-sandbox.com; frame-src https://*.paddle.com https://*.paddle-sandbox.com; upgrade-insecure-requests

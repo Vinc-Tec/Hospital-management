@@ -12,6 +12,7 @@ import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
 import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role } from '../lib/supabase';
+import { formatTenantCurrency } from '../lib/currency';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
 function usePatientDoctorMaps(tenantId: string) {
@@ -353,25 +354,60 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap } = usePatientDoctorMaps(tenantId);
+  const [patientSearch, setPatientSearch] = useState('');
+  const currency = activeTenant?.currency_code ?? 'USD';
+  const taxRate = activeTenant?.tax_rate ?? 0;
+
+  const matchingPatientIds = patientSearch.trim()
+    ? Array.from(pMap.values())
+        .filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(patientSearch.trim().toLowerCase()))
+        .map((p) => p.id)
+    : null;
+
   const cols: ColumnDef[] = [
     { key: 'invoice_number', label: t('col.invoice_no') },
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'issue_date', label: t('col.issue_date') },
-    { key: 'total', label: t('col.total'), render: (r) => <span>${Number(r.total).toFixed(2)}</span> },
+    { key: 'total', label: t('col.total'), render: (r) => <span>{formatTenantCurrency(Number(r.total), currency)}</span> },
     { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
-    { key: 'invoice_number', label: t('fld.invoice_number'), required: true },
+    // invoice_number is no longer entered by hand -- a database trigger
+    // fills it in automatically (INV-<year>-<sequence>) whenever it's
+    // left blank on insert, so duplicate or inconsistent numbering
+    // between staff is no longer possible.
     { key: 'issue_date', label: t('fld.issue_date'), type: 'date', required: true },
     { key: 'due_date', label: t('fld.due_date'), type: 'date' },
     { key: 'subtotal', label: t('fld.subtotal'), type: 'number', required: true },
-    { key: 'tax', label: t('fld.tax'), type: 'number' },
+    { key: 'tax', label: `${t('fld.tax')} (${taxRate}%)`, type: 'number' },
     { key: 'total', label: t('fld.total'), type: 'number', required: true },
-    { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['unpaid', 'paid', 'partial', 'cancelled', 'refunded'], t) },
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
   return <ModulePage table="invoices" tenantId={tenantId} title={t('mod.invoices.title')} desc={t('mod.invoices.desc')} icon={Receipt} columns={cols} formFields={fields}
+    extraFilter={matchingPatientIds ? { column: 'patient_id', in: matchingPatientIds } : null}
+    extraToolbar={
+      <div className="relative max-w-xs w-full">
+        <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} placeholder={t('invoices.search_patient')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+    }
+    // Auto-calculates tax and total from the institution's onboarding
+    // tax rate as the subtotal is typed; editing tax by hand afterwards
+    // still recalculates the total, for the rare exception that needs
+    // a different rate on one invoice.
+    onFieldChange={(key, value, current) => {
+      if (key === 'subtotal') {
+        const subtotal = Number(value) || 0;
+        const tax = Math.round(subtotal * (taxRate / 100) * 100) / 100;
+        return { tax, total: Math.round((subtotal + tax) * 100) / 100 };
+      }
+      if (key === 'tax') {
+        const subtotal = Number(current.subtotal) || 0;
+        return { total: Math.round((subtotal + (Number(value) || 0)) * 100) / 100 };
+      }
+      return null;
+    }}
     pdfAction={(row) => generateInvoicePDF(activeTenant!, row as unknown as Invoice, pMap.get(row.patient_id as string) ?? null)} />;
 }
 

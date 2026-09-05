@@ -39,7 +39,7 @@ export type Tenant = {
   status: 'pending' | 'approved' | 'rejected' | 'request_info' | 'suspended';
   verification_note: string | null; plan_id: string | null;
   trial_ends_at: string; grace_period_ends_at?: string | null;
-  currency_code: string | null; timezone: string | null;
+  currency_code: string | null; timezone: string | null; tax_rate: number;
   accounting_mode: 'per_branch' | 'consolidated' | 'both' | null;
   created_at: string; updated_at: string;
 };

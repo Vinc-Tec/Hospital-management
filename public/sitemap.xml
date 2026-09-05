@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://healthcloud.liafrik.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/features</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/docs/api</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/insights/data-ready-healthcare</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/signup</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/signin</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/terms</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/cookies</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://healthcloud.liafrik.com/refund-policy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://health.liafrik.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://health.liafrik.com/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://health.liafrik.com/features</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://health.liafrik.com/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://health.liafrik.com/docs/api</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://health.liafrik.com/insights/data-ready-healthcare</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://health.liafrik.com/signup</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://health.liafrik.com/signin</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://health.liafrik.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://health.liafrik.com/terms</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://health.liafrik.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://health.liafrik.com/cookies</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://health.liafrik.com/refund-policy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
 </urlset>

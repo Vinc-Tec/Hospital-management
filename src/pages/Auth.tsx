@@ -28,13 +28,15 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
-  const { signIn, signUp, resetPassword, verifyMfaChallenge, signInWithGoogle } = useAuth();
+export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' | 'reset' }) {
+  const { signIn, signUp, resetPassword, updatePassword, verifyMfaChallenge, signInWithGoogle } = useAuth();
   const { t } = useI18n();
   const nav = useNavigate();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +95,12 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
       const res = await resetPassword(email);
       if (res.error) setError(res.error);
       else setInfo(t('auth.reset_sent'));
+    } else if (mode === 'reset') {
+      if (newPassword.length < 6) { setError(t('auth.password_too_short')); setLoading(false); return; }
+      if (newPassword !== confirmPassword) { setError(t('auth.passwords_mismatch')); setLoading(false); return; }
+      const res = await updatePassword(newPassword);
+      if (res.error) setError(res.error);
+      else { setInfo(t('auth.reset_success')); setTimeout(() => nav('/app'), 1200); }
     }
     setLoading(false);
   };
@@ -146,12 +154,13 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               {mode === 'signin' && t('auth.signin.title')}
               {mode === 'signup' && t('auth.signup.title')}
               {mode === 'forgot' && t('auth.forgot.title')}
+              {mode === 'reset' && t('auth.reset.title')}
               {mode === 'verify' && t('auth.verify.title')}
               {mode === 'mfa' && t('auth.mfa.title')}
             </h1>
-            {(mode === 'forgot' || mode === 'verify' || mode === 'mfa') && (
+            {(mode === 'forgot' || mode === 'reset' || mode === 'verify' || mode === 'mfa') && (
               <p className="text-sm text-blue-100/80 mt-2">
-                {mode === 'forgot' ? t('auth.forgot.subtitle') : mode === 'mfa' ? t('auth.mfa.subtitle') : t('auth.verify.subtitle')}
+                {mode === 'forgot' ? t('auth.forgot.subtitle') : mode === 'reset' ? t('auth.reset.subtitle') : mode === 'mfa' ? t('auth.mfa.subtitle') : t('auth.verify.subtitle')}
               </p>
             )}
           </div>
@@ -187,6 +196,11 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
               )}
               {mode === 'mfa' ? (
                 <Input label={t('auth.mfa.code_label')} required value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="000000" maxLength={6} autoFocus />
+              ) : mode === 'reset' ? (
+                <>
+                  <Input label={t('auth.reset.new_password')} type="password" required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoFocus />
+                  <Input label={t('auth.reset.confirm_password')} type="password" required minLength={6} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                </>
               ) : (
                 <>
                   {mode === 'signup' && <Input label={t('auth.fullname')} required value={fullName} onChange={(e) => setFullName(e.target.value)} />}
@@ -226,6 +240,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' }) {
                 {mode === 'signin' && t('auth.signin.cta')}
                 {mode === 'signup' && t('auth.signup.cta')}
                 {mode === 'forgot' && t('auth.forgot.cta')}
+                {mode === 'reset' && t('auth.reset.cta')}
                 {mode === 'mfa' && t('auth.mfa.cta')}
               </Button>
             </form>

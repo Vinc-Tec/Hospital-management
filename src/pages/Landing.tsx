@@ -58,6 +58,19 @@ const SOCIAL_LINKS = [
   { label: 'TikTok', href: 'https://www.tiktok.com/@liyahgroup?_r=1&_t=ZS-9981XGgaxrE', Icon: TikTokIcon },
 ];
 
+// Real ISO 3166-1 alpha-2 codes for flagcdn.com -- a spread across
+// every region, weighted toward Africa and the Gulf given where
+// Health Cloud actually operates (LiAfrik is based in Dubai and
+// Yaoundé), plus major global markets.
+const WORLD_FLAG_CODES = [
+  'cm', 'ng', 'ke', 'gh', 'ci', 'sn', 'za', 'eg', 'ma', 'tz', 'ug', 'rw', 'cd', 'et',
+  'ae', 'sa', 'qa',
+  'fr', 'gb', 'de', 'es', 'it', 'pt', 'be', 'ch',
+  'us', 'ca', 'br',
+  'in', 'cn', 'jp', 'kr', 'sg',
+  'au',
+];
+
 export function LandingPage() {
   const { t } = useI18n();
   const [scrolled, setScrolled] = useState(false);
@@ -474,6 +487,26 @@ export function LandingPage() {
           </div>
 
           <PricingMatrix />
+        </div>
+      </section>
+
+      {/* Scrolling world flags -- real flag images (flagcdn.com, public
+          CDN built on Wikimedia Commons vectors), cropped to circles via
+          CSS. Purely a visual "we operate internationally" strip: the
+          list is duplicated once so the marquee loops seamlessly. */}
+      <section className="py-10 bg-white border-b border-gray-100 overflow-hidden">
+        <div className="flex w-max animate-flag-scroll">
+          {[...WORLD_FLAG_CODES, ...WORLD_FLAG_CODES].map((code, i) => (
+            <img
+              key={`${code}-${i}`}
+              src={`https://flagcdn.com/w80/${code}.png`}
+              srcSet={`https://flagcdn.com/w160/${code}.png 2x`}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-gray-200 shadow-sm mx-3 flex-shrink-0"
+            />
+          ))}
         </div>
       </section>
 

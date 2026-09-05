@@ -42,19 +42,44 @@ function isSearchableColumn(key: string) {
 }
 
 export function ModulePage({
-  table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction,
+  table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction, extraFilter, extraToolbar, onFieldChange,
 }: {
   table: string; tenantId: string; title: string; desc?: string;
   columns: ColumnDef[]; formFields: FieldDef[]; icon: typeof Plus;
   pdfAction?: (row: any) => void;
+  // Restricts the table to rows whose `column` is one of `in` --
+  // e.g. Invoices' patient-name search box resolves matching names to
+  // patient ids client-side (see pMap) and passes them here, since the
+  // invoices table itself has no searchable patient-name column for
+  // the generic ILIKE search below to use directly.
+  extraFilter?: { column: string; in: string[] } | null;
+  // Extra controls rendered next to the search box in the toolbar
+  // (e.g. that same patient search input) -- kept generic so ModulePage
+  // doesn't need to know what any particular module put there.
+  extraToolbar?: ReactNode;
+  // Returns the extra fields to merge into form state when `key`
+  // changes to `value`, or null/undefined for no extra effect.
+  onFieldChange?: (key: string, value: unknown, current: Record<string, unknown>) => Record<string, unknown> | null | undefined;
 }) {
   const { t } = useI18n();
   const { session } = useAuth();
   const searchableColumns = columns.flatMap((c) => c.searchKeys ?? [c.key]).filter(isSearchableColumn);
-  const crud = usePaginatedCrud<Row>(table, tenantId, searchableColumns);
+  const crud = usePaginatedCrud<Row>(table, tenantId, searchableColumns, extraFilter);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
+
+  // Optional per-module reactive calculation (currently only Invoices:
+  // auto-fills tax/total from the institution's onboarding tax rate as
+  // the subtotal is typed). Deliberately a plain "field changed, here's
+  // what else should change" callback rather than baking any billing
+  // math into this generic component -- ModulePage stays generic, the
+  // one module that needs this owns the logic.
+  const updateField = (key: string, value: unknown) => {
+    const next = { ...form, [key]: value };
+    if (onFieldChange) Object.assign(next, onFieldChange(key, value, next) ?? {});
+    setForm(next);
+  };
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [delId, setDelId] = useState<string | null>(null);
@@ -148,9 +173,12 @@ export function ModulePage({
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-gray-100">
-          <div className="relative max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={crud.search} onChange={(e) => crud.setSearch(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative max-w-sm w-full">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={crud.search} onChange={(e) => crud.setSearch(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            {extraToolbar}
           </div>
         </div>
         {crud.loading ? (
@@ -214,7 +242,7 @@ export function ModulePage({
         <div className="space-y-4">
           {formFields.map((f) => {
             const val = form[f.key] as string ?? '';
-            if (f.type === 'textarea') return <textarea key={f.key} placeholder={f.placeholder ?? f.label} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} />;
+            if (f.type === 'textarea') return <textarea key={f.key} placeholder={f.placeholder ?? f.label} value={val} onChange={(e) => updateField(f.key, e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} />;
             if (f.type === 'file') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
@@ -227,7 +255,7 @@ export function ModulePage({
             if (f.type === 'datalist') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
-                <input list={`${f.key}-list`} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} placeholder={f.placeholder}
+                <input list={`${f.key}-list`} value={val} onChange={(e) => updateField(f.key, e.target.value)} placeholder={f.placeholder}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <datalist id={`${f.key}-list`}>
                   {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -237,13 +265,13 @@ export function ModulePage({
             if (f.type === 'select') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>
-                <select value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select value={val} onChange={(e) => updateField(f.key, e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">...</option>
                   {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </label>
             );
-            return <Input key={f.key} label={f.label} required={f.required} type={f.type ?? 'text'} value={val} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />;
+            return <Input key={f.key} label={f.label} required={f.required} type={f.type ?? 'text'} value={val} onChange={(e) => updateField(f.key, e.target.value)} />;
           })}
           {err && <p className="text-sm text-red-600">{err}</p>}
           {uploadErr && <p className="text-sm text-red-600">{uploadErr}</p>}

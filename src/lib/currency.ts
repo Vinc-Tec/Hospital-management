@@ -87,3 +87,30 @@ export function formatCurrency(amount: number, currency: string): string {
     return `${Math.round(amount)} ${currency}`;
   }
 }
+
+// Below: formatting for actual billed amounts (invoices, the cash
+// desk, receipts) -- these need real cent precision, unlike the
+// indicative, rounded price hint above, and they use whichever
+// currency the institution itself picked at onboarding
+// (tenants.currency_code), not a visitor's browser locale.
+
+export function formatTenantCurrency(amount: number, currencyCode: string | null | undefined): string {
+  const code = (currencyCode || 'USD').toUpperCase();
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, currencyDisplay: 'symbol' }).format(amount);
+  } catch {
+    // Intl.NumberFormat throws for a currency code it doesn't
+    // recognize -- possible if a tenant added a custom country at
+    // onboarding with a non-ISO-4217 currency code. Degrade to a
+    // plain, still-correct "<amount> <CODE>" instead of crashing.
+    return `${amount.toFixed(2)} ${code}`;
+  }
+}
+
+// PDF exports (jsPDF/helvetica) can't reliably render most currency
+// symbols (€, ₦, etc.) -- this renders the ISO code instead ("49.00
+// USD"), which is unambiguous and always safe to print.
+export function formatCurrencyForPdf(amount: number, currencyCode: string | null | undefined): string {
+  const code = (currencyCode || 'USD').toUpperCase();
+  return `${amount.toFixed(2)} ${code}`;
+}

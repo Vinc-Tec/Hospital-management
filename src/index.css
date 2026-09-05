@@ -132,6 +132,16 @@ body {
 .logo-flip-face-back { transform: rotateY(180deg); }
 
 .delay-100 { animation-delay: 100ms; }
+
+/* World-flags marquee on the landing page: scrolls the (duplicated)
+   flag list exactly one list-width to the left, so it loops with no
+   visible seam or jump. */
+@keyframes flag-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-flag-scroll { animation: flag-scroll 40s linear infinite; }
+.animate-flag-scroll:hover { animation-play-state: paused; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
