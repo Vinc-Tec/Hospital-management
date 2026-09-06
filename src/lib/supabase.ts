@@ -97,7 +97,7 @@ export type Patient = {
   id: string; tenant_id: string; first_name: string; last_name: string;
   date_of_birth: string | null; gender: 'male' | 'female' | 'other' | null;
   phone: string | null; email: string | null; blood_group: string | null;
-  allergies: string | null; created_at: string;
+  allergies: string | null; national_id: string | null; created_at: string;
 };
 
 export type Doctor = {
@@ -254,7 +254,7 @@ export type AuditLog = {
 
 export type Integration = {
   id: string; tenant_id: string;
-  provider: 'whatsapp' | 'sms' | 'google_calendar' | 'slack' | 'flutterwave' | 'webhook_generic' | 'telegram';
+  provider: 'whatsapp' | 'sms' | 'google_calendar' | 'slack' | 'flutterwave' | 'webhook_generic' | 'telegram' | 'stripe' | 'paystack' | 'zapier';
   name: string; config: Record<string, unknown>;
   status: 'active' | 'inactive' | 'error';
   created_at: string; updated_at: string;

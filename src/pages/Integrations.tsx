@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Smartphone, Plug, Key, Plus, Trash2, ExternalLink,
-  CheckCircle2, Loader2, AlertTriangle, RefreshCw, Send,
+  CheckCircle2, Loader2, AlertTriangle, RefreshCw, Send, Zap,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { useCrud } from '../lib/useCrud';
@@ -13,6 +13,7 @@ import slackLogo from '../assets/integrations/slack.png';
 import googleCalendarLogo from '../assets/integrations/google-calendar.png';
 import flutterwaveLogo from '../assets/integrations/flutterwave.png';
 import telegramLogo from '../assets/integrations/telegram.jpg';
+import stripeLogo from '../assets/integrations/stripe.png';
 
 type ProviderKey = Integration['provider'];
 
@@ -21,18 +22,25 @@ const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; co
   sms: { icon: Smartphone, color: 'text-blue-600 bg-blue-50', fields: [{ key: 'sender_id', label: 'Sender ID' }, { key: 'api_key', label: 'API key' }] },
   google_calendar: { logo: googleCalendarLogo, color: 'bg-red-50', fields: [{ key: 'calendar_id', label: 'Calendar ID', placeholder: 'you@company.com' }] },
   slack: { logo: slackLogo, color: 'bg-purple-50', fields: [{ key: 'webhook_url', label: 'Incoming webhook URL', placeholder: 'https://hooks.slack.com/services/…' }], testable: true },
-  flutterwave: { logo: flutterwaveLogo, color: 'bg-amber-50', fields: [{ key: 'public_key', label: 'Public key' }] },
+  flutterwave: { logo: flutterwaveLogo, color: 'bg-amber-50', fields: [{ key: 'public_key', label: 'Public key' }, { key: 'secret_key', label: 'Secret key (for patient payment links)' }] },
   webhook_generic: { icon: Plug, color: 'text-gray-600 bg-gray-100', fields: [{ key: 'target_url', label: 'Target URL' }] },
   telegram: { logo: telegramLogo, color: 'bg-sky-50', fields: [{ key: 'bot_token', label: 'Bot token', placeholder: '123456:ABC-DEF...' }, { key: 'chat_id', label: 'Chat ID', placeholder: '-100123456789' }], testable: true },
+  stripe: { logo: stripeLogo, color: 'bg-indigo-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
+  paystack: { icon: Key, color: 'text-teal-600 bg-teal-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
+  zapier: { icon: Zap, color: 'text-orange-600 bg-orange-50', fields: [{ key: 'webhook_url', label: 'Zapier "Webhooks by Zapier" URL', placeholder: 'https://hooks.zapier.com/hooks/catch/…' }], testable: true },
 };
 
 const CATALOG: { provider: ProviderKey; nameKey: string; descKey: string }[] = [
   { provider: 'whatsapp', nameKey: 'integrations.name.whatsapp', descKey: 'integrations.use.whatsapp' },
   { provider: 'telegram', nameKey: 'integrations.name.telegram', descKey: 'integrations.telegram.desc' },
   { provider: 'slack', nameKey: 'integrations.name.slack', descKey: 'integrations.slack.desc' },
+
   { provider: 'sms', nameKey: 'integrations.name.sms', descKey: 'integrations.sms.desc' },
   { provider: 'google_calendar', nameKey: 'integrations.name.calendar', descKey: 'integrations.use.calendar' },
   { provider: 'flutterwave', nameKey: 'integrations.name.flutterwave', descKey: 'integrations.flutterwave.desc' },
+  { provider: 'stripe', nameKey: 'integrations.name.stripe', descKey: 'integrations.stripe.desc' },
+  { provider: 'paystack', nameKey: 'integrations.name.paystack', descKey: 'integrations.paystack.desc' },
+  { provider: 'zapier', nameKey: 'integrations.name.zapier', descKey: 'integrations.zapier.desc' },
   { provider: 'webhook_generic', nameKey: 'integrations.name.webhook', descKey: 'integrations.webhook.desc' },
 ];
 
@@ -115,7 +123,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
         }),
       });
       const data = await res.json();
-      const key = provider === 'slack' ? 'slack' : provider === 'telegram' ? 'telegram' : null;
+      const key = provider === 'slack' ? 'slack' : provider === 'telegram' ? 'telegram' : provider === 'zapier' ? 'zapier' : null;
       const outcome = key ? data.results?.[key] : undefined;
       const ok = outcome === 'sent';
       setTestResult({ provider, ok, message: ok ? t('integrations.test.success') : `${t('integrations.test.failed')}${outcome ? ` (${outcome})` : ''}` });

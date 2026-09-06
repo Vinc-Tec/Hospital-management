@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill, FlaskConical, ScanLine,
+  Users, Users2, CalendarDays, Stethoscope, FileText, ClipboardList, Pill, FlaskConical, ScanLine,
   BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
@@ -23,13 +23,39 @@ function usePatientDoctorMaps(tenantId: string) {
   return { pMap, dMap };
 }
 
+// Reusable "search by patient name" for every module that references a
+// patient by id but doesn't store their name as a real, searchable
+// column itself (appointments, records, consultations, prescriptions,
+// lab, radiology, admissions, invoices, and more) -- resolves the typed
+// name to matching patient ids client-side against the map ModulePage
+// already has loaded, then passes those ids to ModulePage's
+// extraFilter so the actual row list is still fetched server-side.
+function usePatientSearch(pMap: Map<string, Patient>) {
+  const { t } = useI18n();
+  const [patientSearch, setPatientSearch] = useState('');
+  const matchingIds = patientSearch.trim()
+    ? Array.from(pMap.values())
+        .filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(patientSearch.trim().toLowerCase()) || (p.national_id ?? '').toLowerCase().includes(patientSearch.trim().toLowerCase()))
+        .map((p) => p.id)
+    : null;
+  const extraFilter = matchingIds ? { column: 'patient_id', in: matchingIds } : null;
+  const searchBox = (
+    <div className="relative max-w-xs w-full">
+      <Users2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <input value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} placeholder={t('invoices.search_patient')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+  );
+  return { extraFilter, searchBox };
+}
+
 const statusOpts = (keys: string[], t: (k: string) => string) =>
   keys.map((k) => ({ value: k, label: t(`opt.${k}`) }));
 
 export function PatientsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name', 'national_id'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'national_id', label: t('col.national_id') },
     { key: 'gender', label: t('col.gender') },
     { key: 'phone', label: t('col.phone') },
     { key: 'email', label: t('col.email') },
@@ -38,6 +64,7 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
   const fields: FieldDef[] = [
     { key: 'first_name', label: t('fld.firstname'), required: true },
     { key: 'last_name', label: t('fld.lastname'), required: true },
+    { key: 'national_id', label: t('fld.national_id'), placeholder: t('fld.national_id_placeholder') },
     { key: 'date_of_birth', label: t('fld.dob'), type: 'date' },
     { key: 'gender', label: t('fld.gender'), type: 'select', options: statusOpts(['male', 'female', 'other'], t) },
     { key: 'phone', label: t('col.phone') },
@@ -73,6 +100,7 @@ export function DoctorsModule({ tenantId }: { tenantId: string }) {
 export function AppointmentsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'doctor_id', label: t('col.doctor'), render: (r) => <span>{dMap.get(r.doctor_id as string)?.first_name ?? '—'} {dMap.get(r.doctor_id as string)?.last_name ?? ''}</span> },
@@ -88,7 +116,7 @@ export function AppointmentsModule({ tenantId }: { tenantId: string }) {
     { key: 'reason', label: t('col.reason') },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'], t) },
   ];
-  return <ModulePage table="appointments" tenantId={tenantId} title={t('mod.appointments.title')} desc={t('mod.appointments.desc')} icon={CalendarDays} columns={cols} formFields={fields} />;
+  return <ModulePage table="appointments" tenantId={tenantId} title={t('mod.appointments.title')} desc={t('mod.appointments.desc')} icon={CalendarDays} columns={cols} formFields={fields} extraFilter={extraFilter} extraToolbar={searchBox} />;
 }
 
 function useIcd10Reference(lang: 'fr' | 'en') {
@@ -104,6 +132,7 @@ export function MedicalRecordsModule({ tenantId }: { tenantId: string }) {
   const { t, lang } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const icd10Options = useIcd10Reference(lang);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
@@ -123,12 +152,14 @@ export function MedicalRecordsModule({ tenantId }: { tenantId: string }) {
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
   return <ModulePage table="medical_records" tenantId={tenantId} title={t('mod.records.title')} desc={t('mod.records.desc')} icon={FileText} columns={cols} formFields={fields}
+    extraFilter={extraFilter} extraToolbar={searchBox}
     pdfAction={(row) => generateMedicalRecordPDF(activeTenant!, row as unknown as MedicalRecord, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
 export function ConsultationsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'consult_date', label: t('col.date') },
@@ -144,7 +175,7 @@ export function ConsultationsModule({ tenantId }: { tenantId: string }) {
     { key: 'plan', label: t('fld.plan'), type: 'textarea' },
     { key: 'follow_up', label: t('fld.follow_up') },
   ];
-  return <ModulePage table="consultations" tenantId={tenantId} title={t('mod.consultations.title')} desc={t('mod.consultations.desc')} icon={ClipboardList} columns={cols} formFields={fields} />;
+  return <ModulePage table="consultations" tenantId={tenantId} title={t('mod.consultations.title')} desc={t('mod.consultations.desc')} icon={ClipboardList} columns={cols} formFields={fields} extraFilter={extraFilter} extraToolbar={searchBox} />;
 }
 
 type DrugInteraction = { drug_a: string; drug_b: string; severity: 'minor' | 'moderate' | 'major'; description_en: string; description_fr: string };
@@ -181,6 +212,7 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
   const { t, lang } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const warnings = useDrugInteractionWarnings(tenantId, lang as 'fr' | 'en');
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
@@ -217,6 +249,7 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
         </div>
       )}
       <ModulePage table="prescriptions" tenantId={tenantId} title={t('mod.prescriptions.title')} desc={t('mod.prescriptions.desc')} icon={Pill} columns={cols} formFields={fields}
+    extraFilter={extraFilter} extraToolbar={searchBox}
         pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />
     </div>
   );
@@ -238,6 +271,7 @@ export function LabModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'test_name', label: t('col.test') },
@@ -256,6 +290,7 @@ export function LabModule({ tenantId }: { tenantId: string }) {
     { key: 'attachment_path', label: t('fld.attachment'), type: 'file' },
   ];
   return <ModulePage table="lab_orders" tenantId={tenantId} title={t('mod.lab.title')} desc={t('mod.lab.desc')} icon={FlaskConical} columns={cols} formFields={fields}
+    extraFilter={extraFilter} extraToolbar={searchBox}
     pdfAction={(row) => generateLabReportPDF(activeTenant!, row as unknown as LabOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
@@ -263,6 +298,7 @@ export function RadiologyModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'modality', label: t('col.modality') },
@@ -280,6 +316,7 @@ export function RadiologyModule({ tenantId }: { tenantId: string }) {
     { key: 'attachment_path', label: t('fld.attachment'), type: 'file' },
   ];
   return <ModulePage table="radiology_orders" tenantId={tenantId} title={t('mod.radiology.title')} desc={t('mod.radiology.desc')} icon={ScanLine} columns={cols} formFields={fields}
+    extraFilter={extraFilter} extraToolbar={searchBox}
     pdfAction={(row) => generateRadiologyReportPDF(activeTenant!, row as unknown as RadiologyOrder, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />;
 }
 
@@ -333,6 +370,7 @@ export function BedsModule({ tenantId }: { tenantId: string }) {
 export function AdmissionsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'admission_date', label: t('col.admitted') },
@@ -347,22 +385,16 @@ export function AdmissionsModule({ tenantId }: { tenantId: string }) {
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['admitted', 'discharged', 'transferred'], t) },
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="admissions" tenantId={tenantId} title={t('mod.admissions.title')} desc={t('mod.admissions.desc')} icon={LogIn} columns={cols} formFields={fields} />;
+  return <ModulePage table="admissions" tenantId={tenantId} title={t('mod.admissions.title')} desc={t('mod.admissions.desc')} icon={LogIn} columns={cols} formFields={fields} extraFilter={extraFilter} extraToolbar={searchBox} />;
 }
 
 export function InvoicesModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { activeTenant } = useAuth();
   const { pMap } = usePatientDoctorMaps(tenantId);
-  const [patientSearch, setPatientSearch] = useState('');
+  const { extraFilter, searchBox } = usePatientSearch(pMap);
   const currency = activeTenant?.currency_code ?? 'USD';
   const taxRate = activeTenant?.tax_rate ?? 0;
-
-  const matchingPatientIds = patientSearch.trim()
-    ? Array.from(pMap.values())
-        .filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(patientSearch.trim().toLowerCase()))
-        .map((p) => p.id)
-    : null;
 
   const cols: ColumnDef[] = [
     { key: 'invoice_number', label: t('col.invoice_no') },
@@ -385,13 +417,8 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
   return <ModulePage table="invoices" tenantId={tenantId} title={t('mod.invoices.title')} desc={t('mod.invoices.desc')} icon={Receipt} columns={cols} formFields={fields}
-    extraFilter={matchingPatientIds ? { column: 'patient_id', in: matchingPatientIds } : null}
-    extraToolbar={
-      <div className="relative max-w-xs w-full">
-        <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} placeholder={t('invoices.search_patient')} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-    }
+    extraFilter={extraFilter}
+    extraToolbar={searchBox}
     // Auto-calculates tax and total from the institution's onboarding
     // tax rate as the subtotal is typed; editing tax by hand afterwards
     // still recalculates the total, for the rare exception that needs

@@ -129,5 +129,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // 4) Zapier, if connected -- "Webhooks by Zapier" is a plain POST
+  // target the tenant creates in their own Zapier account, so this
+  // needs no OAuth app review on our side either.
+  const { data: zapier } = await supabase
+    .from('integrations')
+    .select('config')
+    .eq('tenant_id', body.tenant_id)
+    .eq('provider', 'zapier')
+    .eq('status', 'active')
+    .maybeSingle();
+
+  const zapierUrl = (zapier?.config as Record<string, string> | null)?.webhook_url;
+  if (zapierUrl) {
+    try {
+      const res = await fetch(zapierUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: body.event, title: body.title, lines: body.lines ?? [], sent_at: new Date().toISOString() }),
+      });
+      results.zapier = res.ok ? 'sent' : `http_${res.status}`;
+    } catch (e) {
+      results.zapier = `error: ${e instanceof Error ? e.message : 'unknown'}`;
+    }
+  }
+
   return json({ dispatched: Object.keys(results).length, results });
 });
