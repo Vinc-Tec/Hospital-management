@@ -7,7 +7,6 @@ import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint } from '.
 import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { usePaymentCheckout } from '../components/PaymentCheckout';
-import { formatTenantCurrency } from '../lib/currency';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -527,8 +526,8 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
                     <p className="font-semibold text-gray-900">{p.name}</p>
                     {isCurrent && <Badge color="blue">{t('settings.current_plan')}</Badge>}
                   </div>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{formatTenantCurrency(price, tenant.currency_code)}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
-                  {billing === 'yearly' && <p className="text-xs text-gray-400">{t('settings.billed_yearly').replace('{amount}', formatTenantCurrency(p.price_yearly ?? p.price_monthly * 12, tenant.currency_code))}</p>}
+                  <p className="text-2xl font-bold text-gray-900 mt-2">${price}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
+                  {billing === 'yearly' && <p className="text-xs text-gray-400">{t('settings.billed_yearly').replace('{amount}', `$${p.price_yearly ?? p.price_monthly * 12}`)}</p>}
                   <ConvertedPriceHint usd={price} />
                   {(() => {
                     // Reuse the same translated bullet keys as the public
