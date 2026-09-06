@@ -7,6 +7,7 @@ import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint } from '.
 import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { usePaymentCheckout } from '../components/PaymentCheckout';
+import { formatTenantCurrency } from '../lib/currency';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -470,6 +471,7 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   const { t } = useI18n();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     (async () => {
@@ -480,7 +482,11 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
   }, []);
 
   const checkout = usePaymentCheckout();
-  const selectPlan = (planId: string) => checkout.start(planId, 'monthly');
+  // Real bug this fixes: this used to always pass 'monthly' here no
+  // matter what, so an existing tenant could never actually switch to
+  // or renew on yearly billing from Settings, unlike at signup
+  // (Onboarding.tsx has the same toggle and already worked correctly).
+  const selectPlan = (planId: string) => checkout.start(planId, billing);
 
   const currentPlan = plans.find((p) => p.id === tenant.plan_id);
 
@@ -503,19 +509,27 @@ function BillingTab({ tenant }: { tenant: Tenant; onUpdated: () => void }) {
       </Card>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('settings.choose_plan')}</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-700">{t('settings.choose_plan')}</h3>
+          <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
+            <button onClick={() => setBilling('monthly')} className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${billing === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>{t('plan.monthly')}</button>
+            <button onClick={() => setBilling('yearly')} className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${billing === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>{t('plan.yearly')} <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">-20%</span></button>
+          </div>
+        </div>
         {loading ? <p className="text-sm text-gray-400">{t('common.loading')}</p> : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
             {plans.map((p) => {
               const isCurrent = p.id === tenant.plan_id;
+              const price = billing === 'yearly' ? Math.round((p.price_yearly ?? p.price_monthly * 10) / 12) : p.price_monthly;
               return (
                 <Card key={p.id} className={`p-5 ${isCurrent ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-gray-900">{p.name}</p>
                     {isCurrent && <Badge color="blue">{t('settings.current_plan')}</Badge>}
                   </div>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">${p.price_monthly}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
-                  <ConvertedPriceHint usd={p.price_monthly} />
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{formatTenantCurrency(price, tenant.currency_code)}<span className="text-sm font-normal text-gray-400">/{t('plan.month')}</span></p>
+                  {billing === 'yearly' && <p className="text-xs text-gray-400">{t('settings.billed_yearly').replace('{amount}', formatTenantCurrency(p.price_yearly ?? p.price_monthly * 12, tenant.currency_code))}</p>}
+                  <ConvertedPriceHint usd={price} />
                   {(() => {
                     // Reuse the same translated bullet keys as the public
                     // pricing page (src/pages/Landing.tsx) instead of
