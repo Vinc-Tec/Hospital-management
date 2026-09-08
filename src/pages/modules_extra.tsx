@@ -4,7 +4,7 @@ import {
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
-import { type Patient, type Doctor, type Staff, type Invoice } from '../lib/supabase';
+import { type Patient, type Doctor, type Staff, type Invoice, type Admission } from '../lib/supabase';
 
 const statusOpts = (keys: string[], t: (k: string) => string) =>
   keys.map((k) => ({ value: k, label: t(`opt.${k}`) }));
@@ -238,6 +238,8 @@ export function DischargeModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const pMap = usePatientMap(tenantId);
   const dMap = useDoctorMap(tenantId);
+  const admissions = useCrud<Admission>('admissions', tenantId);
+  const activeAdmissions = admissions.rows.filter((a) => a.status === 'admitted');
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
     { key: 'doctor_id', label: t('col.doctor'), render: (r) => r.doctor_id && dMap.get(String(r.doctor_id)) ? `${dMap.get(String(r.doctor_id))!.first_name} ${dMap.get(String(r.doctor_id))!.last_name}` : '—' },
@@ -246,6 +248,12 @@ export function DischargeModule({ tenantId }: { tenantId: string }) {
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('col.patient'), type: 'select', required: true, options: [...pMap.values()].map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    // Linking the actual admission being closed is what lets this
+    // discharge automatically free the patient's bed (see
+    // 20260908140000_discharge_admissions_sync.sql) instead of leaving
+    // the admission and bed records to silently drift out of sync with
+    // what really happened.
+    { key: 'admission_id', label: t('fld.related_admission'), type: 'select', options: activeAdmissions.map((a) => ({ value: a.id, label: `${pMap.get(a.patient_id)?.first_name ?? '—'} ${pMap.get(a.patient_id)?.last_name ?? ''} — ${new Date(a.admission_date).toLocaleDateString()}` })) },
     { key: 'doctor_id', label: t('col.doctor'), type: 'select', options: [...dMap.values()].map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
     { key: 'summary', label: t('fld.summary'), required: true, type: 'textarea' },
     { key: 'follow_up_instructions', label: t('fld.follow_up'), type: 'textarea' },
