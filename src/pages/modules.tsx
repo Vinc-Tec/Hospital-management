@@ -11,8 +11,9 @@ import { Badge, Card, Button, Input, Modal, EmptyState } from '../components/ui'
 import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
-import { supabase, type Patient, type Doctor, type Invoice, type InvoiceItem, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role, type PharmacyItem } from '../lib/supabase';
+import { supabase, type Patient, type Doctor, type Invoice, type InvoiceItem, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role, type PharmacyItem, type Bed } from '../lib/supabase';
 import { formatTenantCurrency } from '../lib/currency';
+import { PatientTimelineModal, TimelineIcon } from '../components/PatientTimeline';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
 function usePatientDoctorMaps(tenantId: string) {
@@ -53,6 +54,7 @@ const statusOpts = (keys: string[], t: (k: string) => string) =>
 
 export function PatientsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
+  const [timelineFor, setTimelineFor] = useState<{ id: string; name: string } | null>(null);
   const cols: ColumnDef[] = [
     { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name', 'national_id'], render: (r) => <span className="text-sm font-medium text-gray-900">{String(r.first_name ?? '')} {String(r.last_name ?? '')}</span> },
     { key: 'national_id', label: t('col.national_id') },
@@ -72,7 +74,18 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
     { key: 'blood_group', label: t('fld.blood_group'), type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((v) => ({ value: v, label: v })) },
     { key: 'allergies', label: t('fld.allergies'), type: 'textarea' },
   ];
-  return <ModulePage table="patients" tenantId={tenantId} title={t('mod.patients.title')} desc={t('mod.patients.desc')} icon={Users} columns={cols} formFields={fields} />;
+  return (
+    <>
+      <ModulePage table="patients" tenantId={tenantId} title={t('mod.patients.title')} desc={t('mod.patients.desc')} icon={Users} columns={cols} formFields={fields}
+        rowActions={(row) => (
+          <button onClick={() => setTimelineFor({ id: row.id, name: `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() })}
+            title={t('timeline.title')} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><TimelineIcon size={16} /></button>
+        )} />
+      {timelineFor && (
+        <PatientTimelineModal tenantId={tenantId} patientId={timelineFor.id} patientName={timelineFor.name} onClose={() => setTimelineFor(null)} />
+      )}
+    </>
+  );
 }
 
 export function DoctorsModule({ tenantId }: { tenantId: string }) {
@@ -439,8 +452,12 @@ export function AdmissionsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const { extraFilter, searchBox } = usePatientSearch(pMap);
+  const beds = useCrud<Bed>('beds', tenantId);
+  const bedMap = useMemo(() => new Map(beds.rows.map((b) => [b.id, b])), [beds.rows]);
+  const bedLabel = (b: Bed) => `${b.ward} — ${b.room}/${b.bed_number}`;
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
+    { key: 'bed_id', label: t('col.bed'), render: (r) => <span>{r.bed_id ? bedLabel(bedMap.get(r.bed_id as string) ?? { ward: '—', room: '', bed_number: '' } as Bed) : '—'}</span> },
     { key: 'admission_date', label: t('col.admitted') },
     { key: 'reason', label: t('col.reason') },
     { key: 'status', label: t('col.status') },
@@ -448,6 +465,12 @@ export function AdmissionsModule({ tenantId }: { tenantId: string }) {
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
     { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
+    // Only beds that are free (or already assigned to this same
+    // admission when editing) are offered here -- assigning an already-
+    // occupied bed to a different patient is additionally blocked at
+    // the database level (see 20260908130000_admissions_beds_sync.sql)
+    // in case of concurrent edits or API writes.
+    { key: 'bed_id', label: t('fld.bed'), type: 'select', options: beds.rows.filter((b) => b.status === 'available' || b.status === 'occupied').map((b) => ({ value: b.id, label: `${bedLabel(b)}${b.status === 'occupied' ? ` (${t('opt.occupied')})` : ''}` })) },
     { key: 'admission_date', label: t('fld.admission_date'), type: 'datetime-local', required: true },
     { key: 'reason', label: t('col.reason') },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['admitted', 'discharged', 'transferred'], t) },

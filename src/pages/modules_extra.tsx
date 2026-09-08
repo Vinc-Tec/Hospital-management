@@ -4,7 +4,7 @@ import {
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
-import { type Patient, type Doctor, type Staff } from '../lib/supabase';
+import { type Patient, type Doctor, type Staff, type Invoice } from '../lib/supabase';
 
 const statusOpts = (keys: string[], t: (k: string) => string) =>
   keys.map((k) => ({ value: k, label: t(`opt.${k}`) }));
@@ -143,6 +143,7 @@ export function InventoryModule({ tenantId }: { tenantId: string }) {
 export function InsuranceModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const pMap = usePatientMap(tenantId);
+  const invoices = useCrud<Invoice>('invoices', tenantId);
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
     { key: 'provider_name', label: t('col.provider') },
@@ -151,6 +152,10 @@ export function InsuranceModule({ tenantId }: { tenantId: string }) {
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('col.patient'), type: 'select', required: true, options: [...pMap.values()].map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
+    // Links the claim to the actual invoice it's reimbursing, so a
+    // patient's bill and the insurer's claim for it stay traceable to
+    // each other instead of living as two unrelated records.
+    { key: 'invoice_id', label: t('fld.related_invoice'), type: 'select', options: invoices.rows.map((i) => ({ value: i.id, label: `${i.invoice_number} — ${i.total}` })) },
     { key: 'provider_name', label: t('fld.provider_name'), required: true },
     { key: 'policy_number', label: t('fld.policy_number') },
     { key: 'claim_amount', label: t('fld.claim_amount'), type: 'number', required: true },
