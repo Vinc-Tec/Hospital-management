@@ -263,3 +263,13 @@ export type Webhook = {
   id: string; tenant_id: string; name: string; url: string; event: string;
   secret: string | null; is_active: boolean; last_triggered_at: string | null; created_at: string;
 };
+
+export type PatientQueueEntry = {
+  id: string; tenant_id: string; patient_id: string;
+  doctor_id: string | null; appointment_id: string | null;
+  status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled';
+  priority: 'normal' | 'urgent';
+  reason: string | null;
+  checked_in_at: string; called_at: string | null; completed_at: string | null;
+  created_by: string | null; created_at: string;
+};

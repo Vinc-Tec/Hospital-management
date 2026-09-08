@@ -75,6 +75,7 @@ const BedsModule = lazy(() => import('./pages/modules').then((m) => ({ default: 
 const AdmissionsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.AdmissionsModule })));
 const InvoicesModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.InvoicesModule })));
 const CashDeskModule = lazy(() => import('./pages/CashDesk').then((m) => ({ default: m.CashDeskModule })));
+const QueueModule = lazy(() => import('./pages/Queue').then((m) => ({ default: m.QueueModule })));
 const StaffModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.StaffModule })));
 const RolesModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.RolesModule })));
 const ReportsModule = lazy(() => import('./pages/modules').then((m) => ({ default: m.ReportsModule })));
@@ -240,6 +241,7 @@ function AppRoutes() {
         <Route path="admissions" element={<ModuleGate moduleKey="admissions"><AdmissionsModule tenantId={tid} /></ModuleGate>} />
         <Route path="invoices" element={<ModuleGate moduleKey="invoices"><InvoicesModule tenantId={tid} /></ModuleGate>} />
         <Route path="cash-desk" element={<ModuleGate moduleKey="invoices"><CashDeskModule tenantId={tid} /></ModuleGate>} />
+        <Route path="queue" element={<ModuleGate moduleKey="queue"><QueueModule tenantId={tid} /></ModuleGate>} />
         <Route path="reports" element={<ModuleGate moduleKey="reports"><ReportsModule tenantId={tid} /></ModuleGate>} />
         <Route path="staff" element={<ModuleGate moduleKey="staff"><StaffModule tenantId={tid} /></ModuleGate>} />
         <Route path="roles" element={<ModuleGate moduleKey="roles"><RolesModule tenantId={tid} /></ModuleGate>} />

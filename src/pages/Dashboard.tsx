@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, CalendarDays, Stethoscope, FileText, ClipboardList, Pill,
   FlaskConical, ScanLine, BedDouble, LogIn, Receipt, UserCog, ShieldCheck, Settings,
   Plus, LogOut, Menu, ChevronRight, AlertCircle, FileBarChart, TrendingUp, Clock,
-  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send, Plug,
+  Scissors, Briefcase, CalendarOff, Wallet, Boxes, ShieldPlus, Video, Siren, Syringe, FileOutput, Bell, MessageCircle, Send, Plug, ListChecks,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
@@ -20,6 +20,7 @@ const NAV = [
   { to: '/app', icon: LayoutDashboard, key: 'dash.nav.overview', moduleKey: 'overview' },
   { to: '/app/patients', icon: Users, key: 'dash.nav.patients', moduleKey: 'patients' },
   { to: '/app/appointments', icon: CalendarDays, key: 'dash.nav.appointments', moduleKey: 'appointments' },
+  { to: '/app/queue', icon: ListChecks, key: 'dash.nav.queue', moduleKey: 'queue' },
   { to: '/app/doctors', icon: Stethoscope, key: 'dash.nav.doctors', moduleKey: 'doctors' },
   { to: '/app/records', icon: FileText, key: 'dash.nav.records', moduleKey: 'records' },
   { to: '/app/consultations', icon: ClipboardList, key: 'dash.nav.consultations', moduleKey: 'consultations' },

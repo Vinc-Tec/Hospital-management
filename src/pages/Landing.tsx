@@ -99,7 +99,7 @@ export function LandingPage() {
   const plans = [
     {
       name: 'Starter', price_monthly: 49, price_yearly: 470,
-      features: [t('plan.starter.f1'), t('plan.starter.f2'), t('plan.starter.f3'), t('plan.starter.f4'), t('plan.starter.f5')],
+      features: [t('plan.starter.f1'), t('plan.starter.f2'), t('plan.starter.f3'), t('plan.starter.f4'), t('plan.starter.f5'), t('plan.starter.f6')],
       highlight: false,
     },
     {
