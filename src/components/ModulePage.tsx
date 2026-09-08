@@ -21,6 +21,20 @@ function notifyIntegrations(accessToken: string | undefined, tenantId: string, e
   }).catch(() => { /* best-effort notification, never surfaced to the user */ });
 }
 
+// Some server-side checks (triggers, RPCs) raise a short stable code
+// instead of a sentence -- e.g. RAISE EXCEPTION 'bed_already_occupied' --
+// so the same error is understandable regardless of which module or
+// client triggered it. Anything not in this map falls back to the raw
+// message from Postgres/PostgREST.
+const KNOWN_DB_ERRORS = [
+  'bed_already_occupied', 'operating_room_conflict', 'insufficient_stock',
+  'already_dispensed', 'no_pharmacy_item_linked', 'prescription_cancelled',
+];
+function translateDbError(message: string, t: (k: string) => string): string {
+  const code = message.trim();
+  return KNOWN_DB_ERRORS.includes(code) ? t(`db_err.${code}`) : message;
+}
+
 export type FieldDef = {
   key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local' | 'datalist' | 'file';
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string;
@@ -129,7 +143,7 @@ export function ModulePage({
       if (form[f.key] !== undefined && form[f.key] !== '') payload[f.key] = form[f.key];
     }
     const res = editing ? await crud.update(editing.id, payload) : await crud.insert(payload);
-    if (res.error) setErr(res.error);
+    if (res.error) setErr(translateDbError(res.error, t));
     else {
       setModalOpen(false);
       // Notify connected integrations for the events tenants can actually

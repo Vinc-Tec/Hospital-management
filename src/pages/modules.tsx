@@ -460,7 +460,12 @@ export function AdmissionsModule({ tenantId }: { tenantId: string }) {
     { key: 'bed_id', label: t('col.bed'), render: (r) => <span>{r.bed_id ? bedLabel(bedMap.get(r.bed_id as string) ?? { ward: '—', room: '', bed_number: '' } as Bed) : '—'}</span> },
     { key: 'admission_date', label: t('col.admitted') },
     { key: 'reason', label: t('col.reason') },
-    { key: 'status', label: t('col.status') },
+    { key: 'status', label: t('col.status'), render: (r) => (
+      <div className="flex items-center gap-1.5">
+        <span>{String(r.status ?? '')}</span>
+        {Boolean(r.source_emergency_case_id) && <Badge color="red">{t('adm.from_er')}</Badge>}
+      </div>
+    ) },
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },

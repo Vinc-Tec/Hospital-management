@@ -165,7 +165,7 @@ export type Admission = {
   id: string; tenant_id: string; patient_id: string; bed_id: string | null;
   doctor_id: string | null; admission_date: string; discharge_date: string | null;
   reason: string | null; status: 'admitted' | 'discharged' | 'transferred';
-  notes: string | null; created_at: string;
+  notes: string | null; source_emergency_case_id: string | null; created_at: string;
 };
 
 export type Invoice = {
