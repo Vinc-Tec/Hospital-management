@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users, Users2, CalendarDays, Stethoscope, FileText, ClipboardList, Pill, FlaskConical, ScanLine,
-  BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2, AlertTriangle, RefreshCw,
+  BedDouble, Receipt, UserCog, ShieldCheck, LogIn, FileBarChart, Pencil, Trash2, AlertTriangle, RefreshCw, PackageCheck, ListChecks,
 } from 'lucide-react';
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
@@ -11,7 +11,7 @@ import { Badge, Card, Button, Input, Modal, EmptyState } from '../components/ui'
 import {
   generateInvoicePDF, generatePrescriptionPDF, generateLabReportPDF, generateRadiologyReportPDF, generateMedicalRecordPDF, generateGenericReportPDF,
 } from '../lib/pdf';
-import { supabase, type Patient, type Doctor, type Invoice, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role } from '../lib/supabase';
+import { supabase, type Patient, type Doctor, type Invoice, type InvoiceItem, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role, type PharmacyItem } from '../lib/supabase';
 import { formatTenantCurrency } from '../lib/currency';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
 
@@ -214,16 +214,27 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
   const { pMap, dMap } = usePatientDoctorMaps(tenantId);
   const { extraFilter, searchBox } = usePatientSearch(pMap);
   const warnings = useDrugInteractionWarnings(tenantId, lang as 'fr' | 'en');
+  const pharmacy = useCrud<PharmacyItem>('pharmacy_items', tenantId);
+  const pharmacyMap = useMemo(() => new Map(pharmacy.rows.map((p) => [p.id, p])), [pharmacy.rows]);
+  const [dispenseRow, setDispenseRow] = useState<Prescription | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const cols: ColumnDef[] = [
     { key: 'patient_id', label: t('col.patient'), render: (r) => <span>{pMap.get(r.patient_id as string)?.first_name ?? '—'} {pMap.get(r.patient_id as string)?.last_name ?? ''}</span> },
     { key: 'medication', label: t('col.medication') },
     { key: 'dosage', label: t('col.dosage') },
-    { key: 'status', label: t('col.status') },
+    { key: 'status', label: t('col.status'), render: (r) => (
+      <div className="flex items-center gap-1.5">
+        <Badge color={r.status === 'dispensed' ? 'green' : r.status === 'cancelled' ? 'gray' : 'amber'}>{String(r.status ?? '')}</Badge>
+        {r.status === 'dispensed' && Boolean(r.pharmacy_item_id) && <span className="text-xs text-gray-400">({t('rx.stock_linked')})</span>}
+      </div>
+    ) },
   ];
   const fields: FieldDef[] = [
     { key: 'patient_id', label: t('fld.patient'), type: 'select', required: true, options: Array.from(pMap.values()).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })) },
     { key: 'doctor_id', label: t('fld.doctor'), type: 'select', options: Array.from(dMap.values()).map((d) => ({ value: d.id, label: `${d.first_name} ${d.last_name}` })) },
     { key: 'medication', label: t('fld.medication'), required: true },
+    { key: 'pharmacy_item_id', label: t('rx.link_stock'), type: 'select', options: pharmacy.rows.map((p) => ({ value: p.id, label: `${p.name}${p.strength ? ' ' + p.strength : ''} (${p.quantity} ${t('rx.in_stock')})` })) },
     { key: 'dosage', label: t('col.dosage') },
     { key: 'frequency', label: t('fld.frequency') },
     { key: 'duration', label: t('fld.duration_tx') },
@@ -231,7 +242,7 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'dispensed', 'cancelled'], t) },
   ];
   return (
-    <div>
+    <div key={refreshKey}>
       {warnings.length > 0 && (
         <div className="mb-4 space-y-2">
           {warnings.map((w, i) => (
@@ -250,8 +261,65 @@ export function PrescriptionsModule({ tenantId }: { tenantId: string }) {
       )}
       <ModulePage table="prescriptions" tenantId={tenantId} title={t('mod.prescriptions.title')} desc={t('mod.prescriptions.desc')} icon={Pill} columns={cols} formFields={fields}
     extraFilter={extraFilter} extraToolbar={searchBox}
-        pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)} />
+        pdfAction={(row) => generatePrescriptionPDF(activeTenant!, row as unknown as Prescription, pMap.get(row.patient_id as string) ?? null, dMap.get(row.doctor_id as string) ?? null)}
+        rowActions={(row) => (row.status === 'active' && row.pharmacy_item_id) ? (
+          <button onClick={() => setDispenseRow(row as unknown as Prescription)} title={t('rx.dispense')} className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"><PackageCheck size={16} /></button>
+        ) : null} />
+      {dispenseRow && (
+        <DispenseModal
+          prescription={dispenseRow}
+          item={pharmacyMap.get(dispenseRow.pharmacy_item_id!) ?? null}
+          patientName={`${pMap.get(dispenseRow.patient_id)?.first_name ?? ''} ${pMap.get(dispenseRow.patient_id)?.last_name ?? ''}`.trim()}
+          onClose={() => setDispenseRow(null)}
+          onDone={() => { setDispenseRow(null); pharmacy.load(); setRefreshKey((k) => k + 1); }}
+        />
+      )}
     </div>
+  );
+}
+
+function DispenseModal({ prescription, item, patientName, onClose, onDone }: {
+  prescription: Prescription; item: PharmacyItem | null; patientName: string;
+  onClose: () => void; onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const [qty, setQty] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async () => {
+    setSaving(true); setErr(null);
+    const { error } = await supabase.rpc('dispense_prescription', { p_prescription_id: prescription.id, p_quantity: qty });
+    setSaving(false);
+    if (error) {
+      const known: Record<string, string> = {
+        insufficient_stock: t('rx.err_insufficient_stock'),
+        already_dispensed: t('rx.err_already_dispensed'),
+        no_pharmacy_item_linked: t('rx.err_no_stock_linked'),
+      };
+      setErr(known[error.message] ?? error.message);
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <Modal open onClose={onClose} title={t('rx.dispense')} footer={
+      <><Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button><Button onClick={submit} loading={saving}>{t('rx.dispense_confirm')}</Button></>
+    }>
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">{t('rx.dispense_for')} <span className="font-semibold text-gray-900">{patientName}</span></p>
+        {item && (
+          <div className="px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm">
+            <p className="font-medium text-gray-900">{item.name} {item.strength}</p>
+            <p className="text-gray-500 mt-0.5">{t('rx.in_stock')}: {item.quantity} · {t('col.price')}: {item.unit_price}</p>
+          </div>
+        )}
+        <Input label={t('fld.quantity')} type="number" min={1} max={item?.quantity ?? undefined} value={qty} onChange={(e) => setQty(Number(e.target.value))} />
+        <p className="text-xs text-gray-400">{t('rx.dispense_note')}</p>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+      </div>
+    </Modal>
   );
 }
 
@@ -322,7 +390,7 @@ export function RadiologyModule({ tenantId }: { tenantId: string }) {
 
 export function PharmacyModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
-  const crud = useCrud<{ id: string; name: string; quantity: number; reorder_level: number; unit_price: number; expiry_date: string | null }>('pharmacy_items', tenantId);
+  const crud = useCrud<PharmacyItem>('pharmacy_items', tenantId);
   const cols: ColumnDef[] = [
     { key: 'name', label: t('fld.name') },
     { key: 'generic_name', label: t('col.generic') },
@@ -395,6 +463,7 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
   const { extraFilter, searchBox } = usePatientSearch(pMap);
   const currency = activeTenant?.currency_code ?? 'USD';
   const taxRate = activeTenant?.tax_rate ?? 0;
+  const [itemsForInvoice, setItemsForInvoice] = useState<Invoice | null>(null);
 
   const cols: ColumnDef[] = [
     { key: 'invoice_number', label: t('col.invoice_no') },
@@ -416,13 +485,18 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
     { key: 'total', label: t('fld.total'), type: 'number', required: true },
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="invoices" tenantId={tenantId} title={t('mod.invoices.title')} desc={t('mod.invoices.desc')} icon={Receipt} columns={cols} formFields={fields}
+  return (
+    <>
+      <ModulePage table="invoices" tenantId={tenantId} title={t('mod.invoices.title')} desc={t('mod.invoices.desc')} icon={Receipt} columns={cols} formFields={fields}
     extraFilter={extraFilter}
     extraToolbar={searchBox}
     // Auto-calculates tax and total from the institution's onboarding
     // tax rate as the subtotal is typed; editing tax by hand afterwards
     // still recalculates the total, for the rare exception that needs
     // a different rate on one invoice.
+    rowActions={(row) => (
+      <button onClick={() => setItemsForInvoice(row as unknown as Invoice)} title={t('inv.view_items')} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><ListChecks size={16} /></button>
+    )}
     onFieldChange={(key, value, current) => {
       if (key === 'subtotal') {
         const subtotal = Number(value) || 0;
@@ -435,7 +509,42 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
       }
       return null;
     }}
-    pdfAction={(row) => generateInvoicePDF(activeTenant!, row as unknown as Invoice, pMap.get(row.patient_id as string) ?? null)} />;
+    pdfAction={(row) => generateInvoicePDF(activeTenant!, row as unknown as Invoice, pMap.get(row.patient_id as string) ?? null)} />
+      {itemsForInvoice && (
+        <InvoiceItemsModal invoice={itemsForInvoice} currency={currency} onClose={() => setItemsForInvoice(null)} />
+      )}
+    </>
+  );
+}
+
+function InvoiceItemsModal({ invoice, currency, onClose }: { invoice: Invoice; currency: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const [items, setItems] = useState<InvoiceItem[] | null>(null);
+  useEffect(() => {
+    supabase.from('invoice_items').select('*').eq('invoice_id', invoice.id).order('created_at')
+      .then(({ data }) => setItems((data as InvoiceItem[]) ?? []));
+  }, [invoice.id]);
+  return (
+    <Modal open onClose={onClose} title={`${t('inv.items_for')} ${invoice.invoice_number}`} footer={<Button variant="outline" onClick={onClose}>{t('common.close')}</Button>}>
+      {items === null ? (
+        <p className="text-sm text-gray-400">{t('common.loading')}</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-400">{t('inv.no_items')}</p>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {items.map((it) => (
+            <div key={it.id} className="py-2.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-900 truncate">{it.description}</p>
+                <p className="text-xs text-gray-400">{it.quantity} × {formatTenantCurrency(it.unit_price, currency)}{it.source_type !== 'manual' ? ` · ${t(`inv.source.${it.source_type}`)}` : ''}</p>
+              </div>
+              <span className="text-sm font-medium text-gray-900 flex-shrink-0">{formatTenantCurrency(it.amount, currency)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
 }
 
 export function StaffModule({ tenantId }: { tenantId: string }) {

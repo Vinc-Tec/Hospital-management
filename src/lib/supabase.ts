@@ -129,6 +129,7 @@ export type Prescription = {
   id: string; tenant_id: string; patient_id: string; doctor_id: string | null;
   medication: string; dosage: string | null; frequency: string | null;
   duration: string | null; notes: string | null;
+  pharmacy_item_id: string | null; dispensed_at: string | null; dispensed_quantity: number | null;
   status: 'active' | 'dispensed' | 'cancelled'; created_at: string;
 };
 
@@ -172,6 +173,13 @@ export type Invoice = {
   issue_date: string; due_date: string | null; subtotal: number; tax: number;
   total: number; status: 'unpaid' | 'paid' | 'partial' | 'cancelled' | 'refunded';
   notes: string | null; created_at: string;
+};
+
+export type InvoiceItem = {
+  id: string; tenant_id: string; invoice_id: string; description: string;
+  quantity: number; unit_price: number; amount: number;
+  source_type: 'manual' | 'pharmacy' | 'lab' | 'radiology'; source_id: string | null;
+  created_at: string;
 };
 
 export type Role = {

@@ -42,11 +42,16 @@ function isSearchableColumn(key: string) {
 }
 
 export function ModulePage({
-  table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction, extraFilter, extraToolbar, onFieldChange,
+  table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction, extraFilter, extraToolbar, onFieldChange, rowActions,
 }: {
   table: string; tenantId: string; title: string; desc?: string;
   columns: ColumnDef[]; formFields: FieldDef[]; icon: typeof Plus;
   pdfAction?: (row: Row) => void;
+  // Extra per-row action buttons rendered before Edit/Delete (e.g.
+  // Prescriptions' "Dispense" action) -- generic so any module can add
+  // its own workflow actions without ModulePage needing to know about
+  // dispensing, validation, or any other domain-specific action.
+  rowActions?: (row: Row) => ReactNode;
   // Restricts the table to rows whose `column` is one of `in` --
   // e.g. Invoices' patient-name search box resolves matching names to
   // patient ids client-side (see pMap) and passes them here, since the
@@ -209,6 +214,7 @@ export function ModulePage({
                     {columns.map((c) => <td key={c.key} className="px-4 py-3">{renderCell(c, row)}</td>)}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {rowActions && rowActions(row)}
                         {pdfAction && (
                           <button onClick={() => pdfAction(row)} title={t('common.pdf')} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><FileDown size={16} /></button>
                         )}
