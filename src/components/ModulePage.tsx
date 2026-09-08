@@ -26,12 +26,12 @@ export type FieldDef = {
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string;
 };
 
+type Row = { id: string; [k: string]: unknown };
+
 export type ColumnDef = {
-  key: string; label: string; render?: (row: any) => ReactNode;
+  key: string; label: string; render?: (row: Row) => ReactNode;
   searchKeys?: string[]; // real DB columns this displayed column searches, if different from `key` (e.g. a combined "name" column backed by first_name + last_name)
 };
-
-type Row = { id: string; [k: string]: unknown };
 
 // Columns whose underlying Postgres type can't be filtered with ILIKE
 // (uuid foreign keys, timestamps/dates) are excluded from server-side
@@ -46,7 +46,7 @@ export function ModulePage({
 }: {
   table: string; tenantId: string; title: string; desc?: string;
   columns: ColumnDef[]; formFields: FieldDef[]; icon: typeof Plus;
-  pdfAction?: (row: any) => void;
+  pdfAction?: (row: Row) => void;
   // Restricts the table to rows whose `column` is one of `in` --
   // e.g. Invoices' patient-name search box resolves matching names to
   // patient ids client-side (see pMap) and passes them here, since the

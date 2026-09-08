@@ -130,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })();
     });
     return () => { mounted = false; sub.subscription.unsubscribe(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -12,7 +12,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
     return { hasError: true };
   }
   componentDidCatch(error: unknown, info: unknown) {
-    // eslint-disable-next-line no-console
     console.error('Unhandled UI error:', error, info);
     // Reports to Sentry only if VITE_SENTRY_DSN was configured (see main.tsx);
     // otherwise Sentry.captureException is a no-op.

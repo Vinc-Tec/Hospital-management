@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     .in('status', ['active', 'past_due', 'cancelled', 'suspended']);
 
   const counts: Record<string, number> = {};
-  for (const row of (summary ?? []) as any[]) counts[row.status] = (counts[row.status] ?? 0) + 1;
+  for (const row of (summary ?? []) as { status: string }[]) counts[row.status] = (counts[row.status] ?? 0) + 1;
 
   const { count: suspendedTenants } = await db.from('tenants')
     .select('id', { count: 'exact', head: true })

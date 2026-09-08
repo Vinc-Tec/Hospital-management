@@ -54,7 +54,7 @@ const statusOpts = (keys: string[], t: (k: string) => string) =>
 export function PatientsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name', 'national_id'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name', 'national_id'], render: (r) => <span className="text-sm font-medium text-gray-900">{String(r.first_name ?? '')} {String(r.last_name ?? '')}</span> },
     { key: 'national_id', label: t('col.national_id') },
     { key: 'gender', label: t('col.gender') },
     { key: 'phone', label: t('col.phone') },
@@ -78,7 +78,7 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
 export function DoctorsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{String(r.first_name ?? '')} {String(r.last_name ?? '')}</span> },
     { key: 'specialty', label: t('col.specialty') },
     { key: 'phone', label: t('col.phone') },
     { key: 'email', label: t('col.email') },
@@ -326,7 +326,7 @@ export function PharmacyModule({ tenantId }: { tenantId: string }) {
   const cols: ColumnDef[] = [
     { key: 'name', label: t('fld.name') },
     { key: 'generic_name', label: t('col.generic') },
-    { key: 'quantity', label: t('col.qty'), render: (r) => <Badge color={r.quantity <= r.reorder_level ? 'red' : 'green'}>{r.quantity}</Badge> },
+    { key: 'quantity', label: t('col.qty'), render: (r) => <Badge color={Number(r.quantity) <= Number(r.reorder_level) ? 'red' : 'green'}>{String(r.quantity ?? '')}</Badge> },
     { key: 'unit_price', label: t('col.price') },
     { key: 'expiry_date', label: t('col.expiry') },
   ];
@@ -441,7 +441,7 @@ export function InvoicesModule({ tenantId }: { tenantId: string }) {
 export function StaffModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const cols: ColumnDef[] = [
-    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
+    { key: 'first_name', label: t('col.name'), searchKeys: ['first_name', 'last_name'], render: (r) => <span className="text-sm font-medium text-gray-900">{String(r.first_name ?? '')} {String(r.last_name ?? '')}</span> },
     { key: 'role', label: t('col.role') },
     { key: 'department', label: t('col.department') },
     { key: 'phone', label: t('col.phone') },
@@ -601,8 +601,8 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
   const cols: ColumnDef[] = [
     { key: 'title', label: t('fld.name') },
     { key: 'report_type', label: t('common.type') },
-    { key: 'status', label: t('col.status'), render: (r) => <Badge color={r.status === 'published' ? 'green' : 'gray'}>{r.status}</Badge> },
-    { key: 'created_at', label: t('common.date'), render: (r) => <span className="text-sm text-gray-600">{new Date(r.created_at).toLocaleDateString()}</span> },
+    { key: 'status', label: t('col.status'), render: (r) => <Badge color={r.status === 'published' ? 'green' : 'gray'}>{String(r.status ?? '')}</Badge> },
+    { key: 'created_at', label: t('common.date'), render: (r) => <span className="text-sm text-gray-600">{new Date(r.created_at as string).toLocaleDateString()}</span> },
   ];
 
   return (

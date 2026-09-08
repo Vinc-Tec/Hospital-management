@@ -110,7 +110,8 @@ Deno.serve(async (req) => {
   // public API cannot grant access when the DB itself would refuse it
   // (e.g. an active, non-expired subscription is required once "approved").
   const { data: billingActive } = await db.rpc('tenant_billing_active', { p_tenant_id: keyRow.tenant_id });
-  const apiModuleEnabled = (tenant as any).subscription_plans?.module_flags?.api === true;
+  const tenantWithPlan = tenant as { subscription_plans?: { module_flags?: { api?: boolean } } | null } | null;
+  const apiModuleEnabled = tenantWithPlan?.subscription_plans?.module_flags?.api === true;
 
   if (!billingActive) return json({ error: 'subscription_inactive' }, 403, reqOrigin);
   if (!apiModuleEnabled) return json({ error: 'api_not_included_in_plan', message: 'Upgrade to a plan that includes API access.' }, 403, reqOrigin);

@@ -28,10 +28,10 @@ export function SurgeriesModule({ tenantId }: { tenantId: string }) {
   const pMap = usePatientMap(tenantId);
   const dMap = useDoctorMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : '—' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
     { key: 'procedure_name', label: t('col.procedure') },
     { key: 'operating_room', label: t('fld.operating_room') },
-    { key: 'surgeon_id', label: t('fld.surgeon'), render: (r) => r.surgeon_id && dMap.get(r.surgeon_id) ? `${dMap.get(r.surgeon_id)!.first_name} ${dMap.get(r.surgeon_id)!.last_name}` : '—' },
+    { key: 'surgeon_id', label: t('fld.surgeon'), render: (r) => r.surgeon_id && dMap.get(String(r.surgeon_id)) ? `${dMap.get(String(r.surgeon_id))!.first_name} ${dMap.get(String(r.surgeon_id))!.last_name}` : '—' },
     { key: 'scheduled_at', label: t('col.scheduled') },
     { key: 'status', label: t('col.status') },
   ];
@@ -53,7 +53,7 @@ export function HRModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const sMap = useStaffMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(r.staff_id) ? `${sMap.get(r.staff_id)!.first_name} ${sMap.get(r.staff_id)!.last_name}` : '—' },
+    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(String(r.staff_id)) ? `${sMap.get(String(r.staff_id))!.first_name} ${sMap.get(String(r.staff_id))!.last_name}` : '—' },
     { key: 'contract_type', label: t('fld.contract_type') },
     { key: 'hire_date', label: t('fld.hire_date') },
     { key: 'base_salary', label: t('fld.base_salary') },
@@ -77,7 +77,7 @@ export function LeaveModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const sMap = useStaffMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(r.staff_id) ? `${sMap.get(r.staff_id)!.first_name} ${sMap.get(r.staff_id)!.last_name}` : '—' },
+    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(String(r.staff_id)) ? `${sMap.get(String(r.staff_id))!.first_name} ${sMap.get(String(r.staff_id))!.last_name}` : '—' },
     { key: 'leave_type', label: t('fld.leave_type') },
     { key: 'start_date', label: t('fld.start_date') },
     { key: 'end_date', label: t('fld.end_date') },
@@ -99,7 +99,7 @@ export function PayrollModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const sMap = useStaffMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(r.staff_id) ? `${sMap.get(r.staff_id)!.first_name} ${sMap.get(r.staff_id)!.last_name}` : '—' },
+    { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(String(r.staff_id)) ? `${sMap.get(String(r.staff_id))!.first_name} ${sMap.get(String(r.staff_id))!.last_name}` : '—' },
     { key: 'period_month', label: t('fld.period_month') },
     { key: 'gross_salary', label: t('fld.gross_salary') },
     { key: 'net_salary', label: t('fld.net_salary') },
@@ -144,7 +144,7 @@ export function InsuranceModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const pMap = usePatientMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : '—' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
     { key: 'provider_name', label: t('col.provider') },
     { key: 'claim_amount', label: t('col.claim_amount') },
     { key: 'status', label: t('col.status') },
@@ -167,8 +167,8 @@ export function TelemedicineModule({ tenantId }: { tenantId: string }) {
   const pMap = usePatientMap(tenantId);
   const dMap = useDoctorMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : '—' },
-    { key: 'doctor_id', label: t('col.doctor'), render: (r) => r.doctor_id && dMap.get(r.doctor_id) ? `${dMap.get(r.doctor_id)!.first_name} ${dMap.get(r.doctor_id)!.last_name}` : '—' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
+    { key: 'doctor_id', label: t('col.doctor'), render: (r) => r.doctor_id && dMap.get(String(r.doctor_id)) ? `${dMap.get(String(r.doctor_id))!.first_name} ${dMap.get(String(r.doctor_id))!.last_name}` : '—' },
     { key: 'scheduled_at', label: t('col.scheduled') },
     { key: 'status', label: t('col.status') },
   ];
@@ -188,7 +188,7 @@ export function EmergencyModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const pMap = usePatientMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => r.patient_id && pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : (r.walk_in_name || '—') },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => r.patient_id && pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : (String(r.walk_in_name ?? '') || '—') },
     { key: 'triage_level', label: t('col.triage') },
     { key: 'chief_complaint', label: t('fld.chief_complaint') },
     { key: 'status', label: t('col.status') },
@@ -210,7 +210,7 @@ export function ImmunizationsModule({ tenantId }: { tenantId: string }) {
   const pMap = usePatientMap(tenantId);
   const dMap = useDoctorMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : '—' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
     { key: 'vaccine_name', label: t('col.vaccine') },
     { key: 'dose_number', label: t('fld.dose_number') },
     { key: 'date_administered', label: t('fld.date_administered') },
@@ -234,8 +234,8 @@ export function DischargeModule({ tenantId }: { tenantId: string }) {
   const pMap = usePatientMap(tenantId);
   const dMap = useDoctorMap(tenantId);
   const cols: ColumnDef[] = [
-    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(r.patient_id) ? `${pMap.get(r.patient_id)!.first_name} ${pMap.get(r.patient_id)!.last_name}` : '—' },
-    { key: 'doctor_id', label: t('col.doctor'), render: (r) => r.doctor_id && dMap.get(r.doctor_id) ? `${dMap.get(r.doctor_id)!.first_name} ${dMap.get(r.doctor_id)!.last_name}` : '—' },
+    { key: 'patient_id', label: t('col.patient'), render: (r) => pMap.get(String(r.patient_id)) ? `${pMap.get(String(r.patient_id))!.first_name} ${pMap.get(String(r.patient_id))!.last_name}` : '—' },
+    { key: 'doctor_id', label: t('col.doctor'), render: (r) => r.doctor_id && dMap.get(String(r.doctor_id)) ? `${dMap.get(String(r.doctor_id))!.first_name} ${dMap.get(String(r.doctor_id))!.last_name}` : '—' },
     { key: 'discharged_at', label: t('fld.discharged_at') },
     { key: 'referral_to', label: t('fld.referral_to') },
   ];

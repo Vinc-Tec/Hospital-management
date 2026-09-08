@@ -333,7 +333,7 @@ function TeamTab({ tenantId }: { tenantId: string }) {
 
   const load = () => {
     supabase.from('tenant_memberships').select('id, user_id, role, profiles(full_name, email)').eq('tenant_id', tenantId)
-      .then(({ data }) => setMembers((data as any) ?? []));
+      .then(({ data }) => setMembers((data as unknown as typeof members) ?? []));
     supabase.from('roles').select('id, name').eq('tenant_id', tenantId).order('name')
       .then(({ data }) => setRoles((data as typeof roles) ?? []));
   };

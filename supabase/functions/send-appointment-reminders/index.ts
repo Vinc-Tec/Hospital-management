@@ -108,8 +108,8 @@ Deno.serve(async (req) => {
   const errors: string[] = [];
 
   for (const appt of appointments ?? []) {
-    const patient = (appt as any).patients;
-    const tenant = (appt as any).tenants;
+    const patient = (appt as { patients?: { first_name?: string; last_name?: string; phone?: string } | null }).patients;
+    const tenant = (appt as { tenants?: { commercial_name?: string; legal_name?: string } | null }).tenants;
     const phone = patient?.phone;
     if (!phone) { skipped++; continue; }
 
