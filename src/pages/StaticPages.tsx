@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, ArrowLeft, Key, Lock, Zap, Copy, Check } from 'lucide-react';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { privacyPolicy, termsOfService, legalNotice, cookiePolicy, refundPolicy } from '../lib/legalContent';
-import { useI18n } from '../lib/i18n';
+import { useI18n, legalLang } from '../lib/i18n';
 import { Button, Card, Input, Textarea } from '../components/ui';
 import { useState } from 'react';
 import logoMark from '../assets/logo-mark.png';
@@ -94,7 +94,7 @@ export function FeaturesPage() {
 
 export function PrivacyPage() {
   const { t, lang } = useI18n();
-  const doc = privacyPolicy[lang];
+  const doc = privacyPolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.privacy.title')}</h1>
@@ -116,7 +116,7 @@ export function PrivacyPage() {
 
 export function TermsPage() {
   const { t, lang } = useI18n();
-  const doc = termsOfService[lang];
+  const doc = termsOfService[legalLang(lang)];
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.terms.title')}</h1>
@@ -138,7 +138,7 @@ export function TermsPage() {
 
 export function LegalNoticePage() {
   const { t, lang } = useI18n();
-  const doc = legalNotice[lang];
+  const doc = legalNotice[legalLang(lang)];
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.legal.title')}</h1>
@@ -160,7 +160,7 @@ export function LegalNoticePage() {
 
 export function RefundPage() {
   const { t, lang } = useI18n();
-  const doc = refundPolicy[lang];
+  const doc = refundPolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.refund.title')}</h1>
@@ -182,7 +182,7 @@ export function RefundPage() {
 
 export function CookiesPage() {
   const { t, lang } = useI18n();
-  const doc = cookiePolicy[lang];
+  const doc = cookiePolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.cookies.title')}</h1>

@@ -203,7 +203,12 @@ function CheckinModal({ tenantId, patients, doctors, onClose, onDone, createdBy 
   const [err, setErr] = useState<string | null>(null);
 
   const filtered = search.trim()
-    ? patients.filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 8)
+    ? patients.filter((p) => {
+        const q = search.trim().toLowerCase();
+        return `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)
+          || (p.national_id ?? '').toLowerCase().includes(q)
+          || (p.phone ?? '').toLowerCase().includes(q);
+      }).slice(0, 8)
     : patients.slice(0, 8);
   const selected = patients.find((p) => p.id === patientId) ?? null;
 
@@ -235,7 +240,7 @@ function CheckinModal({ tenantId, patients, doctors, onClose, onDone, createdBy 
             <>
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('common.search')}
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('queue.search_placeholder')}
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               {filtered.length > 0 && (

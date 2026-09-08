@@ -1,4 +1,4 @@
-import { useI18n } from '../lib/i18n';
+import { useI18n, SUPPORTED_LANGUAGES } from '../lib/i18n';
 import logoMark from '../assets/logo-mark.png';
 
 export function Logo({ size = 36, variant = 'light' }: { size?: number; variant?: 'light' | 'dark' }) {
@@ -28,24 +28,20 @@ export function CopyrightLine({ className = '' }: { className?: string }) {
 
 export function LangToggle({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const { lang, setLang } = useI18n();
-  const base = variant === 'dark'
-    ? 'text-white/60 hover:text-white'
-    : 'text-gray-500 hover:text-gray-700';
-  const active = variant === 'dark'
-    ? 'bg-white/20 text-white font-semibold'
-    : 'bg-blue-600 text-white font-semibold';
+  const isDark = variant === 'dark';
   return (
-    <div className={`flex items-center gap-0.5 rounded-lg p-0.5 ${variant === 'dark' ? 'bg-white/10' : 'bg-gray-100'}`}>
-      {(['fr', 'en'] as const).map((l) => (
-        <button
-          key={l}
-          onClick={() => setLang(l)}
-          className={`px-2.5 py-1 rounded-md text-xs uppercase tracking-wide transition-all ${lang === l ? active : base}`}
-        >
-          {l}
-        </button>
+    <select
+      value={lang}
+      onChange={(e) => setLang(e.target.value as Parameters<typeof setLang>[0])}
+      aria-label="Language"
+      className={`text-xs uppercase tracking-wide rounded-lg px-2.5 py-1.5 border-0 focus:outline-none focus:ring-2 cursor-pointer ${
+        isDark ? 'bg-white/10 text-white focus:ring-white/40' : 'bg-gray-100 text-gray-700 focus:ring-blue-400'
+      }`}
+    >
+      {SUPPORTED_LANGUAGES.map((l) => (
+        <option key={l.code} value={l.code} className="text-gray-900">{l.nativeName}</option>
       ))}
-    </div>
+    </select>
   );
 }
 

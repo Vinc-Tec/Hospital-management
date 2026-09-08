@@ -1,6 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-type Lang = 'fr' | 'en';
+// Health Cloud's 7 supported languages: French/English are fully
+// translated; Spanish/Arabic/Chinese/Portuguese/Russian are wired up
+// end-to-end (selectable, persisted, RTL-aware for Arabic) with their
+// dictionaries intentionally left empty for now -- t() already falls
+// back to English for any missing key (see the `t` implementation
+// below), so the app renders correctly in English today and only needs
+// dictionary content filled in to go live in each language, with no
+// further plumbing required.
+type Lang = 'fr' | 'en' | 'es' | 'ar' | 'zh' | 'pt' | 'ru';
+export const SUPPORTED_LANGUAGES: { code: Lang; nativeName: string; rtl?: boolean }[] = [
+  { code: 'fr', nativeName: 'Français' },
+  { code: 'en', nativeName: 'English' },
+  { code: 'es', nativeName: 'Español' },
+  { code: 'ar', nativeName: 'العربية', rtl: true },
+  { code: 'zh', nativeName: '中文' },
+  { code: 'pt', nativeName: 'Português' },
+  { code: 'ru', nativeName: 'Русский' },
+];
 type Dict = Record<string, string>;
 
 const fr: Dict = {
@@ -284,6 +301,18 @@ const fr: Dict = {
   'settings.billing_plan': 'Plan actuel', 'settings.billing_status': 'Statut', 'settings.billing_renew': 'Renouvellement',
   'settings.low_stock': 'article(s) au niveau de réappro ou en dessous',
   'mod.patients.title': 'Patients', 'mod.patients.desc': 'Gérer les dossiers patients',
+  'id.title': 'Identifier un patient', 'id.subtitle': 'Renseignez ce que vous avez — pièce d\'identité, téléphone, ou nom et date de naissance.',
+  'id.national_id': 'Numéro de pièce d\'identité', 'id.search': 'Rechercher',
+  'id.exact_match': 'Patient existant détecté', 'id.possible_match': 'Correspondances possibles',
+  'id.possible_match_hint': 'Un ou plusieurs patients pourraient correspondre à cette identité. Vérifiez avant de créer un nouveau dossier.',
+  'id.no_match': 'Aucune correspondance trouvée.', 'id.no_extra_details': 'Aucun détail supplémentaire',
+  'id.create_new': 'Créer un nouveau patient avec ces informations',
+  'id.identify_button': 'Identifier un patient',
+  'id.duplicate_warning_title': 'Vérification anti-doublon',
+  'id.duplicate_exact_msg': 'Un patient correspondant existe déjà. Ouvrez son dossier au lieu d\'en créer un nouveau.',
+  'id.duplicate_possible_msg': 'Un ou plusieurs patients pourraient correspondre. Vérifiez avant de continuer.',
+  'id.open_existing': 'Ouvrir ce dossier', 'id.create_anyway': 'Créer quand même un nouveau dossier',
+  'id.back_to_form': 'Retour au formulaire',
   'timeline.title': 'Chronologie clinique', 'timeline.empty': 'Aucun élément clinique enregistré pour ce patient.',
   'timeline.kind.record': 'Dossier médical', 'timeline.kind.consultation': 'Consultation', 'timeline.kind.lab': 'Analyse labo',
   'timeline.kind.radiology': 'Imagerie', 'timeline.kind.prescription': 'Ordonnance',
@@ -432,6 +461,7 @@ const fr: Dict = {
   'queue.assign_doctor': 'Assigner à un médecin', 'queue.any_doctor': 'N\'importe quel médecin disponible', 'queue.for': 'Pour',
   'queue.priority': 'Priorité', 'queue.normal': 'Normale', 'queue.urgent': 'Urgent',
   'queue.reason': 'Motif de la visite',
+  'queue.search_placeholder': 'Nom, numéro de pièce ou téléphone...',
   'notify.patient_checked_in': 'Patient enregistré à l\'accueil',
   'mod.telemedicine.title': 'Télémédecine', 'mod.telemedicine.desc': 'Téléconsultations vidéo',
   'mod.emergency.title': 'Urgences', 'mod.emergency.desc': 'Triage et prise en charge des urgences',
@@ -777,6 +807,18 @@ const en: Dict = {
   'settings.billing_plan': 'Current plan', 'settings.billing_status': 'Status', 'settings.billing_renew': 'Renewal',
   'settings.low_stock': 'item(s) at or below reorder level',
   'mod.patients.title': 'Patients', 'mod.patients.desc': 'Manage patient records',
+  'id.title': 'Identify a patient', 'id.subtitle': 'Enter whatever you have — ID document number, phone, or name and date of birth.',
+  'id.national_id': 'ID document number', 'id.search': 'Search',
+  'id.exact_match': 'Existing patient detected', 'id.possible_match': 'Possible matches',
+  'id.possible_match_hint': 'One or more patients could match this identity. Please verify before creating a new record.',
+  'id.no_match': 'No match found.', 'id.no_extra_details': 'No extra details',
+  'id.create_new': 'Create a new patient with this information',
+  'id.identify_button': 'Identify a patient',
+  'id.duplicate_warning_title': 'Duplicate check',
+  'id.duplicate_exact_msg': 'A matching patient already exists. Open their record instead of creating a new one.',
+  'id.duplicate_possible_msg': 'One or more patients could match. Please verify before continuing.',
+  'id.open_existing': 'Open this record', 'id.create_anyway': 'Create a new record anyway',
+  'id.back_to_form': 'Back to form',
   'timeline.title': 'Clinical timeline', 'timeline.empty': 'No clinical activity recorded for this patient yet.',
   'timeline.kind.record': 'Medical record', 'timeline.kind.consultation': 'Consultation', 'timeline.kind.lab': 'Lab test',
   'timeline.kind.radiology': 'Imaging', 'timeline.kind.prescription': 'Prescription',
@@ -925,6 +967,7 @@ const en: Dict = {
   'queue.assign_doctor': 'Assign to a doctor', 'queue.any_doctor': 'Any available doctor', 'queue.for': 'For',
   'queue.priority': 'Priority', 'queue.normal': 'Normal', 'queue.urgent': 'Urgent',
   'queue.reason': 'Reason for visit',
+  'queue.search_placeholder': 'Name, ID number, or phone...',
   'notify.patient_checked_in': 'Patient checked in at reception',
   'mod.telemedicine.title': 'Telemedicine', 'mod.telemedicine.desc': 'Video teleconsultations',
   'mod.emergency.title': 'Emergency', 'mod.emergency.desc': 'Triage and emergency case management',
@@ -989,15 +1032,39 @@ const en: Dict = {
   'billing.success_title': 'Subscription activated!', 'billing.success_desc': 'Your access has been restored. Welcome to Health Cloud.',
 };
 
-const dictionaries: Record<Lang, Dict> = { fr, en };
+// Intentionally empty for now -- see the SUPPORTED_LANGUAGES comment
+// above. Each one is a real, separate dictionary ready to receive its
+// translations; t() falls back to English key-by-key until then, so
+// leaving these empty is safe and doesn't require touching this file's
+// structure again when the translations are added.
+const es: Dict = {};
+const ar: Dict = {};
+const zh: Dict = {};
+const pt: Dict = {};
+const ru: Dict = {};
+
+const dictionaries: Record<Lang, Dict> = { fr, en, es, ar, zh, pt, ru };
 type I18nContext = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
 const Ctx = createContext<I18nContext | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('hc_lang') as Lang) || 'fr');
-  useEffect(() => { localStorage.setItem('hc_lang', lang); document.documentElement.lang = lang; }, [lang]);
-  const value = useMemo<I18nContext>(() => ({ lang, setLang: setLangState, t: (key: string) => dictionaries[lang][key] ?? dictionaries.en[key] ?? key }), [lang]);
+  useEffect(() => {
+    localStorage.setItem('hc_lang', lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = SUPPORTED_LANGUAGES.find((l) => l.code === lang)?.rtl ? 'rtl' : 'ltr';
+  }, [lang]);
+  const value = useMemo<I18nContext>(() => ({ lang, setLang: setLangState, t: (key: string) => dictionaries[lang][key] ?? dictionaries.en[key] ?? dictionaries.fr[key] ?? key }), [lang]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+// A few content datasets (legal documents, drug-interaction warnings)
+// are only authored in French/English today -- translating those is a
+// separate, larger content task from the UI-string translations this
+// helper's callers gracefully degrade around. Any of the other 5
+// languages falls back to English content until that's done.
+export function legalLang(lang: Lang): 'fr' | 'en' {
+  return lang === 'fr' ? 'fr' : 'en';
 }
 
 export function useI18n() {

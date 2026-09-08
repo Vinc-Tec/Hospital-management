@@ -1,7 +1,8 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
 import { usePaginatedCrud } from '../lib/useCrud';
+import { findPatientMatches, type PatientMatchResult } from '../lib/patientMatch';
 import { useI18n } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -40,7 +41,7 @@ export type FieldDef = {
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string;
 };
 
-type Row = { id: string; [k: string]: unknown };
+export type Row = { id: string; [k: string]: unknown };
 
 export type ColumnDef = {
   key: string; label: string; render?: (row: Row) => ReactNode;
@@ -57,6 +58,7 @@ function isSearchableColumn(key: string) {
 
 export function ModulePage({
   table, tenantId, title, desc, columns, formFields, icon: Icon, pdfAction, extraFilter, extraToolbar, onFieldChange, rowActions,
+  externalOpenAddWith, externalOpenEditRow, onExternalTriggerHandled,
 }: {
   table: string; tenantId: string; title: string; desc?: string;
   columns: ColumnDef[]; formFields: FieldDef[]; icon: typeof Plus;
@@ -79,6 +81,14 @@ export function ModulePage({
   // Returns the extra fields to merge into form state when `key`
   // changes to `value`, or null/undefined for no extra effect.
   onFieldChange?: (key: string, value: unknown, current: Record<string, unknown>) => Record<string, unknown> | null | undefined;
+  // Lets an external component (the Identify-a-patient search, today)
+  // open this module's existing Add form pre-filled, or jump straight
+  // to editing an existing row -- reusing the same form/modal instead
+  // of that component needing its own. `onExternalTriggerHandled` resets
+  // the parent's trigger so it doesn't keep reopening on re-render.
+  externalOpenAddWith?: Record<string, unknown> | null;
+  externalOpenEditRow?: Row | null;
+  onExternalTriggerHandled?: () => void;
 }) {
   const { t } = useI18n();
   const { session } = useAuth();
@@ -124,14 +134,44 @@ export function ModulePage({
     setEditing(null);
     setForm({});
     setErr(null);
+    setDupCheck(null);
     setModalOpen(true);
   };
   const openEdit = (row: Row) => {
     setEditing(row);
     setForm({ ...row });
     setErr(null);
+    setDupCheck(null);
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (externalOpenAddWith) {
+      setEditing(null);
+      setForm(externalOpenAddWith);
+      setErr(null);
+      setDupCheck(null);
+      setModalOpen(true);
+      onExternalTriggerHandled?.();
+    }
+  }, [externalOpenAddWith]);
+  useEffect(() => {
+    if (externalOpenEditRow) {
+      openEdit(externalOpenEditRow);
+      onExternalTriggerHandled?.();
+    }
+  }, [externalOpenEditRow]);
+
+  // Duplicate-patient check: before a *new* patient record is actually
+  // inserted, search for an existing patient the same details could
+  // already belong to (national ID, phone, name + DOB -- see
+  // patientMatch.ts). An exact or possible match pauses the save and
+  // shows the candidates instead of silently creating a duplicate file;
+  // staff can open the existing record or explicitly create a new one
+  // anyway (e.g. genuinely different people who happen to share a name).
+  // Every other table is unaffected -- this only runs for `patients`.
+  const [dupCheck, setDupCheck] = useState<PatientMatchResult | null>(null);
+  const [dupChecking, setDupChecking] = useState(false);
 
   const submit = async () => {
     setSaving(true); setErr(null);
@@ -142,6 +182,24 @@ export function ModulePage({
     for (const f of formFields) {
       if (form[f.key] !== undefined && form[f.key] !== '') payload[f.key] = form[f.key];
     }
+
+    if (table === 'patients' && !editing && !dupCheck) {
+      setDupChecking(true);
+      const matches = await findPatientMatches(tenantId, {
+        nationalId: payload.national_id as string | undefined,
+        phone: payload.phone as string | undefined,
+        firstName: payload.first_name as string | undefined,
+        lastName: payload.last_name as string | undefined,
+        dateOfBirth: payload.date_of_birth as string | undefined,
+      });
+      setDupChecking(false);
+      if (matches.exact.length > 0 || matches.possible.length > 0) {
+        setDupCheck(matches);
+        setSaving(false);
+        return;
+      }
+    }
+
     const res = editing ? await crud.update(editing.id, payload) : await crud.insert(payload);
     if (res.error) setErr(translateDbError(res.error, t));
     else {
@@ -253,12 +311,34 @@ export function ModulePage({
         )}
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('common.edit') : t('common.add')} footer={
-        <>
-          <Button variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button onClick={submit} loading={saving}>{t('common.save')}</Button>
-        </>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={dupCheck ? t('id.duplicate_warning_title') : (editing ? t('common.edit') : t('common.add'))} footer={
+        dupCheck ? (
+          <>
+            <Button variant="outline" onClick={() => setDupCheck(null)}>{t('id.back_to_form')}</Button>
+            <Button variant="danger" onClick={submit} loading={saving}>{t('id.create_anyway')}</Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={submit} loading={saving || dupChecking}>{t('common.save')}</Button>
+          </>
+        )
       }>
+        {dupCheck ? (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">{dupCheck.exact.length > 0 ? t('id.duplicate_exact_msg') : t('id.duplicate_possible_msg')}</p>
+            {[...dupCheck.exact, ...dupCheck.possible].map((p) => (
+              <button key={p.id} onClick={() => openEdit(p as unknown as Row)}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition-colors flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{p.first_name} {p.last_name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{[p.date_of_birth, p.phone, p.national_id].filter(Boolean).join(' · ')}</p>
+                </div>
+                <span className="text-xs font-medium text-blue-600 flex-shrink-0">{t('id.open_existing')}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
         <div className="space-y-4">
           {formFields.map((f) => {
             const val = form[f.key] as string ?? '';
@@ -296,6 +376,7 @@ export function ModulePage({
           {err && <p className="text-sm text-red-600">{err}</p>}
           {uploadErr && <p className="text-sm text-red-600">{uploadErr}</p>}
         </div>
+        )}
       </Modal>
 
       <Modal open={!!delId} onClose={() => setDelId(null)} title={t('common.confirm.delete')} footer={
