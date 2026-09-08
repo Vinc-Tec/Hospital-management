@@ -4,6 +4,8 @@ import {
 import { ModulePage, type ColumnDef, type FieldDef } from '../components/ModulePage';
 import { useCrud } from '../lib/useCrud';
 import { useI18n } from '../lib/i18n';
+import { useAuth } from '../lib/auth';
+import { formatTenantCurrency } from '../lib/currency';
 import { type Patient, type Doctor, type Staff, type Invoice, type Admission } from '../lib/supabase';
 
 const statusOpts = (keys: string[], t: (k: string) => string) =>
@@ -97,12 +99,14 @@ export function LeaveModule({ tenantId }: { tenantId: string }) {
 // ---------- 4. Payroll ----------
 export function PayrollModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
+  const { activeTenant } = useAuth();
+  const currency = activeTenant?.currency_code ?? 'USD';
   const sMap = useStaffMap(tenantId);
   const cols: ColumnDef[] = [
     { key: 'staff_id', label: t('col.name'), render: (r) => sMap.get(String(r.staff_id)) ? `${sMap.get(String(r.staff_id))!.first_name} ${sMap.get(String(r.staff_id))!.last_name}` : '—' },
     { key: 'period_month', label: t('fld.period_month') },
-    { key: 'gross_salary', label: t('fld.gross_salary') },
-    { key: 'net_salary', label: t('fld.net_salary') },
+    { key: 'gross_salary', label: t('fld.gross_salary'), render: (r) => <span>{formatTenantCurrency(Number(r.gross_salary) || 0, currency)}</span> },
+    { key: 'net_salary', label: t('fld.net_salary'), render: (r) => <span>{formatTenantCurrency(Number(r.net_salary) || 0, currency)}</span> },
     { key: 'status', label: t('col.status') },
   ];
   const fields: FieldDef[] = [
@@ -110,11 +114,29 @@ export function PayrollModule({ tenantId }: { tenantId: string }) {
     { key: 'period_month', label: t('fld.period_month'), type: 'date', required: true },
     { key: 'gross_salary', label: t('fld.gross_salary'), type: 'number', required: true },
     { key: 'deductions', label: t('fld.deductions'), type: 'number' },
+    // Auto-calculated below from gross - deductions (still shown as a
+    // normal field so an unusual case, e.g. a one-off bonus not
+    // captured by either figure, can still be corrected by hand) --
+    // previously a free-typed number with nothing checking it actually
+    // equalled gross minus deductions, so a payslip's own arithmetic
+    // could silently be wrong.
     { key: 'net_salary', label: t('fld.net_salary'), type: 'number', required: true },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['draft', 'approved', 'paid'], t) },
     { key: 'notes', label: t('fld.notes'), type: 'textarea' },
   ];
-  return <ModulePage table="payslips" tenantId={tenantId} title={t('mod.payroll.title')} desc={t('mod.payroll.desc')} icon={Wallet} columns={cols} formFields={fields} />;
+  return <ModulePage table="payslips" tenantId={tenantId} title={t('mod.payroll.title')} desc={t('mod.payroll.desc')} icon={Wallet} columns={cols} formFields={fields}
+    onFieldChange={(key, value, current) => {
+      if (key === 'gross_salary') {
+        const gross = Number(value) || 0;
+        const deductions = Number(current.deductions) || 0;
+        return { net_salary: Math.round((gross - deductions) * 100) / 100 };
+      }
+      if (key === 'deductions') {
+        const gross = Number(current.gross_salary) || 0;
+        return { net_salary: Math.round((gross - (Number(value) || 0)) * 100) / 100 };
+      }
+      return null;
+    }} />;
 }
 
 // ---------- 5. General inventory ----------
