@@ -98,22 +98,22 @@ export function LandingPage() {
 
   const plans = [
     {
-      name: 'Starter', price_monthly: 49, price_yearly: 470,
+      name: 'Starter', price_monthly: 49, price_yearly: 490,
       features: [t('plan.starter.f1'), t('plan.starter.f2'), t('plan.starter.f3'), t('plan.starter.f4'), t('plan.starter.f5'), t('plan.starter.f6')],
       highlight: false,
     },
     {
-      name: 'Professional', price_monthly: 149, price_yearly: 1430,
+      name: 'Professional', price_monthly: 149, price_yearly: 1490,
       features: [t('plan.pro.f1'), t('plan.pro.f2'), t('plan.pro.f3'), t('plan.pro.f4'), t('plan.pro.f5')],
       highlight: true,
     },
     {
-      name: 'Business', price_monthly: 299, price_yearly: 2870,
+      name: 'Business', price_monthly: 299, price_yearly: 2990,
       features: [t('plan.biz.f1'), t('plan.biz.f2'), t('plan.biz.f3'), t('plan.biz.f4'), t('plan.biz.f5'), t('plan.biz.f6')],
       highlight: false,
     },
     {
-      name: 'Enterprise', price_monthly: 429, price_yearly: 4118,
+      name: 'Enterprise', price_monthly: 429, price_yearly: 4290,
       features: [t('plan.ent.f1'), t('plan.ent.f2'), t('plan.ent.f3'), t('plan.ent.f4'), t('plan.ent.f5'), t('plan.ent.f6')],
       highlight: false,
     },
@@ -439,7 +439,7 @@ export function LandingPage() {
               </button>
               <button onClick={() => setAnnualBilling(true)} className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${annualBilling ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
                 {t('plan.yearly')}
-                <span className={`text-xs px-2 py-0.5 rounded-lg font-bold ${annualBilling ? 'bg-emerald-400/20 text-emerald-100' : 'bg-emerald-100 text-emerald-700'}`}>-20%</span>
+                <span className={`text-xs px-2 py-0.5 rounded-lg font-bold ${annualBilling ? 'bg-emerald-400/20 text-emerald-100' : 'bg-emerald-100 text-emerald-700'}`}>{t('plan.two_months_free')}</span>
               </button>
             </div>
           </div>
