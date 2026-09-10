@@ -661,7 +661,7 @@ export function RolesModule({ tenantId }: { tenantId: string }) {
       <div className="flex items-start justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><ShieldCheck size={22} className="text-blue-600" /></div>
-          <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.roles.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.roles.desc')}</p></div>
+          <div><h1 className="text-2xl font-semibold text-gray-900">{t('mod.roles.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.roles.desc')}</p></div>
         </div>
         <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
       </div>
@@ -762,7 +762,7 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
       <div className="flex items-start justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><FileBarChart size={22} className="text-blue-600" /></div>
-          <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.reports.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.reports.desc')}</p></div>
+          <div><h1 className="text-2xl font-semibold text-gray-900">{t('mod.reports.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.reports.desc')}</p></div>
         </div>
         <Button onClick={openAdd}><Plus size={16} /> {t('common.add')}</Button>
       </div>
@@ -845,7 +845,7 @@ export function PerformanceModule({ tenantId }: { tenantId: string }) {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><TrendingUp size={22} className="text-blue-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('mod.performance.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.performance.desc')}</p></div>
+        <div><h1 className="text-2xl font-semibold text-gray-900">{t('mod.performance.title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('mod.performance.desc')}</p></div>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map((k, i) => (

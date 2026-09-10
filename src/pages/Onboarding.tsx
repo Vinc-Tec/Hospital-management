@@ -297,7 +297,7 @@ export function Onboarding() {
         </div>
       </header>
       <div className="relative flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('onb.title')}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">{t('onb.title')}</h1>
         <p className="text-sm text-gray-500 mb-8">{t('onb.subtitle')}</p>
 
         <div className="flex items-center justify-between mb-8 max-w-2xl">

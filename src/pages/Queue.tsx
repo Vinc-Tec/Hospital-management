@@ -96,7 +96,7 @@ export function QueueModule({ tenantId }: { tenantId: string }) {
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center"><ListChecks size={22} className="text-blue-600" /></div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('mod.queue.title')}</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t('mod.queue.title')}</h1>
             <p className="text-sm text-gray-500 mt-0.5">{t('mod.queue.desc')}</p>
           </div>
         </div>

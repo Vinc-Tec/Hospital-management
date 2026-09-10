@@ -309,7 +309,7 @@ export function Dashboard() {
           {isOverview ? (
             <>
               <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">{t('dash.welcome')}, {profile?.full_name || user?.email?.split('@')[0]}</h1>
                 <p className="text-sm text-gray-500 mt-1">{isSuperAdmin ? 'Super Admin — LiAfrik' : activeTenant?.healthcare_type}</p>
               </div>
 

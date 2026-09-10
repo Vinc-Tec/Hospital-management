@@ -9,7 +9,7 @@ export function Button({
   size?: 'sm' | 'md' | 'lg'; loading?: boolean; disabled?: boolean; className?: string;
   type?: 'button' | 'submit' | 'reset'; onClick?: () => void;
 }) {
-  const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   const variants = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md',
     secondary: 'bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-400 shadow-sm',
@@ -106,7 +106,7 @@ export function PageHeader({ title, desc, action }: { title: string; desc?: stri
   return (
     <div className="flex items-start justify-between mb-6 gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
         {desc && <p className="text-sm text-gray-500 mt-1">{desc}</p>}
       </div>
       {action}

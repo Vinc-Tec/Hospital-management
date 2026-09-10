@@ -118,7 +118,7 @@ function GracePeriodScreen({ daysLeft }: { daysLeft: number }) {
         <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <AlertCircle size={32} className="text-red-500" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('billing.grace_title')}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('billing.grace_title')}</h1>
         <p className="text-gray-500 mb-6">{t('billing.grace_desc').replace('{n}', String(daysLeft))}</p>
         <div className="flex flex-col gap-3">
           <Link to="/app/settings" className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors text-center">
@@ -161,7 +161,7 @@ function SubscriptionScreen() {
       <div className="max-w-4xl w-full">
         <div className="text-center mb-10">
           <Logo variant="dark" />
-          <h1 className="text-3xl font-bold text-white mt-6 mb-2">{t('billing.expired_title')}</h1>
+          <h1 className="text-3xl font-semibold text-white mt-6 mb-2">{t('billing.expired_title')}</h1>
           <p className="text-white/50">{t('billing.expired_desc')}</p>
         </div>
 

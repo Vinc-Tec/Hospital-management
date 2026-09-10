@@ -186,10 +186,10 @@ export function LandingPage() {
           </nav>
           <div className="flex items-center gap-3">
             <LangToggle variant="light" />
-            <Link to="/signin" className="text-sm font-medium px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+            <Link to="/signin" className="text-sm font-medium px-4 py-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
               {t('nav.signin')}
             </Link>
-            <Link to="/signup" className="text-sm font-semibold px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <Link to="/signup" className="text-sm font-semibold px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors">
               {t('nav.signup')}
             </Link>
           </div>
@@ -216,7 +216,7 @@ export function LandingPage() {
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.08] mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-gray-900 tracking-tight leading-[1.08] mb-6">
               {t('hero.line1')}<br />
               <span className="text-blue-600">{t('hero.line2')}</span>
             </h1>
@@ -227,12 +227,12 @@ export function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10">
               <Link to="/signup"
-                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-base">
+                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors text-base">
                 {t('hero.cta.start')}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
               <a href="#plans"
-                className="inline-flex items-center gap-2 px-7 py-3.5 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors text-base">
+                className="inline-flex items-center gap-2 px-7 py-3.5 border border-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-50 transition-colors text-base">
                 {t('hero.cta.plans')}
               </a>
             </div>
@@ -434,10 +434,10 @@ export function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-3 mb-4">{t('landing.pricing_title')}</h2>
             <p className="text-gray-500 mb-8">{t('landing.pricing_sub')}</p>
             <div className="inline-flex items-center gap-3 bg-gray-50 rounded-2xl p-1 border border-gray-200">
-              <button onClick={() => setAnnualBilling(false)} className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${!annualBilling ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+              <button onClick={() => setAnnualBilling(false)} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${!annualBilling ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
                 {t('plan.monthly')}
               </button>
-              <button onClick={() => setAnnualBilling(true)} className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${annualBilling ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+              <button onClick={() => setAnnualBilling(true)} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${annualBilling ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
                 {t('plan.yearly')}
                 <span className={`text-xs px-2 py-0.5 rounded-lg font-bold ${annualBilling ? 'bg-emerald-400/20 text-emerald-100' : 'bg-emerald-100 text-emerald-700'}`}>{t('plan.two_months_free')}</span>
               </button>
@@ -479,7 +479,7 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <Link to="/signup"
-                  className={`w-full text-center py-3.5 rounded-xl text-sm font-semibold transition-colors ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+                  className={`w-full text-center py-3.5 rounded-full text-sm font-semibold transition-colors ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
                   {t('plan.start_trial')}
                 </Link>
               </div>
@@ -521,7 +521,7 @@ export function LandingPage() {
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.cta_title')}</h2>
               <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">{t('landing.cta_sub')}</p>
               <Link to="/signup"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-base">
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 font-bold rounded-full hover:bg-blue-50 transition-colors text-base">
                 {t('hero.cta.start')}
                 <ArrowRight size={18} />
               </Link>

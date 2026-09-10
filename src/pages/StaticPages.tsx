@@ -48,7 +48,7 @@ export function AboutPage() {
   const { t } = useI18n();
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('page.about.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-4">{t('page.about.title')}</h1>
       <p className="text-gray-600 leading-relaxed mb-8">{t('page.about.body')}</p>
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-2">{t('page.about.mission_title')}</h2>
@@ -77,7 +77,7 @@ export function FeaturesPage() {
   ];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.features.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.features.title')}</h1>
       <p className="text-gray-500 mb-8">{t('page.features.subtitle')}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {features.map((f, i) => (
@@ -97,7 +97,7 @@ export function PrivacyPage() {
   const doc = privacyPolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.privacy.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.privacy.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
@@ -119,7 +119,7 @@ export function TermsPage() {
   const doc = termsOfService[legalLang(lang)];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.terms.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.terms.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
@@ -141,7 +141,7 @@ export function LegalNoticePage() {
   const doc = legalNotice[legalLang(lang)];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.legal.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.legal.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
@@ -163,7 +163,7 @@ export function RefundPage() {
   const doc = refundPolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.refund.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.refund.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
@@ -185,7 +185,7 @@ export function CookiesPage() {
   const doc = cookiePolicy[legalLang(lang)];
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.cookies.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.cookies.title')}</h1>
       <p className="text-xs text-gray-400 mb-6">{doc.lastUpdated}</p>
       <Card className="p-6 space-y-6">
         <p className="text-gray-600 leading-relaxed">{doc.intro}</p>
@@ -233,7 +233,7 @@ export function ApiDocsPage() {
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-4">
         <Zap size={12} /> {t('page.api.badge')}
       </div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.api.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.api.title')}</h1>
       <p className="text-gray-500 mb-8 max-w-2xl">{t('page.api.subtitle')}</p>
 
       <Card className="p-6 mb-6">
@@ -291,7 +291,7 @@ export function InsightArticlePage() {
   return (
     <StaticPageLayout>
       <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('insight.label')}</span>
-      <h1 className="text-3xl font-bold text-gray-900 mt-3 mb-3 leading-tight">{t('insight.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mt-3 mb-3 leading-tight">{t('insight.title')}</h1>
       <p className="text-sm font-semibold text-gray-800 mb-6">{t('insight.byline')}</p>
       <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-8">
         <img src={resourcePhoto} alt="" className="w-full h-[280px] object-cover" />
@@ -312,7 +312,7 @@ export function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   return (
     <StaticPageLayout>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('page.contact.title')}</h1>
+      <h1 className="text-3xl font-semibold text-gray-900 mb-2">{t('page.contact.title')}</h1>
       <p className="text-gray-500 mb-8">{t('page.contact.body')}</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
