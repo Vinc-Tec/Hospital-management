@@ -20,6 +20,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Headings use Poppins (actually loaded via Google Fonts in index.html,
+   unlike the body's 'Glacial Indifference'/'Satoshi' stack above, which
+   isn't loaded anywhere and has always silently fallen back to
+   system-ui) -- gives titles a distinct, slightly heavier geometric
+   feel at font-semibold without needing font-bold's full weight. */
+h1, h2, h3 {
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
 #root {
   height: 100%;
 }
