@@ -13,6 +13,8 @@ import { supabase, type Tenant, type SubscriptionPlan, type AuditLog } from '../
 import { Button, Card, Input, Modal, Badge, EmptyState, Select } from '../components/ui';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { Logo, LangToggle, StatusBadge, CopyrightLine } from '../components/brand';
+import { GATEWAY_LABELS } from '../lib/payments';
+import { isPaddleConfigured } from '../lib/paddle';
 
 // The protected super-admin list is fetched from protected_admin_emails at
 // runtime (see auth.tsx); it is no longer hardcoded in this file. The
@@ -749,8 +751,10 @@ function SaMarketplace({ codes, onAction }: { codes: CommercialCodeRow[]; onActi
 function SaPayments({ billingInvoices, tenants }: { billingInvoices: BillingInvoiceRow[]; tenants: Tenant[] }) {
   const { t } = useI18n();
   const tenantName = (id: string) => tenants.find((tn) => tn.id === id)?.commercial_name ?? '—';
-  if (billingInvoices.length === 0) return <Card className="p-8"><EmptyState icon={CreditCard} title={t('common.none')} /></Card>;
   return (
+    <div className="space-y-6">
+      <PspStatusPanel />
+      {billingInvoices.length === 0 ? <Card className="p-8"><EmptyState icon={CreditCard} title={t('common.none')} /></Card> : (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -769,6 +773,77 @@ function SaPayments({ billingInvoices, tenants }: { billingInvoices: BillingInvo
           </tbody>
         </table>
       </div>
+    </Card>
+      )}
+    </div>
+  );
+}
+
+// Live diagnostic + management panel for platform admins: shows exactly
+// what payment-gateway-status (the same endpoint the customer-facing
+// checkout picker calls) currently reports, rather than the platform
+// admin having to guess why the picker did or didn't show up for a
+// customer. Also doubles as the "Manage" entry point requested: one
+// place to see -- at a glance, live -- which PSPs the app currently
+// considers active.
+function PspStatusPanel() {
+  const { t } = useI18n();
+  const [status, setStatus] = useState<Record<string, boolean> | null>(null);
+  const [paddleClientReady, setPaddleClientReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true); setErr(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-gateway-status`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setStatus(data);
+      setPaddleClientReady(isPaddleConfigured());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'unreachable');
+      setStatus(null);
+    }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const activeCount = status ? Object.entries(status).filter(([g, v]) => v && (g !== 'paddle' || paddleClientReady)).length : 0;
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="font-semibold text-gray-900">{t('sa.psp.title')}</h3>
+        <button onClick={load} disabled={loading} className="text-xs text-blue-600 hover:underline disabled:opacity-50">{t('sa.psp.refresh')}</button>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">{t('sa.psp.subtitle')}</p>
+
+      {err && <p className="text-sm text-red-600 mb-3">{t('sa.psp.unreachable')}: {err}</p>}
+
+      {status && (
+        <>
+          <div className="grid sm:grid-cols-2 gap-2.5 mb-3">
+            {Object.entries(GATEWAY_LABELS).map(([gateway, label]) => {
+              const serverConfigured = !!status[gateway];
+              const ready = gateway === 'paddle' ? serverConfigured && paddleClientReady : serverConfigured;
+              return (
+                <div key={gateway} className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-gray-100 bg-gray-50">
+                  <span className="text-sm font-medium text-gray-900">{label}</span>
+                  {ready ? <Badge color="green">{t('sa.psp.active')}</Badge>
+                    : serverConfigured && gateway === 'paddle' ? <Badge color="amber">{t('sa.psp.server_only')}</Badge>
+                    : <Badge color="gray">{t('sa.psp.inactive')}</Badge>}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-400">
+            {activeCount === 0 && t('sa.psp.none_active')}
+            {activeCount === 1 && t('sa.psp.one_active')}
+            {activeCount > 1 && t('sa.psp.multi_active')}
+          </p>
+        </>
+      )}
     </Card>
   );
 }
