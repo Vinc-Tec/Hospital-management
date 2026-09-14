@@ -26,6 +26,7 @@ Deno.serve((req) => {
     // and PADDLE_PRICE_MAP is the only thing this server-side lookup
     // still needs.
     paddle: !!Deno.env.get('PADDLE_PRICE_MAP'),
+    stripe: !!Deno.env.get('STRIPE_SECRET_KEY'),
   };
 
   return new Response(JSON.stringify(available), { headers: { 'Content-Type': 'application/json', ...corsHeaders() } });

@@ -12,6 +12,7 @@ export const GATEWAY_LABELS: Record<string, string> = {
   flutterwave: 'Flutterwave',
   paystack: 'Paystack',
   paddle: 'Paddle',
+  stripe: 'Stripe',
 };
 
 export type InitiatePaymentResult =
