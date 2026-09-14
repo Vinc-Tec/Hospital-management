@@ -134,12 +134,50 @@ type ChatMessage = { from: 'user' | 'bot'; text: string };
 
 function SupportChatWidget() {
   const { t, lang } = useI18n();
-  const { user, activeTenant } = useAuth();
+  const { user, activeTenant, session } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([{ from: 'bot', text: t('chat.greeting') }]);
   const [awaitingEscalation, setAwaitingEscalation] = useState(false);
   const [escalating, setEscalating] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
+
+  const askAi = async (query: string) => {
+    setThinking(true);
+    try {
+      const history = messages.slice(-12).map((m) => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+        body: JSON.stringify({ message: query, history, language: lang }),
+      });
+      const data = await res.json();
+      if (data.status === 'not_configured' || !res.ok || !data.reply) {
+        setAiUnavailable(true);
+        setMessages((m) => [...m, { from: 'bot', text: t('chat.no_match') }]);
+        setAwaitingEscalation(true);
+      } else {
+        setMessages((m) => [...m, { from: 'bot', text: data.reply }]);
+      }
+    } catch {
+      setAiUnavailable(true);
+      setMessages((m) => [...m, { from: 'bot', text: t('chat.no_match') }]);
+      setAwaitingEscalation(true);
+    }
+    setThinking(false);
+  };
+
+  const escalate = async (query: string) => {
+    setEscalating(true);
+    const { error } = await supabase.from('support_tickets').insert({
+      tenant_id: activeTenant?.id ?? null, user_id: user!.id,
+      subject: t('chat.escalated_subject'), description: query, priority: 'medium', status: 'open',
+    });
+    setEscalating(false);
+    setAwaitingEscalation(false);
+    setMessages((m) => [...m, { from: 'bot', text: error ? t('chat.escalation_failed') : t('chat.escalated_confirm') }]);
+  };
 
   const send = async () => {
     const query = input.trim();
@@ -147,24 +185,18 @@ function SupportChatWidget() {
     setMessages((m) => [...m, { from: 'user', text: query }]);
     setInput('');
 
-    if (awaitingEscalation) {
-      setEscalating(true);
-      const { error } = await supabase.from('support_tickets').insert({
-        tenant_id: activeTenant?.id ?? null, user_id: user!.id,
-        subject: t('chat.escalated_subject'), description: query, priority: 'medium', status: 'open',
-      });
-      setEscalating(false);
-      setAwaitingEscalation(false);
-      setMessages((m) => [...m, { from: 'bot', text: error ? t('chat.escalation_failed') : t('chat.escalated_confirm') }]);
-      return;
-    }
+    if (awaitingEscalation) { await escalate(query); return; }
 
+    // FAQ answers first (instant, free, no API call) for the common
+    // questions this app already has curated answers for; anything else
+    // goes to the real AI assistant (see supabase/functions/ai-assist)
+    // instead of dead-ending straight into "talk to a human" -- that
+    // option remains one click away via the button below regardless.
     const match = matchFaq(query, lang as 'fr' | 'en');
     if (match) {
       setMessages((m) => [...m, { from: 'bot', text: match.answer[lang as 'fr' | 'en'] }]);
     } else {
-      setMessages((m) => [...m, { from: 'bot', text: t('chat.no_match') }]);
-      setAwaitingEscalation(true);
+      await askAi(query);
     }
   };
 
@@ -182,8 +214,14 @@ function SupportChatWidget() {
                 {m.text}
               </div>
             ))}
-            {escalating && <div className="text-xs text-gray-400 px-2">{t('common.loading')}</div>}
+            {(escalating || thinking) && <div className="text-xs text-gray-400 px-2">{t('common.loading')}</div>}
           </div>
+          {!aiUnavailable && !awaitingEscalation && (
+            <div className="px-3 pb-1 flex-shrink-0">
+              <button onClick={() => { setAwaitingEscalation(true); setMessages((m) => [...m, { from: 'bot', text: t('chat.ask_human_prompt') }]); }}
+                className="text-xs text-blue-600 hover:underline">{t('chat.talk_to_human')}</button>
+            </div>
+          )}
           <div className="p-2 border-t border-gray-100 flex gap-2 flex-shrink-0">
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={t('chat.placeholder')} className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
