@@ -93,6 +93,34 @@ was what blocked completion, not auth loss.
   reloads that tenant row immediately (previously the switch only took
   effect on next login).
 
+## Live DB sync (2026-09-16)
+All 68 migrations in `supabase/migrations/` are now applied on the live
+project (`felojfakygdnprfrhnkq`, "Vinc-Tec's Project"). Previously the
+live DB was ~19 migrations behind (everything since
+`20260902000000_add_telegram_provider`), which meant several fixes that
+existed in this repo were not actually in effect, including the
+2026-08-05 trial/subscription bypass protection that had silently
+regressed back to being exploitable since 2026-08-06 (see
+`20260908180000_restore_trial_bypass_protection.sql`) -- this is now
+re-applied and confirmed live.
+
+## Paddle: webhook deployed, needs secrets (2026-09-16)
+`paddle-initiate` was already deployed; `paddle-webhook` (the only
+place that grants access after a Paddle payment) was missing from the
+live project entirely -- deployed now. Paddle is still INACTIVE until
+these are set as Edge Function secrets on the live project (not in
+this repo -- never commit secrets):
+- `PADDLE_WEBHOOK_SECRET` -- from Paddle Dashboard > Developer Tools >
+  Notifications, after creating a destination pointed at
+  `https://felojfakygdnprfrhnkq.supabase.co/functions/v1/paddle-webhook`
+  subscribed to `transaction.completed`.
+- `PADDLE_PRICE_MAP` -- confirmed against the live Paddle catalog and
+  matching `subscription_plans.price_monthly`/`price_yearly` exactly:
+  `{"starter:monthly":"pri_01m1m9vr47s70ax3zzevazjecq","starter:yearly":"pri_01m2240kmbn984ygt114pg358n","professional:monthly":"pri_01m1m9x11mtscngqh4p04rpy4q","professional:yearly":"pri_01m2241q3dx9xp3gw11m2rszh4","business:monthly":"pri_01m1m9yk3kf6t9ecfbyntcedba","business:yearly":"pri_01m2242tb0fc5j7kecme40x55n","enterprise:monthly":"pri_01m1ma00wwf63r85mq6bp4cw4r","enterprise:yearly":"pri_01m2243rgepzw9nfnpm23qj3s3"}`
+- Frontend build env: `VITE_PADDLE_CLIENT_TOKEN` (public token, from
+  Paddle Dashboard > Developer Tools > Authentication), optionally
+  `VITE_PADDLE_ENV=sandbox` while testing.
+
 ## i18n
 - `Lang = 'fr' | 'en'`, persisted in `localStorage('hc_lang')`, default `fr`.
   `LangToggle` in `src/components/brand.tsx`. The hero badge and trust strip
