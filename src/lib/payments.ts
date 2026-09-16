@@ -29,18 +29,29 @@ export async function getAvailableGateways(supabaseUrl: string): Promise<string[
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/payment-gateway-status`);
     const data = await res.json();
-    return Object.entries(data)
-      .filter(([gateway, isAvailable]) => {
-        if (!isAvailable) return false;
-        // Paddle also needs its public client-side token configured in
-        // *this* build (see src/lib/paddle.ts) -- the server only knows
-        // whether PADDLE_PRICE_MAP is set, so without this check a
-        // deployment with the price map but no client token would offer
-        // Paddle and then fail the moment the overlay tried to open.
-        if (gateway === 'paddle') return isPaddleConfigured();
-        return true;
-      })
-      .map(([gateway]) => gateway);
+    // If the function errored (crashed, cold-start failure, etc.),
+    // Supabase/Deno's own error body typically looks like
+    // { code: '...', message: '...' } -- both non-empty strings, i.e.
+    // truthy. Without checking res.ok first, those would incorrectly
+    // pass the "isAvailable" filter below and render as if "code" and
+    // "message" were real payment gateways. Fail closed instead: no
+    // gateways detected, surfaced as the normal "not configured" error.
+    if (!res.ok) return [];
+    // Only ever return keys this app actually knows how to route to a
+    // real gateway -- so a housekeeping field like the status
+    // fingerprint (`_build`) can never leak into the picker as if it
+    // were a selectable payment method, even on a fully successful
+    // response.
+    return Object.keys(GATEWAY_LABELS).filter((gateway) => {
+      if (!data[gateway]) return false;
+      // Paddle also needs its public client-side token configured in
+      // *this* build (see src/lib/paddle.ts) -- the server only knows
+      // whether PADDLE_PRICE_MAP is set, so without this check a
+      // deployment with the price map but no client token would offer
+      // Paddle and then fail the moment the overlay tried to open.
+      if (gateway === 'paddle') return isPaddleConfigured();
+      return true;
+    });
   } catch {
     return [];
   }
