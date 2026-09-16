@@ -4,6 +4,17 @@
 // (more than one available). This never touches tenant data and
 // requires no auth: it only reveals which secrets exist, not their
 // values, so there's nothing tenant-specific or sensitive to protect.
+//
+// `_build` below is a plain source fingerprint (bumped by hand whenever
+// this file changes) -- NOT a live indicator, just a way to tell, after
+// redeploying, that the code that's actually running is this version
+// and not a stale one from before. Supabase Edge Functions only update
+// when you explicitly run `supabase functions deploy
+// payment-gateway-status` -- changing secrets, or deploying a
+// *different* function, never touches this one. If Super Admin >
+// Payments shows a different `_build` than the one in this file, the
+// deploy hasn't actually happened yet from this project's CLI/session.
+const BUILD = '2026-09-16-stripe';
 
 function corsHeaders() {
   return {
@@ -27,6 +38,7 @@ Deno.serve((req) => {
     // still needs.
     paddle: !!Deno.env.get('PADDLE_PRICE_MAP'),
     stripe: !!Deno.env.get('STRIPE_SECRET_KEY'),
+    _build: BUILD,
   };
 
   return new Response(JSON.stringify(available), { headers: { 'Content-Type': 'application/json', ...corsHeaders() } });

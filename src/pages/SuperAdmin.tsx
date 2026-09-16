@@ -788,7 +788,7 @@ function SaPayments({ billingInvoices, tenants }: { billingInvoices: BillingInvo
 // considers active.
 function PspStatusPanel() {
   const { t } = useI18n();
-  const [status, setStatus] = useState<Record<string, boolean> | null>(null);
+  const [status, setStatus] = useState<Record<string, boolean | string> | null>(null);
   const [paddleClientReady, setPaddleClientReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -809,7 +809,12 @@ function PspStatusPanel() {
   };
   useEffect(() => { load(); }, []);
 
-  const activeCount = status ? Object.entries(status).filter(([g, v]) => v && (g !== 'paddle' || paddleClientReady)).length : 0;
+  // Only count actual gateways -- `_build` is a version string, not a
+  // gateway flag, and must never be mistaken for one here.
+  const activeCount = status ? Object.keys(GATEWAY_LABELS).filter((g) => status[g] && (g !== 'paddle' || paddleClientReady)).length : 0;
+  const EXPECTED_BUILD = '2026-09-16-stripe';
+  const deployedBuild = status?._build as string | undefined;
+  const isStale = !!status && deployedBuild !== EXPECTED_BUILD;
 
   return (
     <Card className="p-5">
@@ -820,6 +825,12 @@ function PspStatusPanel() {
       <p className="text-sm text-gray-500 mb-4">{t('sa.psp.subtitle')}</p>
 
       {err && <p className="text-sm text-red-600 mb-3">{t('sa.psp.unreachable')}: {err}</p>}
+      {isStale && (
+        <div className="mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+          {t('sa.psp.stale_warning')}
+          <code className="block mt-1 text-xs bg-amber-100 px-2 py-1 rounded">supabase functions deploy payment-gateway-status</code>
+        </div>
+      )}
 
       {status && (
         <>
@@ -842,6 +853,7 @@ function PspStatusPanel() {
             {activeCount === 1 && t('sa.psp.one_active')}
             {activeCount > 1 && t('sa.psp.multi_active')}
           </p>
+          {status && <p className="text-xs text-gray-300 mt-2 font-mono">build: {deployedBuild ?? 'unknown (pre-fingerprint deploy)'}</p>}
         </>
       )}
     </Card>
