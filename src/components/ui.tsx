@@ -45,16 +45,34 @@ export function Input({ label, error, required, className = '', ...props }: {
 // Module-level cache: the countries table (250+ rows, rarely changes)
 // is fetched once and shared across every PhoneInput instance on the
 // page instead of once per mounted field.
+//
+// BUG FIXED HERE: an empty array is truthy in JS ([] && ... is true),
+// so the original `if (countriesCache)` guard treated one single
+// failed/empty fetch (a dropped request, a query that raced ahead of
+// session restoration, etc.) as a permanently valid, if empty, cache --
+// poisoning every PhoneInput on the page for the rest of that session,
+// with no retry, no error shown. This is why country codes appeared
+// "sometimes but not always": whether the very first fetch happened to
+// succeed. Now a failed or empty response clears the in-flight promise
+// instead of caching it, so the next PhoneInput mounted (e.g. opening
+// another form) simply tries again.
 let countriesCache: Country[] | null = null;
 let countriesPromise: Promise<Country[]> | null = null;
 function loadCountries(): Promise<Country[]> {
-  if (countriesCache) return Promise.resolve(countriesCache);
+  if (countriesCache && countriesCache.length > 0) return Promise.resolve(countriesCache);
   if (!countriesPromise) {
     countriesPromise = Promise.resolve(
       supabase.from('countries').select('id,name,iso2,phone_code,currency_code,timezone').order('name')
-    ).then(({ data }) => {
-      countriesCache = (data as Country[] | null) ?? [];
+    ).then(({ data, error }) => {
+      if (error || !data || data.length === 0) {
+        countriesPromise = null; // don't poison the cache -- let the next mount retry
+        return [];
+      }
+      countriesCache = data as Country[];
       return countriesCache;
+    }).catch(() => {
+      countriesPromise = null;
+      return [];
     });
   }
   return countriesPromise;
