@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth, hasModuleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Tenant, type SubscriptionPlan, type Branch } from '../lib/supabase';
-import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint } from '../components/ui';
+import { Button, Card, Input, Badge, Select, Modal, ConvertedPriceHint, PhoneInput } from '../components/ui';
 import { Settings as SettingsIcon, Building2, User, CreditCard, Check, Plus, Pencil, Trash2, X, HeadphonesIcon, ShieldCheck, Key, Users } from 'lucide-react';
 import { sha256Hex, generateApiKey } from '../lib/apiKeys';
 import { usePaymentCheckout } from '../components/PaymentCheckout';
@@ -109,7 +109,7 @@ export function SettingsPage() {
             <Input label={t('settings.tenant_name')} required value={form.legal_name} onChange={(e) => setForm({ ...form, legal_name: e.target.value })} />
             <Input label={t('onb.commercial')} value={form.commercial_name} onChange={(e) => setForm({ ...form, commercial_name: e.target.value })} />
             <Input label={t('settings.tenant_email')} type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <Input label={t('settings.tenant_phone')} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <PhoneInput label={t('settings.tenant_phone')} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
             <Input label={t('settings.tenant_website')} value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
             <Input label={t('settings.tenant_address')} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
           </div>
@@ -699,7 +699,7 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
                 onChange={(e) => setForm({ ...form, healthcare_type: e.target.value })} />
               <Input label={t('settings.branches.address')} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
               <Input label={t('settings.branches.manager')} value={form.manager_name} onChange={(e) => setForm({ ...form, manager_name: e.target.value })} />
-              <Input label={t('col.phone')} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <PhoneInput label={t('col.phone')} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
             </div>
             {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
             <Button className="w-full mt-4" onClick={save} loading={saving}>{t('common.save')}</Button>

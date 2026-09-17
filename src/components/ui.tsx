@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useState } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Loader2, X, ChevronDown, Search, Check } from 'lucide-react';
 import { detectLocalCurrency, convertFromUsd, formatCurrency } from '../lib/currency';
+import { supabase, type Country } from '../lib/supabase';
 
 export function Button({
   children, variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', onClick,
@@ -38,6 +39,158 @@ export function Input({ label, error, required, className = '', ...props }: {
       <input className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-400' : 'border-gray-300'} ${className}`} {...props} />
       {error && <span className="block mt-1 text-xs text-red-600">{error}</span>}
     </label>
+  );
+}
+
+// Module-level cache: the countries table (250+ rows, rarely changes)
+// is fetched once and shared across every PhoneInput instance on the
+// page instead of once per mounted field.
+let countriesCache: Country[] | null = null;
+let countriesPromise: Promise<Country[]> | null = null;
+function loadCountries(): Promise<Country[]> {
+  if (countriesCache) return Promise.resolve(countriesCache);
+  if (!countriesPromise) {
+    countriesPromise = Promise.resolve(
+      supabase.from('countries').select('id,name,iso2,phone_code,currency_code,timezone').order('name')
+    ).then(({ data }) => {
+      countriesCache = (data as Country[] | null) ?? [];
+      return countriesCache;
+    });
+  }
+  return countriesPromise;
+}
+
+function detectDefaultIso2(): string {
+  try {
+    const region = navigator.language?.split('-')[1]?.toUpperCase();
+    if (region) return region;
+  } catch {
+    // fall through
+  }
+  return 'US';
+}
+
+// Splits a combined "+225 0700000000" style value into its dial code
+// and national number, matching against the known list of dial codes
+// (longest prefix first, since e.g. +1 and +1264 both start with "1").
+function splitPhoneValue(value: string, countries: Country[]): { iso2: string | null; national: string } {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('+') || countries.length === 0) return { iso2: null, national: trimmed };
+  const digits = trimmed.slice(1);
+  const withCodes = countries.filter((c) => c.phone_code);
+  const sorted = [...withCodes].sort((a, b) => (b.phone_code!.length - a.phone_code!.length));
+  const match = sorted.find((c) => digits.startsWith(c.phone_code!.replace('+', '')));
+  if (!match) return { iso2: null, national: trimmed };
+  return { iso2: match.iso2, national: digits.slice(match.phone_code!.replace('+', '').length).trim() };
+}
+
+// International phone field: a searchable country dropdown (flag +
+// dial code) paired with a plain national-number input. Reports a
+// single combined value ("+225 0700000000") through onChange so it
+// drops into any form that currently stores phone as one string field.
+export function PhoneInput({ label, error, required, value, onChange, placeholder, className = '', disabled }: {
+  label?: string; error?: string; required?: boolean; value: string; onChange: (value: string) => void;
+  placeholder?: string; className?: string; disabled?: boolean;
+}) {
+  const [countries, setCountries] = useState<Country[]>(countriesCache ?? []);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selectedIso2, setSelectedIso2] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { loadCountries().then(setCountries); }, []);
+
+  useEffect(() => {
+    if (countries.length === 0) return;
+    const { iso2 } = splitPhoneValue(value, countries);
+    setSelectedIso2(iso2 ?? detectDefaultIso2());
+  }, [countries.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) { setOpen(false); setSearch(''); }
+    }
+    function onEscape(e: KeyboardEvent) { if (e.key === 'Escape') { setOpen(false); setSearch(''); } }
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('keydown', onEscape);
+    return () => { document.removeEventListener('mousedown', onOutside); document.removeEventListener('keydown', onEscape); };
+  }, []);
+
+  const selected = countries.find((c) => c.iso2 === selectedIso2) ?? null;
+  const { national } = splitPhoneValue(value, countries);
+
+  const filtered = search.trim()
+    ? countries.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone_code?.replace('+', '').includes(search.replace('+', '')))
+    : countries;
+
+  function commit(iso2: string | null, nationalNumber: string) {
+    const country = countries.find((c) => c.iso2 === iso2);
+    const code = country?.phone_code ? (country.phone_code.startsWith('+') ? country.phone_code : `+${country.phone_code}`) : '';
+    onChange(nationalNumber ? `${code} ${nationalNumber}`.trim() : '');
+  }
+
+  return (
+    <div className={`block ${className}`} ref={rootRef}>
+      {label && <span className="block text-sm font-medium text-gray-700 mb-1.5">{label} {required && <span className="text-red-500">*</span>}</span>}
+      <div className={`flex rounded-xl border bg-white transition-colors focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${error ? 'border-red-400' : 'border-gray-300'}`}>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setOpen((o) => !o)}
+            className="flex h-full items-center gap-1.5 pl-3 pr-2 py-2.5 rounded-l-xl border-r border-gray-200 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {selected ? (
+              <img src={`https://flagcdn.com/w40/${selected.iso2.toLowerCase()}.png`} alt="" className="w-5 h-3.5 object-cover rounded-[2px]" />
+            ) : <span className="w-5 h-3.5" />}
+            <span className="tabular-nums">{selected?.phone_code ? (selected.phone_code.startsWith('+') ? selected.phone_code : `+${selected.phone_code}`) : ''}</span>
+            <ChevronDown size={14} className="text-gray-400" />
+          </button>
+          {open && (
+            <div className="absolute z-30 mt-1 w-72 max-h-80 overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg">
+              <div className="p-2 border-b border-gray-100">
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50">
+                  <Search size={14} className="text-gray-400 shrink-0" />
+                  <input
+                    autoFocus
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Rechercher un pays ou indicatif..."
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="overflow-y-auto">
+                {filtered.length === 0 && <p className="px-3 py-4 text-sm text-gray-400 text-center">Aucun résultat</p>}
+                {filtered.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => { setSelectedIso2(c.iso2); commit(c.iso2, national); setOpen(false); setSearch(''); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  >
+                    <img src={`https://flagcdn.com/w40/${c.iso2.toLowerCase()}.png`} alt="" className="w-5 h-3.5 object-cover rounded-[2px] shrink-0" />
+                    <span className="flex-1 truncate text-gray-700">{c.name}</span>
+                    <span className="text-gray-400 tabular-nums">{c.phone_code ? (c.phone_code.startsWith('+') ? c.phone_code : `+${c.phone_code}`) : ''}</span>
+                    {c.iso2 === selectedIso2 && <Check size={14} className="text-blue-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <input
+          type="tel"
+          inputMode="tel"
+          disabled={disabled}
+          value={national}
+          onChange={(e) => commit(selectedIso2, e.target.value)}
+          placeholder={placeholder ?? '07 00 00 00 00'}
+          className="w-full min-w-0 px-3.5 py-2.5 rounded-r-xl bg-transparent text-gray-900 placeholder-gray-400 focus:outline-none disabled:cursor-not-allowed"
+        />
+      </div>
+      {error && <span className="block mt-1 text-xs text-red-600">{error}</span>}
+    </div>
   );
 }
 

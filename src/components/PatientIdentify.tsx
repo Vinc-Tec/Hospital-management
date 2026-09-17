@@ -3,7 +3,7 @@ import { Search, UserCheck, AlertTriangle, UserPlus } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { type Patient } from '../lib/supabase';
 import { findPatientMatches, type PatientMatchResult } from '../lib/patientMatch';
-import { Modal, Button, Input } from './ui';
+import { Modal, Button, Input, PhoneInput } from './ui';
 
 /**
  * The identification layer described for Health Cloud's patient workflow:
@@ -61,7 +61,7 @@ export function PatientIdentify({ tenantId, onSelectExisting, onCreateNew, onClo
         <p className="text-sm text-gray-500">{t('id.subtitle')}</p>
         <div className="grid grid-cols-2 gap-3">
           <Input label={t('id.national_id')} value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
-          <Input label={t('col.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <PhoneInput label={t('col.phone')} value={phone} onChange={setPhone} />
           <Input label={t('fld.firstname')} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
           <Input label={t('fld.lastname')} value={lastName} onChange={(e) => setLastName(e.target.value)} />
           <Input label={t('fld.dob')} type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />

@@ -10,7 +10,7 @@ import { Banknote } from 'lucide-react';
 import { useAuth, hasModuleAccess, hasRoleAccess } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { supabase, type Patient, type Appointment, type Tenant } from '../lib/supabase';
-import { Button, Card, Modal, Input, Select, EmptyState } from '../components/ui';
+import { Button, Card, Modal, Input, Select, EmptyState, PhoneInput } from '../components/ui';
 import { Logo, LangToggle, StatusBadge } from '../components/brand';
 import { TrialBanner } from './Billing';
 import { Footer } from '../components/Footer';
@@ -441,7 +441,7 @@ export function Dashboard() {
             <Input label={t('common.firstname')} required value={pForm.first_name} onChange={(e) => setPForm({ ...pForm, first_name: e.target.value })} />
             <Input label={t('common.lastname')} required value={pForm.last_name} onChange={(e) => setPForm({ ...pForm, last_name: e.target.value })} />
           </div>
-          <Input label={t('common.phone')} value={pForm.phone} onChange={(e) => setPForm({ ...pForm, phone: e.target.value })} />
+          <PhoneInput label={t('common.phone')} value={pForm.phone} onChange={(v) => setPForm({ ...pForm, phone: v })} />
           <Select label={t('common.gender')} value={pForm.gender} options={[{ value: 'male', label: t('common.male') }, { value: 'female', label: t('common.female') }, { value: 'other', label: t('common.other') }]} onChange={(e) => setPForm({ ...pForm, gender: e.target.value })} />
           <Input label={t('common.dob')} type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
         </div>

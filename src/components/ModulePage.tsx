@@ -1,6 +1,6 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Search, FileDown, Inbox, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button, Card, Input, Modal, EmptyState, Badge } from './ui';
+import { Button, Card, Input, Modal, EmptyState, Badge, PhoneInput } from './ui';
 import { usePaginatedCrud } from '../lib/useCrud';
 import { findPatientMatches, type PatientMatchResult } from '../lib/patientMatch';
 import { useI18n } from '../lib/i18n';
@@ -37,7 +37,7 @@ function translateDbError(message: string, t: (k: string) => string): string {
 }
 
 export type FieldDef = {
-  key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local' | 'datalist' | 'file';
+  key: string; label: string; type?: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'datetime-local' | 'datalist' | 'file' | 'phone';
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string;
 };
 
@@ -362,6 +362,7 @@ export function ModulePage({
                 </datalist>
               </label>
             );
+            if (f.type === 'phone') return <PhoneInput key={f.key} label={f.label} required={f.required} value={val} onChange={(v) => updateField(f.key, v)} />;
             if (f.type === 'select') return (
               <label key={f.key} className="block">
                 <span className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}{f.required && <span className="text-red-500"> *</span>}</span>

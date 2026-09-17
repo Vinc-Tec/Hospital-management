@@ -74,7 +74,7 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
     { key: 'national_id', label: t('fld.national_id'), placeholder: t('fld.national_id_placeholder') },
     { key: 'date_of_birth', label: t('fld.dob'), type: 'date' },
     { key: 'gender', label: t('fld.gender'), type: 'select', options: statusOpts(['male', 'female', 'other'], t) },
-    { key: 'phone', label: t('col.phone') },
+    { key: 'phone', label: t('col.phone'), type: 'phone' },
     { key: 'email', label: t('col.email'), type: 'text' },
     { key: 'blood_group', label: t('fld.blood_group'), type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((v) => ({ value: v, label: v })) },
     { key: 'allergies', label: t('fld.allergies'), type: 'textarea' },
@@ -117,7 +117,7 @@ export function DoctorsModule({ tenantId }: { tenantId: string }) {
     { key: 'first_name', label: t('fld.firstname'), required: true },
     { key: 'last_name', label: t('fld.lastname'), required: true },
     { key: 'specialty', label: t('fld.specialty') },
-    { key: 'phone', label: t('col.phone') },
+    { key: 'phone', label: t('col.phone'), type: 'phone' },
     { key: 'email', label: t('col.email'), type: 'text' },
     { key: 'license_number', label: t('fld.license_number') },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'suspended', 'inactive'], t) },
@@ -605,7 +605,7 @@ export function StaffModule({ tenantId }: { tenantId: string }) {
     { key: 'role', label: t('col.role') },
     { key: 'department', label: t('col.department') },
     { key: 'email', label: t('col.email'), type: 'text' },
-    { key: 'phone', label: t('col.phone') },
+    { key: 'phone', label: t('col.phone'), type: 'phone' },
     { key: 'status', label: t('col.status'), type: 'select', options: statusOpts(['active', 'suspended', 'inactive'], t) },
   ];
   return <ModulePage table="staff" tenantId={tenantId} title={t('mod.staff.title')} desc={t('mod.staff.desc')} icon={UserCog} columns={cols} formFields={fields} />;

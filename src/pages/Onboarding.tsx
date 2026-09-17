@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { useGeography } from '../lib/geography';
 import { supabase } from '../lib/supabase';
-import { Button, Input, Select, Card } from '../components/ui';
+import { Button, Input, Select, Card, PhoneInput } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import onbPhoto from '../assets/photos/reception-desk.jpg';
 
@@ -321,7 +321,7 @@ export function Onboarding() {
               <Input label={t('onb.commercial')} value={form.commercial_name} onChange={(e) => set('commercial_name', e.target.value)} />
               <Select label={t('onb.type')} required value={form.healthcare_type} options={types} onChange={(e) => set('healthcare_type', e.target.value)} />
               <Input label={t('onb.email')} type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} />
-              <Input label={t('onb.phone')} value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+              <PhoneInput label={t('onb.phone')} value={form.phone} onChange={(v) => set('phone', v)} />
               <Input label={t('onb.website')} value={form.website} onChange={(e) => set('website', e.target.value)} />
               <Input label={t('onb.doctors')} type="number" min="0" value={form.num_doctors} onChange={(e) => set('num_doctors', e.target.value)} />
               <Input label={t('onb.beds')} type="number" min="0" value={form.num_beds} onChange={(e) => set('num_beds', e.target.value)} />
