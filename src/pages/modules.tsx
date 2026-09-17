@@ -14,6 +14,7 @@ import {
 import { supabase, type Patient, type Doctor, type Invoice, type InvoiceItem, type Prescription, type LabOrder, type RadiologyOrder, type MedicalRecord, type Role, type PharmacyItem, type Bed } from '../lib/supabase';
 import { formatTenantCurrency } from '../lib/currency';
 import { PatientTimelineModal, TimelineIcon } from '../components/PatientTimeline';
+import { PatientMessageModal, MessageIcon } from '../components/PatientMessage';
 import { PatientIdentify } from '../components/PatientIdentify';
 import { UserSearch as IdentifyIcon } from 'lucide-react';
 import { FileDown, MessageCircle, Plus, TrendingUp } from 'lucide-react';
@@ -57,6 +58,7 @@ const statusOpts = (keys: string[], t: (k: string) => string) =>
 export function PatientsModule({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const [timelineFor, setTimelineFor] = useState<{ id: string; name: string } | null>(null);
+  const [messageFor, setMessageFor] = useState<{ id: string; name: string } | null>(null);
   const [identifyOpen, setIdentifyOpen] = useState(false);
   const [openAddWith, setOpenAddWith] = useState<Record<string, unknown> | null>(null);
   const [openEditRow, setOpenEditRow] = useState<Row | null>(null);
@@ -88,9 +90,16 @@ export function PatientsModule({ tenantId }: { tenantId: string }) {
         externalOpenAddWith={openAddWith} externalOpenEditRow={openEditRow}
         onExternalTriggerHandled={() => { setOpenAddWith(null); setOpenEditRow(null); }}
         rowActions={(row) => (
-          <button onClick={() => setTimelineFor({ id: row.id, name: `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() })}
-            title={t('timeline.title')} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><TimelineIcon size={16} /></button>
+          <>
+            <button onClick={() => setMessageFor({ id: row.id, name: `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() })}
+              title={t('msg.title')} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"><MessageIcon size={16} /></button>
+            <button onClick={() => setTimelineFor({ id: row.id, name: `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() })}
+              title={t('timeline.title')} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><TimelineIcon size={16} /></button>
+          </>
         )} />
+      {messageFor && (
+        <PatientMessageModal patientId={messageFor.id} patientName={messageFor.name} onClose={() => setMessageFor(null)} />
+      )}
       {timelineFor && (
         <PatientTimelineModal tenantId={tenantId} patientId={timelineFor.id} patientName={timelineFor.name} onClose={() => setTimelineFor(null)} />
       )}

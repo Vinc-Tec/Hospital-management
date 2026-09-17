@@ -14,6 +14,7 @@ import googleCalendarLogo from '../assets/integrations/google-calendar.png';
 import flutterwaveLogo from '../assets/integrations/flutterwave.png';
 import telegramLogo from '../assets/integrations/telegram.jpg';
 import stripeLogo from '../assets/integrations/stripe.png';
+import twilioLogo from '../assets/integrations/twilio.svg';
 
 type ProviderKey = Integration['provider'];
 
@@ -28,7 +29,7 @@ const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; co
   stripe: { logo: stripeLogo, color: 'bg-indigo-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
   paystack: { icon: Key, color: 'text-teal-600 bg-teal-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
   zapier: { icon: Zap, color: 'text-orange-600 bg-orange-50', fields: [{ key: 'webhook_url', label: 'Zapier "Webhooks by Zapier" URL', placeholder: 'https://hooks.zapier.com/hooks/catch/…' }], testable: true },
-  twilio: { icon: Smartphone, color: 'text-red-600 bg-red-50', fields: [
+  twilio: { logo: twilioLogo, color: 'bg-red-50', fields: [
     { key: 'account_sid', label: 'Account SID', placeholder: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
     { key: 'auth_token', label: 'Auth token' },
     { key: 'from', label: 'SMS sender number', phone: true },
