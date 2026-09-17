@@ -47,7 +47,7 @@ type AuthState = {
   memberships: Membership[]; activeTenant: Tenant | null; activeMembership: Membership | null; activePlan: SubscriptionPlan | null; loading: boolean;
   signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null; mfaRequired?: boolean; mfaFactorId?: string }>;
   verifyMfaChallenge: (factorId: string, code: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
+  signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: string | null; needsVerification?: boolean; emailExists?: boolean }>;
   signOut: () => Promise<void>; refresh: () => Promise<void>; setActiveTenantId: (id: string | null) => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -174,14 +174,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     // Protected super admins should never sign up through the normal flow
     // — but if they do, they'll be auto-marked by the DB trigger.
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, phone: phone || null },
         emailRedirectTo: `${window.location.origin}/signin`,
       },
     });

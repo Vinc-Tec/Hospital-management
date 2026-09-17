@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { Button, Input } from '../components/ui';
+import { Button, Input, PhoneInput } from '../components/ui';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
 import { supabase } from '../lib/supabase';
 import doctorWoman from '../assets/doctors/doctor-woman.png';
@@ -38,6 +38,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' | 'r
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' | 'r
       if (res.error) setError(res.error);
       else nav('/app');
     } else if (mode === 'signup') {
-      const res = await signUp(email, password, fullName);
+      const res = await signUp(email, password, fullName, phone);
       if (res.emailExists) {
         setInfo(t('auth.email_exists'));
         setMode('signin');
@@ -204,6 +205,7 @@ export function AuthPage({ mode: initialMode }: { mode: 'signin' | 'signup' | 'r
               ) : (
                 <>
                   {mode === 'signup' && <Input label={t('auth.fullname')} required value={fullName} onChange={(e) => setFullName(e.target.value)} />}
+                  {mode === 'signup' && <PhoneInput label={t('common.phone')} value={phone} onChange={setPhone} />}
                   <Input label={t('auth.email')} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   {(mode === 'signin' || mode === 'signup') && (
                     <Input label={t('auth.password')} type="password" required minLength={mode === 'signup' ? 6 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
