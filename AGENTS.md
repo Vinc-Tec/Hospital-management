@@ -121,6 +121,34 @@ this repo -- never commit secrets):
   Paddle Dashboard > Developer Tools > Authentication), optionally
   `VITE_PADDLE_ENV=sandbox` while testing.
 
+## Automation: billing housekeeping + reminders now actually scheduled (2026-09-17)
+Both `billing-housekeeping` and `send-appointment-reminders` were fully
+coded and deployed but **nothing was ever calling them** -- no Supabase
+Cron Job, no external scheduler. In practice this meant lapsed
+subscriptions never got suspended and appointment reminders never sent,
+regardless of any other configuration. Fixed by enabling `pg_cron` +
+`pg_net` and scheduling two jobs directly in the database (`cron.job`):
+- `billing-housekeeping-hourly` (`0 * * * *`) calls `fn_billing_housekeeping()`
+  directly (no HTTP hop, no secret needed -- it's a plain DB function).
+- `appointment-reminders-every-30-min` (`*/30 * * * *`) calls the
+  `send-appointment-reminders` Edge Function via `net.http_post`,
+  authenticated with `X-Cron-Secret`.
+
+For the reminders job to actually authenticate (rather than get a
+harmless 401), set this project's `CRON_SECRET` function secret to
+match exactly what the cron job sends:
+`306ea18cc500f31fc2cca8898fc2ab993df28435e35587d3fb5132b3ed723da1`
+Reminders will still report `not_configured` (no error, no message sent)
+until `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM` are also set.
+
+## AI assistant: deployed, needs GEMINI_API_KEY (2026-09-17)
+`ai-assist` Edge Function (Gemini-backed chat, free for every
+authenticated tenant member) is fully coded, deployed, and already
+wired into the Dashboard UI. Set `GEMINI_API_KEY` as a Supabase Edge
+Function secret to activate it -- it must be a Supabase secret, NOT a
+frontend/Cloudflare env var, since the key is only ever read
+server-side inside the function.
+
 ## i18n
 - `Lang = 'fr' | 'en'`, persisted in `localStorage('hc_lang')`, default `fr`.
   `LangToggle` in `src/components/brand.tsx`. The hero badge and trust strip
