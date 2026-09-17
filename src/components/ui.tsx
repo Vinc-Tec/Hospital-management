@@ -166,6 +166,7 @@ export function PhoneInput({ label, error, required, value, onChange, placeholde
           type="tel"
           inputMode="tel"
           disabled={disabled}
+          required={required}
           value={national}
           onChange={(e) => commit(selectedIso2, e.target.value)}
           placeholder={placeholder ?? '07 00 00 00 00'}
