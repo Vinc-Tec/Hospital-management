@@ -149,6 +149,33 @@ Function secret to activate it -- it must be a Supabase secret, NOT a
 frontend/Cloudflare env var, since the key is only ever read
 server-side inside the function.
 
+## AI assistant: active via Vault (2026-09-17)
+`ai-assist` is now fully active. The Gemini key lives in Supabase Vault
+(`vault.secrets`, name `gemini_api_key`) rather than a plain Edge
+Function secret, read through `public.get_vault_secret(text)` -- a
+SECURITY DEFINER RPC whose EXECUTE is granted to `service_role` only
+(revoked from anon/authenticated), since PostgREST doesn't expose the
+`vault` schema directly. Setting `GEMINI_API_KEY` as a function secret
+still works and takes priority if present -- rotating the key is then
+just `SELECT vault.update_secret(id, new_value)` or re-running
+`vault.create_secret`, no redeploy needed.
+
+## Twilio is now per-tenant, not global (2026-09-17)
+`send-appointment-reminders` previously read ONE shared Twilio account
+from Edge Function secrets (`TWILIO_ACCOUNT_SID` etc.) -- meaning every
+tenant's reminders would have gone out from the same number, billed to
+the same account. Doesn't hold up for a platform meant to serve
+unrelated clinics independently. Reworked so each tenant connects their
+OWN Twilio account from Settings > Integrations (new provider
+`'twilio'`, same pattern as WhatsApp/Telegram): `account_sid`,
+`auth_token`, `from` (SMS sender, via the new PhoneInput), and
+optionally `whatsapp_from` + `whatsapp_template_sid`. The function now
+looks up `integrations` per appointment's `tenant_id` (service-role,
+since it runs unattended) instead of `Deno.env`; a tenant with nothing
+connected is just skipped, no error. Also fixed: PhoneInput stores
+"+225 0700000000" (space for readability) but Twilio needs strict
+E.164 -- added `toE164()` to strip it before every Twilio call.
+
 ## i18n
 - `Lang = 'fr' | 'en'`, persisted in `localStorage('hc_lang')`, default `fr`.
   `LangToggle` in `src/components/brand.tsx`. The hero badge and trust strip

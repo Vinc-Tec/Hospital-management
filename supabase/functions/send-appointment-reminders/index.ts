@@ -1,59 +1,67 @@
-// Appointment reminders via SMS / WhatsApp (Twilio)
+// Appointment reminders via SMS / WhatsApp (Twilio) -- per-tenant
 //
-// STATUS: the logic here is real and complete, but it is INACTIVE until
-// you provide Twilio credentials. Without them, this function returns a
-// clear 'not_configured' response and sends nothing -- it never fails
-// silently or fakes success.
-//
-// SETUP (once you have a Twilio account):
-//   supabase secrets set TWILIO_ACCOUNT_SID=ACxxxxxxxx
-//   supabase secrets set TWILIO_AUTH_TOKEN=xxxxxxxx
-//   supabase secrets set TWILIO_FROM=+1415XXXXXXX          (SMS sender number)
-//   supabase secrets set TWILIO_WHATSAPP_FROM=whatsapp:+1415XXXXXXX  (optional, for WhatsApp Business)
-//   supabase functions deploy send-appointment-reminders
+// STATUS: real and complete. Each tenant connects their OWN Twilio
+// account from Settings > Integrations (provider 'twilio') -- there is
+// no shared/global Twilio account. A tenant with no active 'twilio'
+// integration is simply skipped (no error): reminders activate
+// per-tenant the moment they connect their own credentials, with zero
+// further deploy/config needed on our side.
 //
 // IMPORTANT -- WhatsApp specifically requires a pre-approved template:
 // unlike SMS, Meta does not allow a business to send free-form text as
 // the FIRST message of a conversation (i.e. a reminder the patient isn't
-// actively replying to, outside any existing 24h session window). You
-// must create a message template in the Twilio Console (Messaging >
-// Content Template Builder), submit it for WhatsApp approval via Meta
-// (typically takes a few hours to a couple of days the first time), and
-// then set:
-//   supabase secrets set TWILIO_WHATSAPP_TEMPLATE_SID=HXxxxxxxxx
-// The template's body must have exactly one variable placeholder, e.g.:
-//   "Reminder: {{1}}"
-// This function fills that single variable with the full reminder text
-// it already builds. If TWILIO_WHATSAPP_FROM is set but
-// TWILIO_WHATSAPP_TEMPLATE_SID is not, this function will NOT attempt to
-// send via WhatsApp (Meta would reject a free-form send anyway) -- it
-// falls back to SMS if TWILIO_FROM is configured, or reports
-// 'not_configured' for that channel otherwise. This avoids silently
-// sending something Meta will just reject, or worse, appearing to
-// succeed while actually failing per-recipient.
+// actively replying to, outside any existing 24h session window). A
+// tenant wanting WhatsApp reminders must create a message template in
+// their own Twilio Console (Messaging > Content Template Builder),
+// submit it for WhatsApp approval via Meta (typically a few hours to a
+// couple of days the first time), and enter the resulting Content SID
+// as `whatsapp_template_sid` alongside `whatsapp_from`. The template's
+// body must have exactly one variable placeholder, e.g. "Reminder: {{1}}"
+// -- this function fills that variable with the same reminder text used
+// for SMS. If a tenant sets whatsapp_from without whatsapp_template_sid,
+// this function does NOT attempt WhatsApp for them (Meta would reject a
+// free-form send anyway) -- it falls back to SMS if `from` is set, or
+// skips that tenant's reminders for that channel otherwise.
 //
-// This function does not schedule itself -- it needs to be called
-// periodically (every 15-30 min is reasonable) by either:
-//   - Supabase's built-in Cron Jobs (Database > Cron Jobs in the
-//     dashboard, calling this function's URL), or
-//   - an external scheduler (e.g. a cron job on your own server, or a
-//     free-tier scheduler like cron-job.org) hitting the function URL
-//     with the appropriate auth header.
+// SCHEDULING: this function does not schedule itself. See
+// AGENTS.md ("Automation: billing housekeeping + reminders") -- a
+// database Cron Job already calls this every 30 minutes.
 //
-// SECURITY: this function sends real messages (once Twilio is
-// configured) and must not be triggerable by arbitrary callers -- an
-// open endpoint here would let anyone spam every tenant's patients on
+// SECURITY: this function sends real messages (once a tenant connects
+// Twilio) and must not be triggerable by arbitrary callers -- an open
+// endpoint here would let anyone spam every tenant's patients on
 // demand. It requires CRON_SECRET to be set as a function secret AND the
 // caller to prove they know it via the X-Cron-Secret header, exactly
 // like billing-housekeeping. If CRON_SECRET is unset, it refuses to run.
+// It uses the service role (needed to read every tenant's appointments
+// and integration credentials in one unattended run), so it is the ONLY
+// code path allowed to read `integrations.config` across tenants --
+// every other caller goes through RLS via the caller's own JWT.
 //
 // Each run: finds appointments in the next ~24h that haven't had a
-// reminder sent yet, sends one SMS (or WhatsApp template message, if
-// properly configured) per appointment to the patient's phone number,
-// and marks appointments.reminder_sent_at so it's never sent twice.
-// Tenants without a phone number on file are simply skipped (no error).
+// reminder sent yet, groups them by tenant, sends one SMS (or WhatsApp
+// template message, if properly configured) per appointment to the
+// patient's phone number using THAT tenant's own Twilio credentials, and
+// marks appointments.reminder_sent_at so it's never sent twice. Patients
+// without a phone number on file, or tenants without an active Twilio
+// integration, are simply skipped (no error).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+
+type TwilioConfig = {
+  account_sid?: string; auth_token?: string; from?: string;
+  whatsapp_from?: string; whatsapp_template_sid?: string;
+};
+
+// PhoneInput (see components/ui.tsx) stores "+225 0700000000" -- a space
+// after the dial code for readability -- but Twilio's API requires
+// strict E.164 with no whitespace. Every phone number that reaches
+// Twilio (patient `To`, tenant's own `From`) goes through this first.
+function toE164(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw.replace(/[^\d+]/g, '');
+  return cleaned || undefined;
+}
 
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET');
@@ -65,27 +73,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const smsFrom = Deno.env.get('TWILIO_FROM');
-  const whatsappFrom = Deno.env.get('TWILIO_WHATSAPP_FROM');
-  const whatsappTemplateSid = Deno.env.get('TWILIO_WHATSAPP_TEMPLATE_SID');
-
-  // WhatsApp is only usable once a template SID is actually configured --
-  // sending free-form via WhatsApp for a reminder Meta considers
-  // business-initiated would just be rejected per-recipient.
-  const canWhatsapp = !!whatsappFrom && !!whatsappTemplateSid;
-  const canSms = !!smsFrom;
-
-  if (!accountSid || !authToken || !(canSms || canWhatsapp)) {
-    return new Response(JSON.stringify({
-      status: 'not_configured',
-      message: 'No usable channel configured. Set TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN, and either TWILIO_FROM (for SMS) or both TWILIO_WHATSAPP_FROM + TWILIO_WHATSAPP_TEMPLATE_SID (for WhatsApp, which requires a Meta-approved template -- see this file\u2019s header comment).',
-      whatsapp_from_set: !!whatsappFrom,
-      whatsapp_template_configured: canWhatsapp,
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const db = createClient(supabaseUrl, serviceRoleKey);
@@ -95,7 +82,7 @@ Deno.serve(async (req) => {
 
   const { data: appointments, error } = await db
     .from('appointments')
-    .select('id, scheduled_at, reason, patient_id, patients(first_name, last_name, phone), tenants(commercial_name, legal_name)')
+    .select('id, tenant_id, scheduled_at, reason, patient_id, patients(first_name, last_name, phone), tenants(commercial_name, legal_name)')
     .is('reminder_sent_at', null)
     .gte('scheduled_at', windowStart)
     .lte('scheduled_at', windowEnd)
@@ -106,12 +93,30 @@ Deno.serve(async (req) => {
   let sent = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const twilioCache = new Map<string, TwilioConfig | null>();
+
+  async function getTwilioConfig(tenantId: string): Promise<TwilioConfig | null> {
+    if (twilioCache.has(tenantId)) return twilioCache.get(tenantId)!;
+    const { data } = await db.from('integrations').select('config').eq('tenant_id', tenantId).eq('provider', 'twilio').eq('status', 'active').maybeSingle();
+    const config = (data?.config as TwilioConfig | null) ?? null;
+    twilioCache.set(tenantId, config);
+    return config;
+  }
 
   for (const appt of appointments ?? []) {
     const patient = (appt as { patients?: { first_name?: string; last_name?: string; phone?: string } | null }).patients;
     const tenant = (appt as { tenants?: { commercial_name?: string; legal_name?: string } | null }).tenants;
-    const phone = patient?.phone;
+    const phone = toE164(patient?.phone);
     if (!phone) { skipped++; continue; }
+
+    const twilio = await getTwilioConfig(appt.tenant_id as string);
+    if (!twilio?.account_sid || !twilio?.auth_token) { skipped++; continue; }
+
+    const smsFrom = toE164(twilio.from);
+    const whatsappFrom = toE164(twilio.whatsapp_from);
+    const canWhatsapp = !!whatsappFrom && !!twilio.whatsapp_template_sid;
+    const canSms = !!smsFrom;
+    if (!canWhatsapp && !canSms) { skipped++; continue; }
 
     const time = new Date(appt.scheduled_at).toLocaleString();
     const institutionName = tenant?.commercial_name || tenant?.legal_name || 'your healthcare provider';
@@ -120,23 +125,21 @@ Deno.serve(async (req) => {
     // Prefer WhatsApp only when it's actually properly configured (a
     // real approved template, not just a from-number); otherwise use SMS.
     const useWhatsapp = canWhatsapp;
-    if (!useWhatsapp && !canSms) { skipped++; continue; }
-
     const to = useWhatsapp ? `whatsapp:${phone}` : phone;
-    const from = useWhatsapp ? whatsappFrom! : smsFrom!;
+    const from = useWhatsapp ? `whatsapp:${whatsappFrom}` : smsFrom!;
 
     const params = useWhatsapp
       // WhatsApp business-initiated messages must use a pre-approved
       // Content Template, not free-form Body text. The template is
       // expected to have exactly one variable ({{1}}) that this fills
       // with the same reminder text used for SMS.
-      ? new URLSearchParams({ To: to, From: from, ContentSid: whatsappTemplateSid!, ContentVariables: JSON.stringify({ '1': message }) })
+      ? new URLSearchParams({ To: to, From: from, ContentSid: twilio.whatsapp_template_sid!, ContentVariables: JSON.stringify({ '1': message }) })
       : new URLSearchParams({ To: to, From: from, Body: message });
 
-    const twilioResp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    const twilioResp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilio.account_sid}/Messages.json`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+        'Authorization': 'Basic ' + btoa(`${twilio.account_sid}:${twilio.auth_token}`),
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params,

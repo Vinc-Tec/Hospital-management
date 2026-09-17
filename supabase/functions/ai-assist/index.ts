@@ -2,13 +2,15 @@
 // regardless of plan (see module_flags: this is NOT module-gated on
 // purpose, per the requirement that it be usable platform-wide).
 //
-// STATUS: real and active as soon as GEMINI_API_KEY is set and this is
-// deployed.
+// STATUS: active. The Gemini key is stored in Supabase Vault (table
+// `vault.secrets`, name 'gemini_api_key') rather than as a plain Edge
+// Function secret, so it can be rotated via SQL without a redeploy.
+// Setting GEMINI_API_KEY as a function secret still works and takes
+// priority if present (e.g. via `supabase secrets set`), so this is a
+// drop-in replacement, not a breaking change.
 //
-// DEPLOY: supabase functions deploy ai-assist
-// SETUP:  supabase secrets set GEMINI_API_KEY=AIza...
-//         (optional) supabase secrets set GEMINI_MODEL=gemini-2.0-flash
-//         -- override only if Google renames/retires the default below.
+// (optional) supabase secrets set GEMINI_MODEL=gemini-2.0-flash
+//   -- override only if Google renames/retires the default below.
 //
 // Uses Google's stable, long-documented request shape
 // (POST /v1beta/models/{model}:generateContent, auth via the
@@ -21,7 +23,8 @@
 // public, unauthenticated endpoint anyone could hit and burn through
 // the shared Gemini quota. No patient data is sent unless the person
 // using it types it into their own message themselves; this function
-// does not read from any table.
+// does not read from any table other than the vault secret itself
+// (via a service-role client, never exposed to the caller).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
@@ -39,19 +42,34 @@ function json(body: unknown, status = 200) {
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+let cachedVaultKey: string | null = null;
+
+async function getGeminiApiKey(supabaseUrl: string, serviceRoleKey: string): Promise<string | null> {
+  const envKey = Deno.env.get('GEMINI_API_KEY');
+  if (envKey) return envKey;
+  if (cachedVaultKey) return cachedVaultKey;
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
+  const { data, error } = await adminClient.rpc('get_vault_secret', { secret_name: 'gemini_api_key' });
+  if (error || !data) return null;
+  cachedVaultKey = data as string;
+  return cachedVaultKey;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders() });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const apiKey = await getGeminiApiKey(supabaseUrl, serviceRoleKey);
   if (!apiKey) {
-    return json({ status: 'not_configured', message: 'GEMINI_API_KEY is not set.' });
+    return json({ status: 'not_configured', message: 'No Gemini API key found (checked GEMINI_API_KEY secret and vault.secrets).' });
   }
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return json({ error: 'missing_auth' }, 401);
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
   const { data: userData, error: userErr } = await userClient.auth.getUser();

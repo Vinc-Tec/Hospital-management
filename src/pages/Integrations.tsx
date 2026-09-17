@@ -7,7 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { useCrud } from '../lib/useCrud';
 import { useAuth } from '../lib/auth';
 import { supabase, type Integration, type Webhook } from '../lib/supabase';
-import { Card, Button, Input, Select, Modal, Badge, EmptyState, PageHeader } from '../components/ui';
+import { Card, Button, Input, PhoneInput, Select, Modal, Badge, EmptyState, PageHeader } from '../components/ui';
 import whatsappLogo from '../assets/integrations/whatsapp.png';
 import slackLogo from '../assets/integrations/slack.png';
 import googleCalendarLogo from '../assets/integrations/google-calendar.png';
@@ -17,7 +17,7 @@ import stripeLogo from '../assets/integrations/stripe.png';
 
 type ProviderKey = Integration['provider'];
 
-const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; color: string; fields: { key: string; label: string; placeholder?: string }[]; testable?: boolean }> = {
+const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; color: string; fields: { key: string; label: string; placeholder?: string; phone?: boolean }[]; testable?: boolean }> = {
   whatsapp: { logo: whatsappLogo, color: 'bg-emerald-50', fields: [{ key: 'phone_number_id', label: 'Phone number ID (Meta)', placeholder: '109xxxxxxxxxxxx' }, { key: 'api_token', label: 'Access token (Meta)' }] },
   sms: { icon: Smartphone, color: 'text-blue-600 bg-blue-50', fields: [{ key: 'sender_id', label: 'Sender ID' }, { key: 'api_key', label: 'API key' }] },
   google_calendar: { logo: googleCalendarLogo, color: 'bg-red-50', fields: [{ key: 'calendar_id', label: 'Calendar ID', placeholder: 'you@company.com' }] },
@@ -28,6 +28,13 @@ const PROVIDER_META: Record<ProviderKey, { icon?: typeof Plug; logo?: string; co
   stripe: { logo: stripeLogo, color: 'bg-indigo-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
   paystack: { icon: Key, color: 'text-teal-600 bg-teal-50', fields: [{ key: 'secret_key', label: 'Secret key', placeholder: 'sk_live_…' }] },
   zapier: { icon: Zap, color: 'text-orange-600 bg-orange-50', fields: [{ key: 'webhook_url', label: 'Zapier "Webhooks by Zapier" URL', placeholder: 'https://hooks.zapier.com/hooks/catch/…' }], testable: true },
+  twilio: { icon: Smartphone, color: 'text-red-600 bg-red-50', fields: [
+    { key: 'account_sid', label: 'Account SID', placeholder: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+    { key: 'auth_token', label: 'Auth token' },
+    { key: 'from', label: 'SMS sender number', phone: true },
+    { key: 'whatsapp_from', label: 'WhatsApp sender number (optional)', phone: true },
+    { key: 'whatsapp_template_sid', label: 'WhatsApp approved template SID (optional)', placeholder: 'HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+  ] },
 };
 
 const CATALOG: { provider: ProviderKey; nameKey: string; descKey: string }[] = [
@@ -36,6 +43,7 @@ const CATALOG: { provider: ProviderKey; nameKey: string; descKey: string }[] = [
   { provider: 'slack', nameKey: 'integrations.name.slack', descKey: 'integrations.slack.desc' },
 
   { provider: 'sms', nameKey: 'integrations.name.sms', descKey: 'integrations.sms.desc' },
+  { provider: 'twilio', nameKey: 'integrations.name.twilio', descKey: 'integrations.twilio.desc' },
   { provider: 'google_calendar', nameKey: 'integrations.name.calendar', descKey: 'integrations.use.calendar' },
   { provider: 'flutterwave', nameKey: 'integrations.name.flutterwave', descKey: 'integrations.flutterwave.desc' },
   { provider: 'stripe', nameKey: 'integrations.name.stripe', descKey: 'integrations.stripe.desc' },
@@ -268,8 +276,13 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
       >
         <div className="space-y-4">
           {configuring && PROVIDER_META[configuring].fields.map((f) => (
-            <Input key={f.key} label={f.label} placeholder={f.placeholder} value={form[f.key] ?? ''}
-              onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))} />
+            f.phone ? (
+              <PhoneInput key={f.key} label={f.label} value={form[f.key] ?? ''}
+                onChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v }))} />
+            ) : (
+              <Input key={f.key} label={f.label} placeholder={f.placeholder} value={form[f.key] ?? ''}
+                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))} />
+            )
           ))}
         </div>
       </Modal>
