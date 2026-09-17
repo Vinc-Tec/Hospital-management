@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Loader2, X, ChevronDown, Search, Check } from 'lucide-react';
 import { detectLocalCurrency, convertFromUsd, formatCurrency } from '../lib/currency';
-import { supabase, type Country } from '../lib/supabase';
+import { COUNTRY_CODES, type CountryCode } from '../lib/countryCodes';
 
 export function Button({
   children, variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', onClick,
@@ -42,42 +42,6 @@ export function Input({ label, error, required, className = '', ...props }: {
   );
 }
 
-// Module-level cache: the countries table (250+ rows, rarely changes)
-// is fetched once and shared across every PhoneInput instance on the
-// page instead of once per mounted field.
-//
-// BUG FIXED HERE: an empty array is truthy in JS ([] && ... is true),
-// so the original `if (countriesCache)` guard treated one single
-// failed/empty fetch (a dropped request, a query that raced ahead of
-// session restoration, etc.) as a permanently valid, if empty, cache --
-// poisoning every PhoneInput on the page for the rest of that session,
-// with no retry, no error shown. This is why country codes appeared
-// "sometimes but not always": whether the very first fetch happened to
-// succeed. Now a failed or empty response clears the in-flight promise
-// instead of caching it, so the next PhoneInput mounted (e.g. opening
-// another form) simply tries again.
-let countriesCache: Country[] | null = null;
-let countriesPromise: Promise<Country[]> | null = null;
-function loadCountries(): Promise<Country[]> {
-  if (countriesCache && countriesCache.length > 0) return Promise.resolve(countriesCache);
-  if (!countriesPromise) {
-    countriesPromise = Promise.resolve(
-      supabase.from('countries').select('id,name,iso2,phone_code,currency_code,timezone').order('name')
-    ).then(({ data, error }) => {
-      if (error || !data || data.length === 0) {
-        countriesPromise = null; // don't poison the cache -- let the next mount retry
-        return [];
-      }
-      countriesCache = data as Country[];
-      return countriesCache;
-    }).catch(() => {
-      countriesPromise = null;
-      return [];
-    });
-  }
-  return countriesPromise;
-}
-
 function detectDefaultIso2(): string {
   try {
     const region = navigator.language?.split('-')[1]?.toUpperCase();
@@ -91,38 +55,39 @@ function detectDefaultIso2(): string {
 // Splits a combined "+225 0700000000" style value into its dial code
 // and national number, matching against the known list of dial codes
 // (longest prefix first, since e.g. +1 and +1264 both start with "1").
-function splitPhoneValue(value: string, countries: Country[]): { iso2: string | null; national: string } {
+function splitPhoneValue(value: string, countries: CountryCode[]): { iso2: string | null; national: string } {
   const trimmed = value.trim();
   if (!trimmed.startsWith('+') || countries.length === 0) return { iso2: null, national: trimmed };
   const digits = trimmed.slice(1);
-  const withCodes = countries.filter((c) => c.phone_code);
-  const sorted = [...withCodes].sort((a, b) => (b.phone_code!.length - a.phone_code!.length));
-  const match = sorted.find((c) => digits.startsWith(c.phone_code!.replace('+', '')));
+  const sorted = [...countries].sort((a, b) => b.dial.length - a.dial.length);
+  const match = sorted.find((c) => digits.startsWith(c.dial.replace('+', '')));
   if (!match) return { iso2: null, national: trimmed };
-  return { iso2: match.iso2, national: digits.slice(match.phone_code!.replace('+', '').length).trim() };
+  return { iso2: match.iso2, national: digits.slice(match.dial.replace('+', '').length).trim() };
 }
 
 // International phone field: a searchable country dropdown (flag +
 // dial code) paired with a plain national-number input. Reports a
 // single combined value ("+225 0700000000") through onChange so it
 // drops into any form that currently stores phone as one string field.
+//
+// Dial codes come from the bundled COUNTRY_CODES list (lib/countryCodes.ts),
+// never from a network call -- see that file's header for why.
 export function PhoneInput({ label, error, required, value, onChange, placeholder, className = '', disabled }: {
   label?: string; error?: string; required?: boolean; value: string; onChange: (value: string) => void;
   placeholder?: string; className?: string; disabled?: boolean;
 }) {
-  const [countries, setCountries] = useState<Country[]>(countriesCache ?? []);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [selectedIso2, setSelectedIso2] = useState<string | null>(null);
+  const [selectedIso2, setSelectedIso2] = useState<string>(() => splitPhoneValue(value, COUNTRY_CODES).iso2 ?? detectDefaultIso2());
   const rootRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadCountries().then(setCountries); }, []);
-
+  // If the value we're editing changes to belong to a different
+  // country after mount (e.g. a form loads its data asynchronously
+  // after this field already rendered), follow it.
   useEffect(() => {
-    if (countries.length === 0) return;
-    const { iso2 } = splitPhoneValue(value, countries);
-    setSelectedIso2(iso2 ?? detectDefaultIso2());
-  }, [countries.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+    const { iso2 } = splitPhoneValue(value, COUNTRY_CODES);
+    if (iso2 && iso2 !== selectedIso2) setSelectedIso2(iso2);
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     function onOutside(e: MouseEvent) {
@@ -134,16 +99,16 @@ export function PhoneInput({ label, error, required, value, onChange, placeholde
     return () => { document.removeEventListener('mousedown', onOutside); document.removeEventListener('keydown', onEscape); };
   }, []);
 
-  const selected = countries.find((c) => c.iso2 === selectedIso2) ?? null;
-  const { national } = splitPhoneValue(value, countries);
+  const selected = COUNTRY_CODES.find((c) => c.iso2 === selectedIso2) ?? null;
+  const { national } = splitPhoneValue(value, COUNTRY_CODES);
 
   const filtered = search.trim()
-    ? countries.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone_code?.replace('+', '').includes(search.replace('+', '')))
-    : countries;
+    ? COUNTRY_CODES.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.dial.replace('+', '').includes(search.replace('+', '')))
+    : COUNTRY_CODES;
 
-  function commit(iso2: string | null, nationalNumber: string) {
-    const country = countries.find((c) => c.iso2 === iso2);
-    const code = country?.phone_code ? (country.phone_code.startsWith('+') ? country.phone_code : `+${country.phone_code}`) : '';
+  function commit(iso2: string, nationalNumber: string) {
+    const country = COUNTRY_CODES.find((c) => c.iso2 === iso2);
+    const code = country?.dial ?? '';
     onChange(nationalNumber ? `${code} ${nationalNumber}`.trim() : '');
   }
 
@@ -161,7 +126,7 @@ export function PhoneInput({ label, error, required, value, onChange, placeholde
             {selected ? (
               <img src={`https://flagcdn.com/w40/${selected.iso2.toLowerCase()}.png`} alt="" className="w-5 h-3.5 object-cover rounded-[2px]" />
             ) : <span className="w-5 h-3.5" />}
-            <span className="tabular-nums">{selected?.phone_code ? (selected.phone_code.startsWith('+') ? selected.phone_code : `+${selected.phone_code}`) : ''}</span>
+            <span className="tabular-nums">{selected?.dial ?? ''}</span>
             <ChevronDown size={14} className="text-gray-400" />
           </button>
           {open && (
@@ -182,14 +147,14 @@ export function PhoneInput({ label, error, required, value, onChange, placeholde
                 {filtered.length === 0 && <p className="px-3 py-4 text-sm text-gray-400 text-center">Aucun résultat</p>}
                 {filtered.map((c) => (
                   <button
-                    key={c.id}
+                    key={c.iso2}
                     type="button"
                     onClick={() => { setSelectedIso2(c.iso2); commit(c.iso2, national); setOpen(false); setSearch(''); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-gray-50"
                   >
                     <img src={`https://flagcdn.com/w40/${c.iso2.toLowerCase()}.png`} alt="" className="w-5 h-3.5 object-cover rounded-[2px] shrink-0" />
                     <span className="flex-1 truncate text-gray-700">{c.name}</span>
-                    <span className="text-gray-400 tabular-nums">{c.phone_code ? (c.phone_code.startsWith('+') ? c.phone_code : `+${c.phone_code}`) : ''}</span>
+                    <span className="text-gray-400 tabular-nums">{c.dial}</span>
                     {c.iso2 === selectedIso2 && <Check size={14} className="text-blue-600 shrink-0" />}
                   </button>
                 ))}
