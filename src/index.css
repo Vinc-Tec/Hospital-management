@@ -1,5 +1,3 @@
-@import url('https://cdn.jsdelivr.net/gh/fontalternative/glacial-indifference/font.css');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,16 +13,21 @@ html {
 
 body {
   height: 100%;
-  font-family: 'Glacial Indifference', 'Satoshi', system-ui, -apple-system, sans-serif;
+  /* Poppins is the only font actually loaded (see index.html) --
+     previously this listed 'Glacial Indifference' first via a CDN
+     @import that either failed to load or, worse, could load
+     inconsistently across browsers/networks. That font is known to be
+     missing/broken glyphs for accented Latin characters (é, è, à, ç...),
+     which is exactly why the project moved to Poppins for everything --
+     it fully supports French accents. Naming a broken font first in the
+     stack was a live regression risk even while it happened to be
+     falling back correctly: any environment where the CDN import
+     succeeded would have silently reintroduced invisible/missing accents. */
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Headings use Poppins (actually loaded via Google Fonts in index.html,
-   unlike the body's 'Glacial Indifference'/'Satoshi' stack above, which
-   isn't loaded anywhere and has always silently fallen back to
-   system-ui) -- gives titles a distinct, slightly heavier geometric
-   feel at font-semibold without needing font-bold's full weight. */
 h1, h2, h3 {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
 }

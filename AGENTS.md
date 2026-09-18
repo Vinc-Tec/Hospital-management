@@ -176,6 +176,42 @@ connected is just skipped, no error. Also fixed: PhoneInput stores
 "+225 0700000000" (space for readability) but Twilio needs strict
 E.164 -- added `toE164()` to strip it before every Twilio call.
 
+## Font: Glacial Indifference import removed for good (2026-09-18)
+`src/index.css` still had a CDN `@import` for 'Glacial Indifference'
+listed first in the body font stack, alongside a comment claiming it
+"isn't loaded anywhere." That claim was true in practice but the import
+itself was still live -- any environment where that CDN request
+succeeded would have silently reintroduced the exact bug the project
+moved away from Poppins for (missing/broken glyphs on French accented
+characters). Removed the import and the dead font names entirely; body
+and headings both now explicitly use 'Poppins' (index.html's Google
+Fonts link updated to load weight 400 too, not just 500/600/700, so
+regular body text renders the actual requested weight).
+
+## Security hardening pass (2026-09-18)
+Advisors flagged 31 SECURITY DEFINER functions callable via
+`/rest/v1/rpc/<name>` by anon/authenticated. Checked each:
+- `dispense_prescription`, `get_staff_performance`, `staff_performance`
+  already have their own internal `is_tenant_member`/`is_super_admin`
+  checks -- not exploitable, left as-is.
+- 24 were pure trigger functions (`RETURNS trigger`) -- Postgres already
+  refuses to call these outside trigger context, so not exploitable
+  either, but there's no reason to leave them in the public API surface.
+  Revoked EXECUTE from PUBLIC/anon/authenticated on all of them; trigger
+  firing is unaffected (it doesn't go through the EXECUTE check).
+- `fn_billing_housekeeping` had no internal auth check (didn't need
+  one -- every UPDATE it runs is date-gated) but also had no reason to
+  be publicly callable. Revoked EXECUTE the same way; the hourly
+  pg_cron job and the Edge Function both call it directly and are
+  unaffected.
+- Remaining ~12 (`is_tenant_member`, `is_super_admin`, `tenant_billing_active`,
+  etc.) are boolean/read-only helpers used throughout RLS policies
+  across the schema -- left callable to avoid risking any policy that
+  might depend on them being reachable for a given role.
+Also confirmed via advisors (not yet fixed, needs Dashboard access this
+setup doesn't have a tool for): enable "Leaked Password Protection"
+under Authentication > Providers > Email.
+
 ## i18n
 - `Lang = 'fr' | 'en'`, persisted in `localStorage('hc_lang')`, default `fr`.
   `LangToggle` in `src/components/brand.tsx`. The hero badge and trust strip
