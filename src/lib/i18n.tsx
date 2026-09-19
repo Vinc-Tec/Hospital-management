@@ -23,7 +23,7 @@ type Dict = Record<string, string>;
 const fr: Dict = {
   'app.name': 'Health Cloud', 'app.tagline': 'Une plateforme. Chaque établissement de santé.',
   'app.developed': 'Développé par LiAfrik', 'app.cameroon': '100% Technologie Internationale',
-  'nav.signin': 'Connexion', 'nav.signup': "S'inscrire", 'nav.dashboard': 'Tableau de bord', 'nav.signout': 'Déconnexion',
+  'nav.signin': 'Connexion', 'nav.signup': "S'inscrire", 'nav.dashboard': 'Tableau de bord', 'nav.signout': 'Déconnexion', 'nav.menu': 'Menu', 'nav.language': 'Langue',
   'nav.back': 'Retour', 'nav.superadmin': 'Super Admin', 'nav.about': 'À propos',
   'hero.title': "La plateforme de santé cloud pour le monde entier",
   'hero.subtitle': 'Gérez votre établissement de santé avec une solution moderne, sécurisée et multilocale. Isolation stricte des données par établissement.',
@@ -538,7 +538,7 @@ const fr: Dict = {
 const en: Dict = {
   'app.name': 'Health Cloud', 'app.tagline': 'One Platform. Every Healthcare Institution.',
   'app.developed': 'Developed by LiAfrik', 'app.cameroon': '100% Global Technology',
-  'nav.signin': 'Sign in', 'nav.signup': 'Sign up', 'nav.dashboard': 'Dashboard', 'nav.signout': 'Sign out',
+  'nav.signin': 'Sign in', 'nav.signup': 'Sign up', 'nav.dashboard': 'Dashboard', 'nav.signout': 'Sign out', 'nav.menu': 'Menu', 'nav.language': 'Language',
   'nav.back': 'Back', 'nav.superadmin': 'Super Admin', 'nav.about': 'About',
   'hero.title': 'The cloud health platform for the whole world',
   'hero.subtitle': 'Manage your healthcare institution with a modern, secure, multi-tenant solution. Strict data isolation per institution.',

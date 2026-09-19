@@ -4,10 +4,10 @@ import logoMark from '../assets/logo-mark.png';
 export function Logo({ size = 36, variant = 'light' }: { size?: number; variant?: 'light' | 'dark' }) {
   const s = size;
   return (
-    <div className="flex items-center gap-2.5 select-none">
+    <div className="flex items-center gap-2.5 select-none shrink-0">
       <img src={logoMark} alt="Health Cloud" width={s} height={s} className="flex-shrink-0 object-contain" style={{ width: s, height: s }} />
-      <div className="leading-none">
-        <span className={`font-bold tracking-tight ${variant === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontSize: s * 0.42 }}>
+      <div className="leading-none shrink-0">
+        <span className={`font-bold tracking-tight whitespace-nowrap ${variant === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontSize: s * 0.42 }}>
           Health Cloud
         </span>
       </div>

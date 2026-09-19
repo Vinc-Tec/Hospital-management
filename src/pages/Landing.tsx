@@ -4,7 +4,7 @@ import {
   Shield, Globe, CreditCard, Zap, ArrowRight, Check,
   Activity, BarChart3, Star,
   Building2, Stethoscope, FlaskConical, Pill,
-  Sparkles, X, Facebook, Instagram, Linkedin, Youtube,
+  Sparkles, X, Facebook, Instagram, Linkedin, Youtube, Menu,
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { Logo, LangToggle, CopyrightLine } from '../components/brand';
@@ -74,6 +74,7 @@ const WORLD_FLAG_CODES = [
 export function LandingPage() {
   const { t } = useI18n();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(false);
   const [showPromoBar, setShowPromoBar] = useState(() => {
     try {
@@ -174,7 +175,7 @@ export function LandingPage() {
         className={`fixed left-0 right-0 z-50 bg-white transition-[top,box-shadow] duration-200 ${scrolled ? 'border-b border-gray-100 shadow-sm' : 'border-b border-transparent'}`}
         style={{ top: showPromoBar ? '2.5rem' : '0' }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <Logo variant="light" />
           <nav className="hidden md:flex items-center gap-8">
             {[t('nav.features'), t('nav.pricing'), t('nav.about')].map((item, i) => (
@@ -184,7 +185,11 @@ export function LandingPage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          {/* Desktop controls -- hidden below md so nothing ever has to
+              squeeze into the same row as the logo on a phone screen,
+              regardless of which language (and therefore which native
+              name / text width) is selected. */}
+          <div className="hidden md:flex items-center gap-3">
             <LangToggle variant="light" />
             <Link to="/signin" className="text-sm font-medium px-4 py-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
               {t('nav.signin')}
@@ -193,7 +198,50 @@ export function LandingPage() {
               {t('nav.signup')}
             </Link>
           </div>
+          {/* Mobile: a single hamburger button next to the logo -- the
+              only reliable way to guarantee the logo is never crowded
+              out or covered, whatever combination of language text
+              length and screen width the visitor has. */}
+          <button
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label={mobileMenuOpen ? t('common.close') : t('nav.menu')}
+            aria-expanded={mobileMenuOpen}
+            className="md:hidden shrink-0 p-2 -mr-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white shadow-lg">
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-1">
+              {[
+                { label: t('nav.features'), href: '#features' },
+                { label: t('nav.pricing'), href: '#plans' },
+                { label: t('nav.about'), href: '/about' },
+              ].map((item) => (
+                <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  {item.label}
+                </a>
+              ))}
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <span className="text-sm text-gray-500">{t('nav.language')}</span>
+                <LangToggle variant="light" />
+              </div>
+              <div className="mt-2 pt-3 border-t border-gray-100 flex flex-col gap-2">
+                <Link to="/signin" onClick={() => setMobileMenuOpen(false)}
+                  className="text-center text-sm font-medium px-4 py-2.5 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                  {t('nav.signin')}
+                </Link>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)}
+                  className="text-center text-sm font-semibold px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors">
+                  {t('nav.signup')}
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* HERO — plain light background, two columns, framed photo instead of full-bleed overlay */}
