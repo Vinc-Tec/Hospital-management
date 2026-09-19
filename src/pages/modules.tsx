@@ -325,6 +325,8 @@ function DispenseModal({ prescription, item, patientName, onClose, onDone }: {
   const [err, setErr] = useState<string | null>(null);
 
   const submit = async () => {
+    if (!qty || qty <= 0) { setErr(t('rx.err_invalid_quantity')); return; }
+    if (item && qty > item.quantity) { setErr(t('rx.err_insufficient_stock')); return; }
     setSaving(true); setErr(null);
     const { error } = await supabase.rpc('dispense_prescription', { p_prescription_id: prescription.id, p_quantity: qty });
     setSaving(false);
@@ -333,6 +335,7 @@ function DispenseModal({ prescription, item, patientName, onClose, onDone }: {
         insufficient_stock: t('rx.err_insufficient_stock'),
         already_dispensed: t('rx.err_already_dispensed'),
         no_pharmacy_item_linked: t('rx.err_no_stock_linked'),
+        invalid_quantity: t('rx.err_invalid_quantity'),
       };
       setErr(known[error.message] ?? error.message);
       return;

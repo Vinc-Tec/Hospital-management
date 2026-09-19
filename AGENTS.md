@@ -121,6 +121,20 @@ this repo -- never commit secrets):
   Paddle Dashboard > Developer Tools > Authentication), optionally
   `VITE_PADDLE_ENV=sandbox` while testing.
 
+## Audit pass 2: bed assignment race condition (2026-09-19)
+`sync_bed_with_admission()` checked bed availability with a plain
+EXISTS (no row lock) then updated the bed with no status guard in the
+UPDATE's own WHERE clause. Two admissions to the same bed submitted
+close together could both pass the check before either committed, and
+the second UPDATE would silently overwrite the first patient's
+occupancy -- no error to either clinician, bed ends up pointing at the
+wrong patient. Fixed the same way as the invoice-overpayment race
+(20260919000000): `SELECT ... FOR UPDATE` locks the bed row first, plus
+a status guard directly on the final UPDATE as defense in depth. Also
+added client-side + translated server-side validation for dispensing 0
+or negative quantity in Prescriptions (was previously only caught
+server-side with an untranslated error code shown raw).
+
 ## Automation: billing housekeeping + reminders now actually scheduled (2026-09-17)
 Both `billing-housekeeping` and `send-appointment-reminders` were fully
 coded and deployed but **nothing was ever calling them** -- no Supabase
