@@ -70,7 +70,13 @@ function NotificationBell() {
   const { t } = useI18n();
   const [notifications, setNotifications] = useState<{ id: string; title: string; message: string; created_at: string }[]>([]);
   const [open, setOpen] = useState(false);
-  const [seenIds, setSeenIds] = useState<string[]>(() => JSON.parse(localStorage.getItem('hc_seen_notifications') || '[]'));
+  const [seenIds, setSeenIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hc_seen_notifications') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     supabase.from('platform_notifications').select('id, title, message, created_at, target')
@@ -169,9 +175,14 @@ function SupportChatWidget() {
   };
 
   const escalate = async (query: string) => {
+    if (!user) {
+      setAwaitingEscalation(false);
+      setMessages((m) => [...m, { from: 'bot', text: t('chat.escalation_failed') }]);
+      return;
+    }
     setEscalating(true);
     const { error } = await supabase.from('support_tickets').insert({
-      tenant_id: activeTenant?.id ?? null, user_id: user!.id,
+      tenant_id: activeTenant?.id ?? null, user_id: user.id,
       subject: t('chat.escalated_subject'), description: query, priority: 'medium', status: 'open',
     });
     setEscalating(false);
@@ -255,24 +266,29 @@ export function Dashboard() {
     if (!activeTenant || isSuperAdmin) return;
     (async () => {
       const tid = activeTenant.id;
-      const [{ data: p }, { data: a }, { count: pc }, { count: ac }, { count: dc }] = await Promise.all([
+      const [{ data: p }, { data: a }, { count: pc }, { count: ac }, { count: dc }, { data: paidInvoices }] = await Promise.all([
         supabase.from('patients').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(5),
         supabase.from('appointments').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(5),
         supabase.from('patients').select('*', { count: 'exact', head: true }).eq('tenant_id', tid),
         supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('tenant_id', tid),
         supabase.from('doctors').select('*', { count: 'exact', head: true }).eq('tenant_id', tid),
+        supabase.from('invoices').select('total').eq('tenant_id', tid).eq('status', 'paid'),
       ]);
       setPatients((p as Patient[]) ?? []);
       setAppointments((a as Appointment[]) ?? []);
-      setStats({ patients: pc ?? 0, appointments: ac ?? 0, doctors: dc ?? 0, revenue: 0 });
+      const revenue = (paidInvoices ?? []).reduce((sum, inv) => sum + Number((inv as { total: number }).total ?? 0), 0);
+      setStats({ patients: pc ?? 0, appointments: ac ?? 0, doctors: dc ?? 0, revenue });
     })();
   }, [activeTenant, isSuperAdmin]);
 
+  const [addErr, setAddErr] = useState<string | null>(null);
   const addPatient = async () => {
     if (!activeTenant) return;
     setSaving(true);
+    setAddErr(null);
     const { error } = await supabase.from('patients').insert({ ...pForm, tenant_id: activeTenant.id });
     if (!error) { setAddOpen(false); setPForm({ first_name: '', last_name: '', phone: '', gender: 'male', date_of_birth: '' }); }
+    else setAddErr(error.message);
     setSaving(false);
   };
 
@@ -283,7 +299,7 @@ export function Dashboard() {
     { label: t('dash.patients'), value: stats.patients, icon: Users, color: 'blue' },
     { label: t('dash.appointments'), value: stats.appointments, icon: CalendarDays, color: 'emerald' },
     { label: t('dash.doctors'), value: stats.doctors, icon: Stethoscope, color: 'amber' },
-    { label: t('dash.revenue'), value: `$${stats.revenue}`, icon: Receipt, color: 'gray' },
+    { label: t('dash.revenue'), value: `$${stats.revenue.toLocaleString()}`, icon: Receipt, color: 'gray' },
   ];
 
   return (
@@ -444,6 +460,7 @@ export function Dashboard() {
           <PhoneInput label={t('common.phone')} value={pForm.phone} onChange={(v) => setPForm({ ...pForm, phone: v })} />
           <Select label={t('common.gender')} value={pForm.gender} options={[{ value: 'male', label: t('common.male') }, { value: 'female', label: t('common.female') }, { value: 'other', label: t('common.other') }]} onChange={(e) => setPForm({ ...pForm, gender: e.target.value })} />
           <Input label={t('common.dob')} type="date" value={pForm.date_of_birth} onChange={(e) => setPForm({ ...pForm, date_of_birth: e.target.value })} />
+          {addErr && <p className="text-sm text-red-600">{addErr}</p>}
         </div>
       </Modal>
     </div>
