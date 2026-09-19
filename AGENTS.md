@@ -121,6 +121,22 @@ this repo -- never commit secrets):
   Paddle Dashboard > Developer Tools > Authentication), optionally
   `VITE_PADDLE_ENV=sandbox` while testing.
 
+## Audit pass 3: cross-tenant FK isolation gaps (2026-09-19)
+Surgeries, HR, Payroll, Insurance, Telemedicine, Emergency,
+Immunizations, Discharge module screens themselves were clean (pure
+generic ModulePage forms, nothing custom to break). But diffing every
+foreign key against the systemic cross-tenant guard
+(20260902090000_systemic_cross_tenant_fk_validation.sql) turned up
+several added later that were never covered -- each could in principle
+reference a row belonging to a DIFFERENT tenant (RLS still scopes the
+referencing row's own tenant_id correctly, but not what it points at):
+`employee_records.staff_id`, `payslips.staff_id`,
+`leave_requests.staff_id`, `admissions.source_emergency_case_id`,
+`admissions.bed_id`, `invoice_items.invoice_id`,
+`patient_queue.patient_id/appointment_id/doctor_id`,
+`prescriptions.pharmacy_item_id`. All now guarded the same way as
+every other cross-tenant FK in the schema.
+
 ## Audit pass 2: bed assignment race condition (2026-09-19)
 `sync_bed_with_admission()` checked bed availability with a plain
 EXISTS (no row lock) then updated the bed with no status guard in the
