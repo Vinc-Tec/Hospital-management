@@ -189,10 +189,12 @@ function ApiTab({ tenantId }: { tenantId: string }) {
     load();
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const remove = async (id: string) => {
     setErr(null);
     const { error } = await supabase.from('api_keys').delete().eq('id', id);
     if (error) { setErr(error.message); return; }
+    setConfirmDeleteId(null);
     load();
   };
 
@@ -214,12 +216,21 @@ function ApiTab({ tenantId }: { tenantId: string }) {
               <div className="flex items-center gap-2">
                 <Badge color={k.is_active ? 'green' : 'gray'}>{k.is_active ? t('opt.active') : t('opt.inactive')}</Badge>
                 <Button size="sm" variant="outline" onClick={() => toggle(k)}>{k.is_active ? t('sa.deactivate') : t('sa.activate')}</Button>
-                <Button size="sm" variant="outline" onClick={() => remove(k.id)}><Trash2 size={14} /></Button>
+                <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(k.id)}><Trash2 size={14} /></Button>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      <Modal open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} title={t('common.confirm.delete')} footer={
+        <>
+          <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>{t('common.cancel')}</Button>
+          <Button variant="danger" onClick={() => confirmDeleteId && remove(confirmDeleteId)}>{t('common.delete')}</Button>
+        </>
+      }>
+        <p className="text-sm text-gray-600">{t('settings.api_delete_confirm')}</p>
+      </Modal>
 
       <Modal open={open} onClose={() => setOpen(false)} title={t('sa.generate_api_key')} footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button onClick={createKey}>{t('common.save')}</Button></>}>
         <div className="space-y-3">
@@ -408,10 +419,10 @@ function SupportTab() {
   useEffect(() => { if (user) load(); }, [user]);
 
   const submit = async () => {
-    if (!form.subject.trim()) return;
+    if (!form.subject.trim() || !user) return;
     setSubmitting(true); setErr(null);
     const { error } = await supabase.from('support_tickets').insert({
-      tenant_id: activeTenant?.id ?? null, user_id: user!.id,
+      tenant_id: activeTenant?.id ?? null, user_id: user.id,
       subject: form.subject, description: form.description, priority: form.priority, status: 'open',
     });
     setSubmitting(false);
@@ -610,10 +621,12 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
     setShowModal(false); await load(); await onUpdated();
   };
 
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const remove = async (id: string) => {
     setErr(null);
     const { error } = await supabase.from('branches').delete().eq('id', id);
     if (error) { setErr(error.message); return; }
+    setConfirmRemoveId(null);
     await load();
   };
 
@@ -674,7 +687,7 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
                   {!b.is_head_office && (
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                      <button onClick={() => remove(b.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                      <button onClick={() => setConfirmRemoveId(b.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                     </div>
                   )}
                 </div>
@@ -706,6 +719,15 @@ function BranchesTab({ tenant, onUpdated }: { tenant: Tenant | null; onUpdated: 
           </div>
         </div>
       )}
+
+      <Modal open={!!confirmRemoveId} onClose={() => setConfirmRemoveId(null)} title={t('common.confirm.delete')} footer={
+        <>
+          <Button variant="outline" onClick={() => setConfirmRemoveId(null)}>{t('common.cancel')}</Button>
+          <Button variant="danger" onClick={() => confirmRemoveId && remove(confirmRemoveId)}>{t('common.delete')}</Button>
+        </>
+      }>
+        <p className="text-sm text-gray-600">{t('settings.branches.delete_confirm')}</p>
+      </Modal>
     </div>
   );
 }

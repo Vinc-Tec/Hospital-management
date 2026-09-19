@@ -222,10 +222,13 @@ export function ModulePage({
     setSaving(false);
   };
 
+  const [delErr, setDelErr] = useState<string | null>(null);
   const confirmDelete = async () => {
     if (!delId) return;
-    await crud.remove(delId);
-    setDelId(null);
+    setDelErr(null);
+    const res = await crud.remove(delId);
+    if (res.error) setDelErr(translateDbError(res.error, t));
+    else setDelId(null);
   };
 
   const renderCell = (col: ColumnDef, row: Row) => {
@@ -380,13 +383,14 @@ export function ModulePage({
         )}
       </Modal>
 
-      <Modal open={!!delId} onClose={() => setDelId(null)} title={t('common.confirm.delete')} footer={
+      <Modal open={!!delId} onClose={() => { setDelId(null); setDelErr(null); }} title={t('common.confirm.delete')} footer={
         <>
-          <Button variant="outline" onClick={() => setDelId(null)}>{t('common.cancel')}</Button>
+          <Button variant="outline" onClick={() => { setDelId(null); setDelErr(null); }}>{t('common.cancel')}</Button>
           <Button variant="danger" onClick={confirmDelete}>{t('common.delete')}</Button>
         </>
       }>
         <p className="text-sm text-gray-600">{t('common.confirm.delete')}</p>
+        {delErr && <p className="text-sm text-red-600 mt-2">{delErr}</p>}
       </Modal>
     </div>
   );

@@ -220,7 +220,7 @@ function CollectPaymentModal({ invoice, balanceDue, patient, currency, onClose, 
       received_by_name: receivedByName,
     });
     setSaving(false);
-    if (error) { setErr(error.message); return; }
+    if (error) { setErr(error.message.trim() === 'payment_exceeds_invoice_balance' ? t('cashdesk.err.exceeds') : error.message); return; }
     const createdAt = new Date().toISOString();
     setDone({ createdAt });
     setTimeout(() => onDone(amountNum >= balanceDue - 0.01), 1400);
