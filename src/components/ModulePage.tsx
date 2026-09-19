@@ -30,6 +30,7 @@ function notifyIntegrations(accessToken: string | undefined, tenantId: string, e
 const KNOWN_DB_ERRORS = [
   'bed_already_occupied', 'operating_room_conflict', 'insufficient_stock',
   'already_dispensed', 'no_pharmacy_item_linked', 'prescription_cancelled',
+  'doctor_appointment_conflict', 'payment_exceeds_invoice_balance',
 ];
 function translateDbError(message: string, t: (k: string) => string): string {
   const code = message.trim();

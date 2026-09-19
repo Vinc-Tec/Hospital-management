@@ -81,6 +81,8 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
   const [webhookModal, setWebhookModal] = useState(false);
   const [whForm, setWhForm] = useState<{ name: string; url: string; event: string; secret: string }>({ name: '', url: '', event: 'all', secret: '' });
   const [whSaving, setWhSaving] = useState(false);
+  const [whErr, setWhErr] = useState<string | null>(null);
+  const [confirmDeleteWebhookId, setConfirmDeleteWebhookId] = useState<string | null>(null);
 
   const byProvider = new Map(integrations.rows.map((i) => [i.provider, i]));
 
@@ -155,7 +157,10 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
   }
 
   async function removeWebhook(id: string) {
-    await webhooks.remove(id);
+    setWhErr(null);
+    const res = await webhooks.remove(id);
+    if (res.error) setWhErr(res.error);
+    else setConfirmDeleteWebhookId(null);
   }
 
   return (
@@ -243,7 +248,7 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
                   <Badge color="blue">{EVENT_OPTIONS(t).find((e) => e.value === w.event)?.label ?? w.event}</Badge>
                   <Badge color={w.is_active ? 'green' : 'gray'}>{w.is_active ? t('integrations.status.active') : t('integrations.status.inactive')}</Badge>
                   <button onClick={() => toggleWebhook(w)} className="text-xs font-medium text-blue-600 hover:underline">{w.is_active ? t('integrations.status.inactive') : t('integrations.status.active')}</button>
-                  <button onClick={() => removeWebhook(w.id)} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
+                  <button onClick={() => setConfirmDeleteWebhookId(w.id)} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
                 </div>
               </div>
             ))}
@@ -304,6 +309,16 @@ export function IntegrationsModule({ tenantId }: { tenantId: string }) {
           <Select label={t('integrations.webhooks.event')} options={EVENT_OPTIONS(t)} value={whForm.event} onChange={(e) => setWhForm({ ...whForm, event: e.target.value })} />
           <Input label={t('integrations.webhooks.secret')} value={whForm.secret} onChange={(e) => setWhForm({ ...whForm, secret: e.target.value })} />
         </div>
+      </Modal>
+
+      <Modal open={!!confirmDeleteWebhookId} onClose={() => { setConfirmDeleteWebhookId(null); setWhErr(null); }} title={t('common.confirm.delete')} footer={
+        <>
+          <Button variant="outline" onClick={() => { setConfirmDeleteWebhookId(null); setWhErr(null); }}>{t('common.cancel')}</Button>
+          <Button variant="danger" onClick={() => confirmDeleteWebhookId && removeWebhook(confirmDeleteWebhookId)}>{t('common.delete')}</Button>
+        </>
+      }>
+        <p className="text-sm text-gray-600">{t('integrations.webhooks.delete_confirm')}</p>
+        {whErr && <p className="text-sm text-red-600 mt-2">{whErr}</p>}
       </Modal>
     </div>
   );

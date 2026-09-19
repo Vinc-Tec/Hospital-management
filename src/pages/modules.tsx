@@ -805,8 +805,9 @@ export function ReportsModule({ tenantId }: { tenantId: string }) {
           {err && <p className="text-sm text-red-600">{err}</p>}
         </div>
       </Modal>
-      <Modal open={!!delId} onClose={() => setDelId(null)} title={t('common.confirm.delete')} footer={<><Button variant="outline" onClick={() => setDelId(null)}>{t('common.cancel')}</Button><Button variant="danger" onClick={async () => { if (delId) { await crud.remove(delId); setDelId(null); } }}>{t('common.delete')}</Button></>}>
+      <Modal open={!!delId} onClose={() => { setDelId(null); setErr(null); }} title={t('common.confirm.delete')} footer={<><Button variant="outline" onClick={() => { setDelId(null); setErr(null); }}>{t('common.cancel')}</Button><Button variant="danger" onClick={async () => { if (delId) { const res = await crud.remove(delId); if (res.error) setErr(res.error); else setDelId(null); } }}>{t('common.delete')}</Button></>}>
         <p className="text-sm text-gray-600">{t('common.confirm.delete')}</p>
+        {err && <p className="text-sm text-red-600 mt-2">{err}</p>}
       </Modal>
     </div>
   );
